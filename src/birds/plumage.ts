@@ -6,7 +6,12 @@ import type {Point} from '../engine/types';
  * White is unpainted paper; this grammar never pastes opaque white over a wash.
  */
 export function plumageSlot(bird:Bird,p:Point,origin:Point,axis:number,sy:number):number{
-  if(!bird.signature)return bird.slot;
+  if(!bird.signature){
+    const palette=bird.plumage;
+    if(!palette||palette.length<2)return bird.slot;
+    const band=Math.sin((p.x-origin.x)*22+(p.y-origin.y)*sy*17+1.4);
+    return palette[Math.min(palette.length-1,Math.floor((band+1)*.5*palette.length))];
+  }
   const x=p.x-origin.x,y=(p.y-origin.y)*sy;
   const across=-x*Math.sin(axis)+y*Math.cos(axis),along=x*Math.cos(axis)+y*Math.sin(axis);
   const islands=Math.sin(across*26+.8)+.32*Math.sin(along*38+1.9);
@@ -15,4 +20,4 @@ export function plumageSlot(bird:Bird,p:Point,origin:Point,axis:number,sy:number
   if(bird.signature==='twig')return Math.sin(along*24+across*19+1.5)>.48?8:7;
   return islands>.70?4:9;
 }
-export const companionSlot=(bird:Bird):number|undefined=>bird.signature==='lace'?4:bird.signature==='velvet'?6:bird.signature==='twig'?8:bird.signature==='ripple'?4:undefined;
+export const companionSlot=(bird:Bird):number|undefined=>bird.signature==='lace'?4:bird.signature==='velvet'?6:bird.signature==='twig'?8:bird.signature==='ripple'?4:bird.plumage?.find(slot=>slot!==bird.slot);

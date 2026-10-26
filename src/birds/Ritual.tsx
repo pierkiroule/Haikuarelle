@@ -1,9 +1,9 @@
 export const RITUAL=[
-  {stage:'choose',name:'Les oiseaux',title:'Trois plumes sonores qui t’inspirent',hint:'Trois présences, trois couleurs. Écoute-les bientôt se rencontrer sur le papier.'},
-  {stage:'water',name:'L’eau',title:'Dépose l’eau résonante sur ta toile',hint:'Effleure le papier pour y déposer de l’eau claire. Aucun chant, aucun pigment. Tu peux aussi passer directement au papier sec.'},
-  {stage:'paint',name:'Les chants',title:'Dépose les chants des oiseaux',hint:'Dépose un chant ou glisse la plume, sur le sec comme dans l’eau. Le sample entier anime le geste. Dans l’eau, le pigment s’étale et rejoint ses contours.'},
-  {stage:'drying',name:'Le soleil',title:'Laisse sécher sous le soleil du silence',hint:'Les chants se taisent. L’eau se retire, les contours se précisent et la matière révèle ses détails. Les mots viendront quand le papier sera sec.'},
-  {stage:'finished',name:'Le partage',title:'Partager ton haïkuarelle',hint:'Un titre, trois vers et la trace de tes oiseaux. À offrir, à garder, à laisser voyager.'},
+  {stage:'choose',name:'La rencontre',title:'Une plume sonore qui t’attire',hint:'Choisis une plume parmi celles qui virevoltent. Un seul oiseau te confie les couleurs de son plumage et son univers poétique.'},
+  {stage:'poem',name:'Le haïku',title:'Un haïku pour ouvrir le voyage',hint:'Accueille ces trois vers. Ils suggèrent un monde, sans te demander de l’illustrer.'},
+  {stage:'paint',name:'La création',title:'Fais dialoguer l’eau et le chant',hint:'Choisis la goutte ou la plume dans la palette. Ajoute de l’eau avant ou après le chant, sur le sec comme sur les pigments. L’eau reste présente jusqu’au séchage volontaire.'},
+  {stage:'drying',name:'Le soleil',title:'Laisse sécher sous le soleil du silence',hint:'Les chants se taisent. L’eau se retire, les contours se précisent et la matière révèle ses détails. Le titre et le haïku accompagnent la matière jusqu’au papier sec.'},
+  {stage:'finished',name:'Le partage',title:'Partager ton haïkuarelle',hint:'Un titre, trois vers et la trace de ton oiseau. À offrir, à garder, à laisser voyager.'},
 ] as const;
 export type RitualStage=typeof RITUAL[number]['stage'];
 export function RitualProgress({stage}:{stage:RitualStage}){

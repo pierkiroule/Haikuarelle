@@ -82,9 +82,9 @@ describe('gesture and live audio create the brush together',()=>{
     expect(BIRD_PADS.map(b=>b.id)).toEqual(['corneille','rougegorge','geai']);
     const colors=BIRD_PADS.map(b=>getPalette('plumages').colors[b.slot]);expect(new Set(colors).size).toBe(3);
     const [crow,robin,jay]=BIRD_PADS.map(b=>path(.005,417,b).frames[2].segments.filter(s=>!s.water));
-    expect(crow.every(s=>s.slot===0)).toBe(true);expect(jay.every(s=>s.slot===2)).toBe(true);
+    expect(crow.some(s=>s.slot===0)).toBe(true);expect(crow.every(s=>[0,7,6].includes(s.slot))).toBe(true);expect(jay.some(s=>s.slot===2)).toBe(true);expect(jay.every(s=>[2,8,5,0].includes(s.slot))).toBe(true);
     expect(robin.some(s=>s.slot===0&&s.load<.2)).toBe(true);expect(robin.some(s=>s.slot===1)).toBe(true);
-    expect(crow[0].strength).toBeGreaterThan(robin.find(s=>s.slot===1)!.strength);
+    expect(crow.find(s=>s.slot===0)!.strength).toBeGreaterThan(robin.find(s=>s.slot===1)!.strength);
   });
   it('projects separate black magpie droplets with varied sizes, no connecting stroke and a fixed budget',()=>{
     const pie=BIRD_BRUSHES.find(b=>b.id==='pie')!;

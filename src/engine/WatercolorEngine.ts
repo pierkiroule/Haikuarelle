@@ -1,3 +1,4 @@
+import {BIRD_COLOURS} from '../birds/colourPalettes';
 import { PaintEngine, Kind, type Segment, type Drop, type Look } from '../vendor/pigment-drift/paint/engine';
 import { createRng } from '../vendor/pigment-drift/engine/params';
 import { compose, sampleGesture, TICK_RATE, DURATION, clamp } from './composition';
@@ -33,6 +34,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private active=false;
   private performance=false;
   private drying=false;
+  private pigmentColours:string[]=PLUMAGE_PIGMENTS;
   private voice:{gestures:Gesture[];ink:InkStroke[];analysis:AudioAnalysis;start:number}|null=null;
   private brushVoice:{brush:ResonantBrush;analysis:AudioAnalysis;start:number;clock?:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
   private stainVoice:{stain:SoundStain;analysis:AudioAnalysis;start:number;clock:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
@@ -74,7 +76,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private look():Look {
     const palette=getPalette(this.settings.palette);
     return {paper:palette.paper,inks:palette.colors.map(c=>inkRamp(c,palette.paper)),
-      pigments:this.performance&&palette.id==='plumages'?PLUMAGE_PIGMENTS:undefined,
+      pigments:this.performance&&palette.id==='plumages'?this.pigmentColours:undefined,
       layers:6,bleed:this.settings.wetness,drift:0,texture:this.settings.granulation,
       edges:this.performance?1:.74,hueDrift:.02,mist:this.performance?.015:.12,ridge:.13,feather:this.performance?.22:.82,density:this.performance?.83:.68,detail:this.performance?1:0,
       dryingTime:this.performance?(this.drying?dryingTime(this.settings.wetness):Infinity):undefined,dryingDetail:this.performance?.95:0,
@@ -122,11 +124,26 @@ export class HaikuarelleEngine implements WatercolorEngine {
   beginSignature(seed:number):void {
     this.performance=true;this.audio=null;this.seed=seed>>>0;this.clear();
   }
+  /** Only switch the optical table on a blank sheet; deposited colour is immutable. */
+  setBirdPalette(id:Bird['id']):void{
+    if(this.hasPigment)throw new Error('La palette de l’oiseau reste fixe pendant l’œuvre.');
+    this.pigmentColours=[...PLUMAGE_PIGMENTS,...(BIRD_COLOURS[id]??[]).map(c=>c.hex)];
+    this.paint.setLook(this.look());
+  }
   /** Explicit clear-water gesture. It never authorizes pigment or starts audio. */
   wetBrush(point:Point,size=.55,pressure=.5,amount=1):void{
     if(this.destroyed||!this.performance||![point.x,point.y].every(Number.isFinite))return;
     const p={x:clamp(point.x,.015,.985),y:clamp(point.y,.015,.985)},a=this.waterLast??p;
     const radius=(.025+.11*clamp(size))*(.75+.5*clamp(pressure)),time=this.tick/TICK_RATE;
+    // Fresh water creates a bounded growing backrun in living pigment.
+    // Merely raising a saturated moisture mask cannot push paint on its own.
+    const waterSheet=sheetFor(this.settings.format),waterUnit=Math.min(waterSheet.width,waterSheet.height);
+    const previous=this.waterBlooms[this.waterBlooms.length-1];
+    const distance=previous?Math.hypot((p.x-previous.point.x)*waterSheet.width/waterUnit,(p.y-previous.point.y)*waterSheet.height/waterUnit):Infinity;
+    if(this.hasPigment&&!this.drying&&amount>0&&(!previous||distance>radius*.5||time-previous.start>.28)){
+      this.waterBlooms=this.waterBlooms.filter(b=>time<b.start+b.duration).slice(-3);
+      this.waterBlooms.push({point:{...p},start:time,duration:.65+.6*clamp(amount),radius:radius*(.24+.40*Math.sqrt(clamp(amount)))});
+    }
     this.wetPaper.add(a,p,radius,.45*clamp(amount),time);
     this.waterPending.push({a,b:p,radius,load:0,slot:0,water:true,waterAmount:clamp(amount),strength:.45,coupling:0});
     if(this.waterPending.length>96)this.waterPending=this.waterPending.filter((_,i)=>i%2===0||i===this.waterPending.length-1);
@@ -134,12 +151,12 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition.duration=Math.max(this.composition.duration,time+this.dryingDuration());this.request();
   }
   liftWaterBrush():void{this.waterLast=null;}
-  /** Commit even a quick water tap before holding the silent preparation. */
-  holdWater():void{
+  /** Commit a water tap; keep the clock running when rewetting living pigment. */
+  holdWater(pause=true):void{
     if(this.destroyed)return;
     this.liftWaterBrush();
     while(this.waterPending.length&&this.active)this.stepOnce();
-    this.paint.render(0);this.pause();
+    this.paint.render(0);if(pause)this.pause();
   }
   setDrying(enabled:boolean):void{
     if(!this.performance||this.destroyed)return;
@@ -156,7 +173,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.stopBird();
     const start=this.tick/TICK_RATE;
     const frames=soundImprint(analysis);
-    this.stainVoice={stain:new SoundStain(bird,seed,{...point},{...this.settings},this.wetPaper,size,layer,start,frames.filter(f=>f.active&&f.energy>0).map(f=>f.time),opacity),
+    this.stainVoice={stain:new SoundStain(bird,seed,{...point},{...this.settings,...(bird.pigmentSlot!==undefined?{ink:0}:{})},this.wetPaper,size,layer,start,frames.filter(f=>f.active&&f.energy>0).map(f=>f.time),opacity),
       analysis:{...analysis,frames},start,clock:clock??(()=>this.tick/TICK_RATE-start),marked:false,onMark};
     this.audio=analysis;this.composition.title=bird.gesture;
     this.composition.duration=start+analysis.duration+this.dryingDuration();
@@ -340,7 +357,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   setGranulation(value:number):void{this.update({granulation:value});}
   deposit(x:number,y:number,pigment:string):void {
     const palette=getPalette(this.settings.palette);
-    const colors=this.performance&&palette.id==='plumages'?PLUMAGE_PIGMENTS:palette.colors;
+    const colors=this.performance&&palette.id==='plumages'?this.pigmentColours:palette.colors;
     const index=colors.findIndex(c=>c.toLowerCase()===pigment.toLowerCase());
     const slot=index>=0?index:Number(pigment);
     if(!Number.isInteger(slot)||slot<0||slot>=colors.length)throw new RangeError(`Pigment must be a palette hex value or slot 0..${colors.length-1}.`);

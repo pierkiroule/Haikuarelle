@@ -1,0 +1,17 @@
+import {useState,type CSSProperties} from 'react';
+import type {Bird} from './catalog';
+import {BIRD_COLOURS} from './colourPalettes';
+import {FeatherGlyph} from './FeatherGlyph';
+import {WaterDrop} from './Ritual';
+import {PLUMAGE_PIGMENTS} from '../engine/palettes';
+interface Props {bird:Bird;tool:'water'|'plume';colour:number|null;size:number;opacity:number;waterSize:number;waterAmount:number;canDry:boolean;onTool:(tool:'water'|'plume')=>void;onColour:(colour:number|null)=>void;onSize:(value:number)=>void;onOpacity:(value:number)=>void;onWaterSize:(value:number)=>void;onWaterAmount:(value:number)=>void;onDry:()=>void}
+export function CreationPalette(p:Props){
+ const [collapsed,setCollapsed]=useState(false);
+ const colours=BIRD_COLOURS[p.bird.id]??[],water=p.tool==='water';
+ const colour=p.colour===null?p.bird.color:colours[p.colour]?.hex??p.bird.color;
+ const feather=p.colour===null?p.bird:{...p.bird,color:colour,pigmentSlot:PLUMAGE_PIGMENTS.length+p.colour};
+ return <div className={`creation-palette accessible-palette ${collapsed?'is-collapsed':''}`} role="group" aria-label="Palette : eau résonante et plume sonore">
+  <div className="palette-toolbar"><button className={`water-pad ${water?'is-selected':''}`} aria-label="Choisir l’eau résonante" aria-pressed={water} onClick={()=>p.onTool('water')}><WaterDrop/><span>Eau résonante</span></button><div className="bird-pads"><button className={`bird-pad ${!water?'is-selected':''}`} aria-label={`Choisir la plume ${p.bird.name} — ${p.bird.gesture}`} aria-pressed={!water} onClick={()=>p.onTool('plume')} style={{'--bird-color':colour} as CSSProperties}><FeatherGlyph bird={feather}/></button></div><span className="palette-tool-name">{water?'Eau résonante':p.colour===null?p.bird.name:colours[p.colour]?.name}</span><button className="finalize-art" disabled={!p.canDry} onClick={p.onDry}>Laisser sécher <span aria-hidden="true">☼</span></button><button className="palette-collapse" aria-label={collapsed?'Déployer la palette':'Réduire la palette'} aria-expanded={!collapsed} aria-controls="palette-settings" onClick={()=>setCollapsed(value=>!value)}>{collapsed?'⌃':'⌄'}</button></div>
+  {!collapsed&&<div id="palette-settings" className="palette-settings"><div className="feather-colours" role="group" aria-label={`Couleurs du plumage ${p.bird.name}`}><button className="whole-plumage" aria-label="Tout le plumage" aria-pressed={p.colour===null} title="Tout le plumage" onClick={()=>p.onColour(null)}>✧</button>{colours.map((c,i)=><button key={c.hex} aria-label={`Plume ${c.name}`} aria-pressed={p.colour===i} title={c.name} onClick={()=>p.onColour(i)}><i style={{background:c.hex}}/></button>)}</div><div className="palette-sliders"><label><span>Taille <output>{Math.round((water?p.waterSize:p.size)*100)} %</output></span><input aria-label={water?'Taille du geste d’eau':`Taille de la plume ${p.bird.name}`} type="range" min="0" max="100" value={(water?p.waterSize:p.size)*100} onChange={e=>(water?p.onWaterSize:p.onSize)(Number(e.target.value)/100)}/></label><label><span>{water?'Quantité d’eau':'Opacité'} <output>{Math.round((water?p.waterAmount:p.opacity)*100)} %</output></span><input aria-label={water?'Quantité d’eau':`Opacité de la plume ${p.bird.name}`} type="range" min={water?'10':'0'} max="100" value={(water?p.waterAmount:p.opacity)*100} onChange={e=>(water?p.onWaterAmount:p.onOpacity)(Number(e.target.value)/100)}/></label></div></div>}
+ </div>;
+}

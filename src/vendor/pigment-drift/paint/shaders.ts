@@ -297,7 +297,7 @@ uniform vec2 uSize;
 // HAÏKUARELLE optical basis; the original three-ink representation is retained
 // unless explicitly enabled. Coefficients are linear absorption / 8.
 uniform float uOptical;
-uniform vec3 uAbsorption[16];
+uniform vec3 uAbsorption[32];
 uniform float uDt;
 uniform float uFlowing;
 uniform float uBleed;        // 0..1 how far wet pigment spreads
@@ -321,14 +321,14 @@ vec4 fieldAt(vec2 p) { return texture(uField, p / uSize); }
 /** What a pigment amount p of ink "slot" stores in the BA channels. */
 vec2 inkOf(float slot, float p) {
   if(uOptical>0.5){
-    vec3 a=uAbsorption[int(clamp(slot,0.0,15.0))];
+    vec3 a=uAbsorption[int(clamp(slot,0.0,31.0))];
     return p*a.yz/max(a.x+a.y+a.z,1e-5);
   }
   return vec2(slot > 0.5 && slot < 1.5 ? p : 0.0, slot > 1.5 ? p : 0.0);
 }
 float pigmentLoad(float slot,float p){
   if(uOptical<0.5)return p;
-  vec3 a=uAbsorption[int(clamp(slot,0.0,15.0))];
+  vec3 a=uAbsorption[int(clamp(slot,0.0,31.0))];
   return p*(a.x+a.y+a.z);
 }
 

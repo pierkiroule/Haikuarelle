@@ -1,5 +1,5 @@
 export type BirdId='rougegorge'|'merle'|'rossignol'|'fauvette'|'hirondelle'|'geai'|'etourneau'|'chouette'|'hibou'|'corneille'|'mesange'|'bouvreuil'|'sittelle'|'picvert'|'pie';
-export interface Bird {id:BirdId;name:string;latin:string;gesture:string;motif:'plume'|'trille'|'branche'|'voile';slot:number;angle:number;color:string;source:string;author:string;plumage?:number[];signature?:'lace'|'velvet'|'twig'|'ripple'}
+export interface Bird {pigmentSlot?:number;id:BirdId;name:string;latin:string;gesture:string;motif:'plume'|'trille'|'branche'|'voile';slot:number;angle:number;color:string;source:string;author:string;plumage?:number[];signature?:'lace'|'velvet'|'twig'|'ripple'}
 const base='https://bigsoundbank.com/';
 export const PIE:Bird={id:'pie',name:'Pie',latin:'Pica pica',gesture:'Noir · pluie de gouttelettes',motif:'trille',slot:0,angle:.2,color:'#252b2c',plumage:[0],source:'https://freesound.org/people/naturenotesuk/sounds/555096/',author:'naturenotesuk'};
 export const BIRDS:Bird[]=[
@@ -22,8 +22,8 @@ export const BIRDS:Bird[]=[
 export const birdFor=(id:BirdId)=>BIRDS.find(b=>b.id===id)!;
 /** Three initial pads. The seven brushes share one stable optical pigment table. */
 export const BIRD_PADS:Bird[]=[
-  {...birdFor('corneille'),name:'Corneille',gesture:'Noir · encre & éclats',color:'#344247'},
+  {...birdFor('corneille'),name:'Corneille',gesture:'Noir · encre & éclats',color:'#344247',plumage:[0,7,6]},
   {...birdFor('rougegorge'),gesture:'Orange · gris & réserves',color:'#bd6545',plumage:[1,6,0]},
-  {...birdFor('geai'),gesture:'Bleu · brun & traits vifs',color:'#4a83a7',plumage:[2,8,0]},
+  {...birdFor('geai'),gesture:'Bleu · brun & traits vifs',color:'#4a83a7',plumage:[2,8,5,0]},
 ];
 export const BIRD_BRUSHES:Bird[]=[...BIRD_PADS,...BIRDS.filter(b=>!!b.signature),PIE];
