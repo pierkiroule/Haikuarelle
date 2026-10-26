@@ -186,3 +186,14 @@ it('commits new water over pigment without pausing its clock or draining the wat
   await e.finish();expect(e.waterAt(p)).toBeGreaterThanOrEqual(wet);
   e.setDrying(true);await e.finish();expect(e.waterAt(p)).toBeLessThan(wet*.005);
 });
+
+it('rewetting living paint triggers bounded expanding water backruns, while clear water alone does not',async()=>{
+  const e=open(),p={x:.5,y:.5};e.beginSignature(8);e.wetBrush(p,.7);e.holdWater();
+  expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[3])).toHaveLength(0);
+  expect(e.startSoundStain(music,BIRDS[0],p,8)).toBe(true);await e.finish();e.stopBird();
+  vi.mocked(e.paint.step).mockClear();e.wetBrush(p,.7,.5,1);e.holdWater(false);frame(200);frame(300);
+  const calls=vi.mocked(e.paint.step).mock.calls,backruns=calls.flatMap(c=>c[3]);
+  expect(backruns.length).toBeGreaterThan(0);expect(backruns.every(d=>d.kind===1&&d.r1>=d.r0)).toBe(true);
+  expect(calls.every(c=>c[3].length<=4)).toBe(true);
+  expect(backruns.some(d=>d.r1>d.r0)).toBe(true);expect(e.waterAt(p)).toBeGreaterThan(0);
+});

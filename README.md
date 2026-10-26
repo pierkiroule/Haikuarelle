@@ -1,6 +1,6 @@
 # Plume d’Haïkuarelle
 
-Un rituel poétique en cinq temps : rencontrer un oiseau au hasard, accueillir son haïku, créer avec l’eau et le chant, laisser sécher sous le soleil du silence, puis partager son haïkuarelle. Les titres et les trois vers puisent dans la vie de l’oiseau rencontré : milieux, nourriture, nidification, gestes, saisons et voyages. Le haïku précède la peinture ; ses vers restent les mêmes pendant la création et au partage. Le titre se révèle après le séchage.
+Un rituel poétique en cinq temps : choisir une plume virevoltante, accueillir son haïku, créer avec l’eau et le chant, laisser sécher sous le soleil du silence, puis partager son haïkuarelle. Les titres et les trois vers puisent dans la vie de l’oiseau rencontré : milieux, nourriture, nidification, gestes, saisons et voyages. Le haïku précède la peinture ; ses vers restent les mêmes pendant la création et au partage. Le titre se révèle après le séchage.
 
 React + Vite + TypeScript. Simulation et rendu WebGL2 fondés sur Paint Studio / Pigment Drift (MIT). Sans backend, service payant ni appel à une IA.
 
@@ -25,9 +25,9 @@ npm run preview
 
 ## Le rituel
 
-1. **Une plume sonore confiée au hasard.** Tourner la roue désigne équitablement un seul des huit oiseaux et joue son vrai chant en aperçu. La rotation respecte la réduction des animations. Un nouveau tirage remplace le précédent ; une seule plume accompagne ensuite toute l’œuvre. L’audio est autorisé dès le geste initial, pour les navigateurs mobiles. Le titre (« La mémoire du geai », « La veille du rouge-gorge »…) et les trois vers explorent l’univers de cet oiseau.
+1. **Une plume sonore qui t’attire.** Huit plumes virevoltent dans un cercle. Toucher une plume choisit son oiseau et joue son vrai chant immédiatement. Une autre plume remplace ce choix ; une seule accompagne ensuite toute l’œuvre. Les trajectoires se suspendent au survol et au clavier pour faciliter la sélection ; un bouton permet aussi de les immobiliser. La réduction des animations affiche les plumes immobiles. Le titre (« La mémoire du geai », « La veille du rouge-gorge »…) et les trois vers explorent l’univers de cet oiseau.
 2. **Un haïku pour ouvrir le voyage.** Trois vers liés à la vie et à l’univers de l’oiseau apparaissent avant tout dépôt. Le titre reste réservé pour la fin. « Entrer dans l’atelier » ouvre la toile.
-3. **Fais dialoguer l’eau et le chant.** Une palette de deux pastilles — goutte et plume — reste accessible pendant toute la création. La goutte propose taille et quantité d’eau ; la plume propose taille et opacité. On peut peindre à sec, mouiller avant, revenir humidifier les pigments et alterner les outils sur la même toile. Changer d’outil et déposer de l’eau ne coupent pas un sample en cours ; l’eau persiste jusqu’au séchage volontaire. Les réglages se referment hors du menu ou avec Échap. « Mon haïku » permet de relire discrètement les vers. Les pigments conservent la palette du plumage en zones voisines, sans changement des couleurs déjà déposées.
+3. **Fais dialoguer l’eau et le chant.** Une palette de deux pastilles — goutte et plume — reste accessible pendant toute la création. La goutte propose taille et quantité d’eau ; la plume propose taille et opacité. On peut peindre à sec, mouiller avant, revenir humidifier les pigments et alterner les outils sur la même toile. Changer d’outil et déposer de l’eau ne coupent pas un sample en cours ; l’eau persiste jusqu’au séchage volontaire. Le bandeau garde nuancier et curseurs accessibles ; sa flèche permet de le réduire pour agrandir la toile. « Mon haïku » permet de relire discrètement les vers. Les pigments conservent la palette du plumage en zones voisines, sans changement des couleurs déjà déposées.
 4. **Laisse sécher sous le soleil du silence.** « Laisser sécher » devient disponible après la fin du chant. La progression suit le séchage réel, sans minuterie artificielle. Le titre apparaît quand la peinture est sèche, accompagné du haïku initial. « Reprendre la plume » permet de continuer.
 5. **Partager ton haïkuarelle.** Partager le PNG avec le titre, l’œuvre, les trois vers et la dédicace facultative via le menu natif du navigateur. Si le partage de fichiers n’est pas disponible, l’image est téléchargée. « Garder l’image · PNG » permet toujours de télécharger directement. Annuler le partage ne déclenche pas de téléchargement.
 
@@ -43,11 +43,11 @@ Three.js se charge uniquement à l’ouverture du voyage. Le maillage est prépa
 
 La goutte de la palette permet de réhumidifier le papier sans effacer les pigments. « Effacer tout » conserve l’oiseau et revient à la création avec la goutte active. « Nouvelle œuvre » recommence le rituel avec une nouvelle graine. La plume animée suit le contact au pixel près ; les animations respectent la préférence de réduction des mouvements. Le logo aquarellé est servi en WebP sans perte. Six particules de plumes légères restent derrière l’interface, dans les marges ; elles sont absentes de l’œuvre exportée et désactivées en mode Toile seule ou avec la réduction des mouvements.
 
-Un clic sur la brosse ouvre son menu contextuel : taille et opacité sont mémorisées séparément pour chaque oiseau pendant la session. Échap, le bouton de fermeture ou un clic hors du menu le referme. Seules la taille et l’opacité sont proposées : la matière est accordée en interne au chant. Son énergie ouvre le lavis, ses attaques animent les marges humides et son timbre fait varier la diffusion. Les réglages de la plume modifient les nouveaux dépôts, sans altérer les traces existantes.
+Le bandeau de création garde le nuancier, la taille et l’opacité à portée de main. Avec la goutte active, les curseurs règlent la taille et la quantité d’eau. Un bouton réduit le bandeau aux outils et au séchage, et agrandit la surface affichée de la toile ; le déployer restitue les réglages. Les nouveaux réglages n’altèrent pas les traces existantes.
 
 Les attaques ouvrent des lobes humides irréguliers plutôt que des filaments. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Elle utilise un cri réel de Pie bavarde (*Pica pica*) enregistré par naturenotesuk (Freesound 555096, copie publique CC0 conservée localement). Cet extrait bref de 0,853 s est joué entier, sans répétition artificielle.
 
-L’oiseau reste fixe pendant les dépôts. Avant le premier geste, **Retrouver la roue** permet un nouveau tirage. Le parcours complet et sa vérification sont dans [Trois oiseaux, une œuvre](docs/TROIS-OISEAUX-UNE-OEUVRE.md).
+L’oiseau reste fixe pendant les dépôts. Avant le premier geste, **Retrouver les plumes** permet une nouvelle rencontre. Le parcours complet et sa vérification sont dans [Trois oiseaux, une œuvre](docs/TROIS-OISEAUX-UNE-OEUVRE.md).
 
 Choisir une brosse ne joue rien. Aucun pigment n’est créé avant le démarrage réussi de la source audio, dans ses silences ou si la lecture est bloquée. Lever la main ne coupe plus le dépôt sonore. Le dépôt attend le démarrage réel du sample ; le relâchement ne l’annule pas pendant son décodage. Échap, le bouton d’interruption ou le masquage de l’onglet peuvent arrêter explicitement le chant.
 
@@ -108,7 +108,7 @@ Régression visuelle WebGL facultative : lancer `npm run dev`, puis `python scri
 - `src/engine/WatercolorEngine.ts` : façade du PaintEngine réel et simulation fixe 30 Hz.
 - `src/vendor/pigment-drift/paint/` : moteur et shaders conservés, adaptations dans `patches/pigment-drift.patch`.
 - `src/engine/FineInkRenderer.ts` : encre fine GPU, incluse dans l’export.
-- `src/birds/artworkPoetry.ts` : lecture du rendu final et composition avec l’oiseau tiré au sort.
+- `src/birds/artworkPoetry.ts` : lecture du rendu final et composition avec l’oiseau rencontré.
 - `src/birds/ornithopoetry.ts` : scènes ornithologiques originales pour quinze espèces ; chaque oiseau du trio apporte une image au poème.
 - `src/birds/ArtworkWords.tsx`, `export.ts` : révélation des mots et carte PNG.
 - `src/birds/haiku.ts` : grammaire historique conservée.
@@ -129,6 +129,8 @@ La sculpture utilise une capture dédiée de 2048 à 3072 pixels sur son grand c
 
 ### Les couleurs séparées du plumage
 
-Toucher la plume ouvre son nuancier : six à huit couleurs par oiseau, soit 59 teintes nommées au total. Choisir une teinte ferme le menu et colore la plume ; les prochains dépôts utilisent uniquement ce pigment, avec le même chant et la même gestuelle. « Tout le plumage » rétablit la brosse multicolore. La sélection ne modifie jamais les dépôts précédents. Les teintes claires sont des lavis transparents, pas une gouache blanche opaque. Les HEX sont des approximations artistiques ; les reflets de pie et de corneille ne simulent pas une iridescence physique.
+Le nuancier de la plume reste dans le bandeau de création : six à huit couleurs par oiseau, soit 59 teintes nommées au total. Choisir une teinte colore la plume et laisse le nuancier accessible ; les prochains dépôts utilisent uniquement ce pigment, avec le même chant et la même gestuelle. « Tout le plumage » rétablit la brosse multicolore. La sélection ne modifie jamais les dépôts précédents. Les teintes claires sont des lavis transparents, pas une gouache blanche opaque. Les HEX sont des approximations artistiques ; les reflets de pie et de corneille ne simulent pas une iridescence physique.
 
 La table optique est fixée pour l’oiseau sur la feuille vierge, avec les onze pigments historiques suivis des six à huit pigments dédiés. Changer de teinte ne change pas cette table. Le shader dispose de 32 emplacements sans ajouter de champ de simulation ni de texture par couleur.
+
+L’eau déposée sur un pigment encore vivant déclenche désormais de petites poussées croissantes qui déplacent la matière et ouvrent des auréoles. Leur rayon dépend de la quantité d’eau ; elles sont espacées le long du geste et limitées à quatre simultanément. L’eau seule sur papier vierge n’ajoute ni pigment ni auréole artificielle.

@@ -1,7 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {voyageQuality,renderPixelRatio} from '../src/voyage/quality';
 import {extendPigmentColours} from '../src/voyage/texture';
-import {randomBirdIndex} from '../src/birds/BirdWheel';
 describe('bounded mobile rendering and faithful pigment projection',()=>{
  it('keeps mobile budgets bounded independently of texture detail',()=>{
   const low=voyageQuality(true,4,2),desktop=voyageQuality(false,12,16);
@@ -17,10 +16,5 @@ describe('bounded mobile rendering and faithful pigment projection',()=>{
  it('leaves an empty painting empty',()=>{
   const pixels=new Uint8Array([247,244,236,255]);extendPigmentColours({width:1,height:1,pixels},'#f7f4ec');
   expect([...pixels]).toEqual([247,244,236,255]);
- });
- it('rejects biased random tails and can choose every available bird',()=>{
-  const values=[0xffffffff,8];expect(randomBirdIndex(3,()=>values.shift()!)).toBe(2);
-  for(let i=0;i<8;i++)expect(randomBirdIndex(8,()=>i)).toBe(i);
-  expect(()=>randomBirdIndex(0)).toThrow();
  });
 });

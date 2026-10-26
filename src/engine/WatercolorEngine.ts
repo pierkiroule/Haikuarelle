@@ -135,6 +135,15 @@ export class HaikuarelleEngine implements WatercolorEngine {
     if(this.destroyed||!this.performance||![point.x,point.y].every(Number.isFinite))return;
     const p={x:clamp(point.x,.015,.985),y:clamp(point.y,.015,.985)},a=this.waterLast??p;
     const radius=(.025+.11*clamp(size))*(.75+.5*clamp(pressure)),time=this.tick/TICK_RATE;
+    // Fresh water creates a bounded growing backrun in living pigment.
+    // Merely raising a saturated moisture mask cannot push paint on its own.
+    const waterSheet=sheetFor(this.settings.format),waterUnit=Math.min(waterSheet.width,waterSheet.height);
+    const previous=this.waterBlooms[this.waterBlooms.length-1];
+    const distance=previous?Math.hypot((p.x-previous.point.x)*waterSheet.width/waterUnit,(p.y-previous.point.y)*waterSheet.height/waterUnit):Infinity;
+    if(this.hasPigment&&!this.drying&&amount>0&&(!previous||distance>radius*.5||time-previous.start>.28)){
+      this.waterBlooms=this.waterBlooms.filter(b=>time<b.start+b.duration).slice(-3);
+      this.waterBlooms.push({point:{...p},start:time,duration:.65+.6*clamp(amount),radius:radius*(.24+.40*Math.sqrt(clamp(amount)))});
+    }
     this.wetPaper.add(a,p,radius,.45*clamp(amount),time);
     this.waterPending.push({a,b:p,radius,load:0,slot:0,water:true,waterAmount:clamp(amount),strength:.45,coupling:0});
     if(this.waterPending.length>96)this.waterPending=this.waterPending.filter((_,i)=>i%2===0||i===this.waterPending.length-1);
