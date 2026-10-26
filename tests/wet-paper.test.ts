@@ -44,3 +44,18 @@ it('holds prepared water for multiple songs and evaporates only on request',()=>
   w.retime(600,6);expect(w.at(p,606)).toBeCloseTo(.45/Math.E);
   const remaining=w.at(p,606);w.hold(606);expect(w.at(p,1200)).toBeCloseTo(remaining);
 });
+
+it('uses the transported GPU water for later gestures, connected basins and drying',()=>{
+ const paper=new WetPaper('portrait',Infinity);
+ paper.add({x:.1,y:.5},{x:.1,y:.5},.05,.45,0);
+ const width=20,height=32,water=new Float32Array(width*height);
+ for(let y=12;y<20;y++)for(let x=10;x<19;x++)water[y*width+x]=.3;
+ paper.replaceMoisture({width,height,water},3);
+ expect(paper.at({x:.1,y:.5},3)).toBe(0);
+ expect(paper.at({x:.85,y:.5},3)).toBeCloseTo(.3);
+ expect(paper.region({x:.85,y:.5},3,24).sites.length).toBeGreaterThan(0);
+ expect(paper.resonantSites(3).length).toBeGreaterThan(0);
+ paper.retime(3,2);expect(paper.at({x:.85,y:.5},5)).toBeCloseTo(.3/Math.E);
+ paper.add({x:.1,y:.5},{x:.1,y:.5},.05,.45,5);
+ expect(paper.at({x:.1,y:.5},5)).toBeCloseTo(.45);
+});

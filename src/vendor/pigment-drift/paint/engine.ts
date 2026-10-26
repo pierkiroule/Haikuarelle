@@ -152,6 +152,7 @@ export class PaintEngine {
   private maxScale: number;
   private maxDimension: number;
   private detailBudget:number;
+  private moistureTarget:Target|null=null;
   private paperFrom: number[] = [];
   private paperTo: number[] = [];
   private labFrom: number[] = [];
@@ -611,6 +612,21 @@ export class PaintEngine {
     this.gl.deleteFramebuffer(a.flow.fbo);
   }
 
+  /** Small top-down moisture guide, read once after a breath gesture. */
+  captureMoisture():{width:number;height:number;water:Float32Array}|null{
+    if(!this.ready||this.isContextLost)return null;
+    const scale=Math.min(1,192/Math.max(this.fieldW,this.fieldH));
+    const width=Math.max(1,Math.round(this.fieldW*scale)),height=Math.max(1,Math.round(this.fieldH*scale));
+    const g=this.gl;
+    const target=this.moistureTarget??(this.moistureTarget=this.makeTarget(width,height,this.rgba,true));
+    this.run('copy',target,u=>g.uniform4f(u.uMap,this.fieldW/width,this.fieldH/height,0,0),{uSrc:this.field[0].tex});
+    const pixels=new Float32Array(width*height*4),water=new Float32Array(width*height);
+    g.bindFramebuffer(g.FRAMEBUFFER,target.fbo);g.readPixels(0,0,width,height,g.RGBA,g.FLOAT,pixels);g.bindFramebuffer(g.FRAMEBUFFER,null);
+    if(g.getError()!==g.NO_ERROR)return null;
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++)water[y*width+x]=Math.max(0,pixels[((height-1-y)*width+x)*4+1]);
+    return {width,height,water};
+  }
+
   /** Renders what the viewport shows at `scale` × CSS size; rows top-down, RGBA. */
   capture(scale: number, timeS: number): { width: number; height: number; pixels: Uint8Array } {
     const gl = this.gl;
@@ -715,6 +731,7 @@ export class PaintEngine {
   /** Frees every GPU target, except `keep` (used to carry the old sheet over when growing). */
   private release(keep?: Target): void {
     this.clearHistory();
+    if(this.moistureTarget){this.deleteTarget(this.moistureTarget);this.moistureTarget=null;}
     for (const t of this.pool.splice(0)) this.deleteTarget(t);
     if (this.settleTarget) this.deleteTarget(this.settleTarget);
     this.settleTarget = null;

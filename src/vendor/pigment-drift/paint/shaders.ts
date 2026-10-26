@@ -363,6 +363,39 @@ vec4 fieldSharp(vec2 p) {
   return clamp(r, min(min(a, c), min(d, e)), max(max(a, c), max(d, e)));
 }
 
+vec2 breathDisplacement(vec2 position){
+  if(uBreathShape.y<=0.0)return vec2(0.0);
+  float speed=length(uBreath.zw);
+  if(speed<0.0001)return vec2(0.0);
+  vec2 direction=uBreath.zw/max(speed,0.0001);
+  vec2 side=vec2(-direction.y,direction.x);
+  vec2 rel=position-uBreath.xy;
+  float reach=length(rel)/max(uBreathShape.x,1.0);
+  float envelope=1.0-smoothstep(0.4,2.1,reach);
+  if(envelope<=0.0)return vec2(0.0);
+
+  // A widening fan with two levels of forks. The same parent channel
+  // splits progressively downstream, instead of laying parallel teeth.
+  float along=dot(position,direction)/uUnit;
+  float across=dot(position,side)/uUnit;
+  float forward=dot(rel,direction)/uUnit;
+  float bend=0.7*gnoise(vec2(along*15.0,across*11.0)+uSeedOff);
+  float phase=across*100.0+bend*3.0+uSeedOff.x;
+  float fork=smoothstep(-0.015,0.065,forward);
+  float parent=abs(sin(phase));
+  float primary=1.0-smoothstep(0.10,0.34,abs(parent-fork*0.72));
+  float twig=1.0-smoothstep(0.10,0.28,abs(abs(sin(phase*2.0+bend))-0.55));
+  float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.04,0.11,forward));
+  float irregular=0.6+0.4*smoothstep(-0.4,0.4,gnoise(vec2(across*19.0,along*8.0)+uSeedOff));
+  vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.95);
+  float extension=min(speed*uDt*30.0,min(uUnit*0.018,6.0));
+  return fan*extension*envelope*branching*irregular*uBreathShape.y;
+}
+vec4 mobileWater(vec4 value){
+  float fraction=smoothstep(0.004,0.04,value.y);
+  return vec4(value.x*fraction,value.y,value.zw*fraction);
+}
+
 void main() {
   vec2 q = gl_FragCoord.xy;
   vec2 src = q;
@@ -390,43 +423,11 @@ void main() {
   vec2 airSide=vec2(0.0);
   if (uFlowing > 0.5) {
     vec2 destination=src-texture(uVel,src/uSize).xy*uDt;
-    if(uMaterial>0.5 && uBreathShape.y>0.0){
-      float speed=length(uBreath.zw);
-      vec2 direction=uBreath.zw/max(speed,0.0001);
-      vec2 side=vec2(-direction.y,direction.x);
-      vec2 rel=src-uBreath.xy;
-      float reach=length(rel)/max(uBreathShape.x,1.0);
-      float envelope=1.0-smoothstep(0.4,2.1,reach);
-      airMask=envelope*min(1.0,uBreathShape.y*2.0);airSide=side;
-      // A widening fan with two levels of forks. The same parent channel
-      // splits progressively downstream, instead of laying parallel teeth.
-      float along=dot(src,direction)/uUnit;
-      float across=dot(src,side)/uUnit;
-      float forward=dot(rel,direction)/uUnit;
-      float bend=0.7*gnoise(vec2(along*15.0,across*11.0)+uSeedOff);
-      float phase=across*100.0+bend*3.0+uSeedOff.x;
-      float fork=smoothstep(-0.015,0.065,forward);
-      float parent=abs(sin(phase));
-      float primary=1.0-smoothstep(0.10,0.34,abs(parent-fork*0.72));
-      float twig=1.0-smoothstep(0.10,0.28,abs(abs(sin(phase*2.0+bend))-0.55));
-      float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.04,0.11,forward));
-      float irregular=0.6+0.4*smoothstep(-0.4,0.4,gnoise(vec2(across*19.0,along*8.0)+uSeedOff));
-      vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.95);
-      float behind=fieldAt(src-fan*uUnit*0.025).x;
-      float ahead=fieldAt(src+fan*uUnit*0.012).x;
-      float rim=smoothstep(0.001,0.025,behind-ahead);
-      float extension=min(speed*uDt*30.0,min(uUnit*0.045,10.0));
-      destination-=fan*extension*envelope*branching*irregular*rim*uBreathShape.y;
-      // Bound the entire backtrace so the wet-route probes cannot jump a dry cut.
-      vec2 travel=destination-src;
-      destination=src+travel*min(1.0,12.0/max(length(travel),0.0001));
-    }
     if(uMaterial>0.5){
       // Currents carry pigment only through a continuous wet route. Dry paper
       // and dry cuts between pools remain barriers even while the fluid coasts.
       float channel=min(fieldAt(src).y,fieldAt(destination).y);
-      int routeSamples=uBreathShape.y>0.0?16:4;
-      for(int j=1;j<=16;j++){if(j>routeSamples)break;channel=min(channel,fieldAt(mix(src,destination,float(j)/float(routeSamples+1))).y);}
+      for(int j=1;j<=4;j++)channel=min(channel,fieldAt(mix(src,destination,float(j)/5.0)).y);
       src=mix(src,destination,mix(smoothstep(0.008,0.07,channel),smoothstep(0.018,0.16,channel),uFixation));
     }else src=destination;
   }
@@ -434,8 +435,31 @@ void main() {
   vec4 f = length(src - q) < 0.002 ? texelFetch(uField, ivec2(q), 0) : fieldSharp(src);
 
   // Prepared water is held on the cotton until explicit evaporation. Moving
-  // pigment must not resample (inflate or erode) this stationary moisture mask.
+  // ordinary pigment currents must not erode it. Explicit breath transport follows.
   if (uDryKeep >= 1.0) f.y = texelFetch(uField, ivec2(q), 0).y;
+  if(uMaterial>0.5 && uBreathShape.y>0.0){
+    vec4 original=fieldAt(q),mobile=mobileWater(original),transport=vec4(0.0);
+    // Paired face flux carries water AND its suspended pigment across the old
+    // shoreline. Each donor gives at most 22% per face; dry pigment cannot move.
+    // Fractional, sheet-scaled steps keep the gesture visible at high density.
+    float stride=max(1.0,uUnit*0.0073);
+    for(int axis=0;axis<4;axis++){
+      vec2 direction=axis==0?vec2(1,0):axis==1?vec2(-1,0):axis==2?vec2(0,1):vec2(0,-1);
+      vec2 offset=direction*stride;
+      vec2 displacement=breathDisplacement(q+offset*0.5);
+      float rate=clamp(dot(displacement,direction)/stride,-0.22,0.22);
+      // No flux outside the physical paper.
+      vec2 other=q+offset;
+      if(any(lessThan(other,vec2(0.5)))||any(greaterThan(other,uSize-0.5)))rate=0.0;
+      transport+=rate>=0.0?-mobile*rate:mobileWater(fieldAt(other))*(-rate);
+    }
+    if(dot(abs(transport),vec4(1))>0.000001){
+      f=original+transport;
+      airMask=1.0-smoothstep(0.4,2.1,length(q-uBreath.xy)/max(uBreathShape.x,1.0));
+      vec2 direction=uBreath.zw/max(length(uBreath.zw),0.0001);
+      airSide=vec2(-direction.y,direction.x);
+    }
+  }
 
   // Pairwise capillary exchange: mass moves toward the pinned, thinner wet
   // margin. The symmetric conductance preserves pigment instead of painting a

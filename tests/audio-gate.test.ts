@@ -10,6 +10,7 @@ vi.mock('../src/vendor/pigment-drift/paint/engine',()=>({
   PaintEngine:class{
     canvas:HTMLCanvasElement;gl={};ready=false;k=1;isContextLost=false;
     newSheet=vi.fn(()=>{this.ready=true;});setLook=vi.fn();setView=vi.fn();
+    captureMoisture=vi.fn(()=>null);
     step=vi.fn();render=vi.fn();dispose=vi.fn();
     constructor(canvas:HTMLCanvasElement){this.canvas=canvas;}
   },
@@ -247,3 +248,15 @@ it('breath drives wet pigment without depositing or refilling and stops acceptin
   expect(e.status.phase).toBe('complete');expect(e.status.ticks/30-start).toBeCloseTo(12);
   expect(e.waterAt(point)).toBeLessThan(initial*.005);
  });
+
+it('synchronizes the transported moisture once on breath release and dries the extensions',async()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ const width=20,height=32,water=new Float32Array(width*height);
+ for(let y=12;y<20;y++)for(let x=10;x<19;x++)water[y*width+x]=.3;
+ vi.mocked(e.paint.captureMoisture).mockReturnValue({width,height,water});
+ e.blow({x:.5,y:.5},0,.6);e.blow({x:.51,y:.5},30,.6);frame(1);frame(101);
+ e.liftBreath();e.liftBreath();
+ expect(e.paint.captureMoisture).toHaveBeenCalledTimes(1);
+ expect(e.waterAt({x:.85,y:.5})).toBeCloseTo(.3);
+ e.setDrying(true);await e.finish();expect(e.waterAt({x:.85,y:.5})).toBeLessThan(.3*.005);
+});

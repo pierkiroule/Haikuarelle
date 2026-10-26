@@ -33,3 +33,12 @@ it('gives the first movement an impulse, then settles and renews it after liftin
  b.reset();b.move({x:.4,y:.5},500,.5,.45);
  expect(b.move({x:.41,y:.5},530,.5,.45)!.coupling).toBeCloseTo(first.coupling);
 });
+
+it('allows a short outward follow-through only after actually moving through water',()=>{
+ const b=new LivingBreath();b.move({x:.5,y:.5},0,.6,.45);
+ expect(b.move({x:.51,y:.5},30,.6,.45)).not.toBeNull();
+ expect(b.move({x:.53,y:.5},60,.6,0)).not.toBeNull();
+ expect(b.move({x:.54,y:.5},260,.6,0)).toBeNull();
+ b.reset();b.move({x:.5,y:.5},300,.6,0);
+ expect(b.move({x:.51,y:.5},330,.6,0)).toBeNull();
+});

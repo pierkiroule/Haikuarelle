@@ -50,6 +50,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private waterLast:Point|null=null;
   private breath=new LivingBreath();
   private breathPending:WaterCurrent|null=null;
+  private breathMoved=false;
   private waterBlooms:{point:Point;start:number;duration:number;radius:number}[]=[];
   private hasPigment=false;
   private tick=0;
@@ -109,7 +110,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     if(this.destroyed)return;
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
     this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;
-    this.breath.reset();this.breathPending=null;
+    this.breath.reset();this.breathPending=null;this.breathMoved=false;
     this.waterPending=[];this.waterLast=null;this.waterBlooms=[];this.hasPigment=false;
     this.drying=false;this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper=new WetPaper(this.settings.format,this.performance?Infinity:dryingTime(this.settings.wetness));
@@ -187,7 +188,13 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.active=true;this.paused=false;
     this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+this.dryingDuration());this.request();
   }
-  liftBreath():void{this.breath.reset();this.breathPending=null;}
+  liftBreath():void{
+    this.breath.reset();this.breathPending=null;
+    if(this.breathMoved&&!this.destroyed){
+      const moisture=this.paint.captureMoisture();if(moisture)this.wetPaper.replaceMoisture(moisture,this.tick/TICK_RATE);
+    }
+    this.breathMoved=false;
+  }
   waterAt(point:Point):number{return this.wetPaper.at(point,this.tick/TICK_RATE);}
   private dryingDuration():number{return this.drying?RITUAL_DRYING_SECONDS:dryingTime(this.settings.wetness)*5.6;}
   /** Drop one real sample onto dry or prepared wet paper. No live pointer path. */
@@ -377,6 +384,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     // Bound the grammar before it reaches the upstream uniform limits.
     if(segs.length>16||drops.length>4)throw new Error('Composition outside GPU gesture budget.');
     this.paint.step(1/TICK_RATE,(this.tick+1)*1000/TICK_RATE,segs,drops);
+    if(segs.some(s=>s.breath))this.breathMoved=true;
     if(stainPoint&&this.stainVoice&&!this.stainVoice.marked){this.hasPigment=true;this.stainVoice.marked=true;this.stainVoice.onMark?.(this.stainVoice.stain.origin);}
     if(brushPoint&&this.brushVoice&&!this.brushVoice.marked){this.hasPigment=true;this.brushVoice.marked=true;this.brushVoice.onMark?.(brushPoint);}
     this.tick++;
