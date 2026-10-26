@@ -229,7 +229,7 @@ it('breath drives wet pigment without depositing or refilling and stops acceptin
  expect(forces.length).toBeGreaterThan(0);
  expect(forces.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0&&s.fx>0&&s.breath===true)).toBe(true);
  expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);
- e.liftBreath();vi.mocked(e.paint.step).mockClear();
+ e.liftBreath(true);vi.mocked(e.paint.step).mockClear();
  e.blow({x:.9,y:.9},150,.6);e.blow({x:.91,y:.9},180,.6);frame(201);
  expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2])).toEqual([]);
  e.setDrying(true);e.blow(p,220,.6);e.blow({x:.51,y:.5},250,.6);frame(301);
@@ -273,4 +273,20 @@ it('refreshes the moving moisture during a continuous breath before gating its n
  vi.mocked(e.paint.step).mockClear();frame(201);
  expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).some(s=>s.breath&&s.ax>1500)).toBe(true);
  e.liftBreath();expect(e.paint.captureMoisture).toHaveBeenCalledTimes(2);
+});
+
+it('keeps a quick flick alive for a finite strong burst after release, even before its first frame',()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ vi.mocked(e.paint.step).mockClear();e.blow({x:.5,y:.5},0,.8);e.blow({x:.54,y:.5},16,.8);e.liftBreath();
+ for(let t=1;t<=701;t+=50)frame(t);
+ const forces=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).filter(s=>s.breath);
+ expect(forces).toHaveLength(9);expect(forces[0].coupling).toBeGreaterThan(forces.at(-1)!.coupling);
+ expect(forces.every(s=>s.waterAmount===0&&s.strength===0&&s.fx>0)).toBe(true);
+ expect(e.status.hasPigment).toBe(false);expect(e.paint.captureMoisture).toHaveBeenCalledTimes(1);
+});
+it('explicit interruption cancels a pending breath burst before any force is applied',()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ vi.mocked(e.paint.step).mockClear();e.blow({x:.5,y:.5},0,.8);e.blow({x:.54,y:.5},16,.8);e.liftBreath(true);
+ frame(1);frame(101);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).some(s=>s.breath)).toBe(false);
 });

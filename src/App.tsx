@@ -106,7 +106,7 @@ export function BirdStudio(){
   useEffect(()=>{engine.current?.setBrushSize(brush);engine.current?.setBrushOpacity?.(opacity);},[brush,opacity]);
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(''),4500);return()=>clearTimeout(timer);},[notice]);
   const stop=()=>{
-    engine.current?.liftBreath();
+    engine.current?.liftBreath(true);
     const id=pointer.current;pointer.current=null;keyHeld.current=false;
     waterGesture.current=false;waterSong.current?.cancel();previewToken.current++;setPreviewing(null);stroke.current?.cancel();if(canWet)engine.current?.holdWater();setContact(false);
     if(id!==null&&paper.current?.hasPointerCapture(id))paper.current.releasePointerCapture(id);
@@ -141,7 +141,7 @@ export function BirdStudio(){
   };
   const selectTool=(next:'water'|'plume'|'breath')=>{
     if(!canCreate)return;
-    engine.current?.liftBreath();
+    engine.current?.liftBreath(true);
     if(canWet)finishWater();else{pointer.current=null;keyHeld.current=false;setContact(false);}
     setPoint(null);setTool(next);
   };
@@ -205,7 +205,7 @@ export function BirdStudio(){
     event.preventDefault();event.currentTarget.focus({preventScroll:true});event.currentTarget.setPointerCapture(event.pointerId);
     pointer.current=event.pointerId;setPoint(p);begin(p,event.timeStamp,event.pointerType==='pen'?event.pressure:.5);
   };
-  const release=(event:React.PointerEvent<HTMLDivElement>)=>{if(pointer.current!==event.pointerId)return;if(canWet){finishWater();if(paper.current?.hasPointerCapture(event.pointerId))paper.current.releasePointerCapture(event.pointerId);return;}engine.current?.liftBreath();pointer.current=null;setContact(false);if(paper.current?.hasPointerCapture(event.pointerId))paper.current.releasePointerCapture(event.pointerId);};
+  const release=(event:React.PointerEvent<HTMLDivElement>)=>{if(pointer.current!==event.pointerId)return;if(canWet){finishWater();if(paper.current?.hasPointerCapture(event.pointerId))paper.current.releasePointerCapture(event.pointerId);return;}engine.current?.liftBreath(event.type==='pointercancel');pointer.current=null;setContact(false);if(paper.current?.hasPointerCapture(event.pointerId))paper.current.releasePointerCapture(event.pointerId);};
   const keyboardPaper=(event:React.KeyboardEvent<HTMLDivElement>)=>{
     if(!canDraw||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key)||error||exporting)return;
     event.preventDefault();const old=point??{x:.5,y:.5};

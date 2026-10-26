@@ -381,7 +381,7 @@ vec2 breathDisplacement(vec2 position){
   float envelope=breathEnvelope(position);
   if(envelope<=0.0)return vec2(0.0);
   vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.4);
-  float extension=min(speed*uDt*30.0,min(uUnit*0.018,6.0));
+  float extension=min(speed*uDt*30.0,min(uUnit*0.045,24.0));
   float forward=dot(rel,direction)/uUnit;
   float fringe=smoothstep(0.02,0.18,forward);
   if(fringe<=0.0)return fan*extension*envelope*uBreathShape.y;
@@ -449,7 +449,9 @@ void main() {
   if(uMaterial>0.5 && uBreathShape.y>0.0){
     vec4 original=fieldAt(q),mobile=mobileWater(original),transport=vec4(0.0);
     // Paired face flux carries water AND its suspended pigment across the old
-    // shoreline. Each donor gives at most 24% per face; dry pigment cannot move.
+    // shoreline. Each donor gives at most 32% per face; dry pigment cannot move.
+    // The forward fan spans less than 45 degrees: at most three faces export,
+    // so their combined outgoing fraction stays below one (3 * 0.32).
     // Fractional, sheet-scaled steps keep the gesture visible at high density.
     // Short exchanges keep the root connected; longer, fractional exchanges
     // pull its wet tip outward without widening the entire stain.
@@ -464,7 +466,7 @@ void main() {
       vec2 direction=axis==0?vec2(1,0):axis==1?vec2(-1,0):axis==2?vec2(0,1):vec2(0,-1);
       vec2 offset=direction*stride;
       vec2 displacement=breathDisplacement(q+offset*0.5);
-      float rate=clamp(dot(displacement,direction)/stride,-0.24,0.24)*share;
+      float rate=clamp(dot(displacement,direction)/stride,-0.32,0.32)*share;
       // No flux outside the physical paper.
       vec2 other=q+offset;
       if(any(lessThan(other,vec2(0.5)))||any(greaterThan(other,uSize-0.5)))rate=0.0;

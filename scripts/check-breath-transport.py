@@ -12,7 +12,7 @@ with sync_playwright() as pw:
   const e=new HaikuarelleEngine(canvas,{palette:'plumages',format:'portrait'},undefined,undefined,{requireAudio:true});e.beginSignature(7);e.pause();
   const p=e.paint,g=p.gl,w=p.field[0].w,h=p.field[0].h,unit=p.meta.unit*p.k;
   const read=()=>{g.bindFramebuffer(g.FRAMEBUFFER,p.field[0].fbo);const a=new Float32Array(w*h*4);g.readPixels(0,0,w,h,g.RGBA,g.FLOAT,a);return a;};
-  const run=dir=>{
+  const run=(dir,quick=false)=>{
    const initial=new Float32Array(w*h*4),center={x:w*.5,y:h*.5};
    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const i=(y*w+x)*4,wet=Math.hypot(x-center.x,y-center.y)<unit*.13;
@@ -31,17 +31,26 @@ with sync_playwright() as pw:
     return {water,pigment,waterCenter:[wx/water,wy/water],pigmentCenter:[px/pigment,py/pigment],donor,dryDelta,colourError};
    };
    const before=stats(read());
+   if(quick){
+    const snapshot=p.captureMoisture();e.wetPaper.replaceMoisture(snapshot,e.status.ticks/30);
+    const start={x:(center.x-dir.x*unit*.07)/w,y:1-(center.y-dir.y*unit*.07)/h};
+    const end={x:start.x+dir.x*unit*.03/w,y:start.y-dir.y*unit*.03/h};
+    e.blow(start,0,1);e.blow(end,16,1);e.liftBreath();
+    // Same real facade as pointer input: release happens before any physical tick.
+    for(let i=0;i<9;i++)e.stepOnce();e.pause();
+   }else{
    for(let i=0;i<30;i++){
     const x=center.x+dir.x*unit*(-.07+i*.002),y=center.y+dir.y*unit*(-.07+i*.002);
     p.step(1/30,i*1000/30,[{ax:x,ay:y,bx:x,by:y,radius:unit*.13,target:0,strength:0,waterAmount:0,kind:1,slot:0,fx:dir.x*unit*.2,fy:dir.y*unit*.2,coupling:.8,breath:true}],[]);
+   }
    }
    const after=stats(read()),residualAirFlow=p.flowUntil>1000,shift=(after.waterCenter[0]-before.waterCenter[0])*dir.x+(after.waterCenter[1]-before.waterCenter[1])*dir.y;
    const alignment=Math.hypot(after.waterCenter[0]-after.pigmentCenter[0],after.waterCenter[1]-after.pigmentCenter[1]);
    return {before,after,shift,alignment,unit,residualAirFlow};
   };
-  const horizontal=run({x:1,y:0}),vertical=run({x:0,y:1});const error=g.getError();e.destroy();return {horizontal,vertical,error};
+  const horizontal=run({x:1,y:0}),vertical=run({x:0,y:1}),quick=run({x:1,y:0},true);const error=g.getError();e.destroy();return {horizontal,vertical,quick,error};
  }''')
- for direction in ['horizontal','vertical']:
+ for direction in ['horizontal','vertical','quick']:
   r=result[direction]
   assert not r['residualAirFlow'],(direction,r)
   assert r['shift']>r['unit']*.025,(direction,r)
@@ -50,5 +59,6 @@ with sync_playwright() as pw:
   assert abs(r['after']['water']/r['before']['water']-1)<.02,(direction,r)
   assert abs(r['after']['pigment']/r['before']['pigment']-1)<.02,(direction,r)
   assert r['after']['dryDelta']<1e-4,(direction,r)
+ assert result['quick']['shift']>result['quick']['unit']*.04,result
  assert result['error']==0 and not errors,(result,errors)
  print(json.dumps(result),flush=True);browser.close()
