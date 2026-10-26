@@ -1,3 +1,4 @@
+import {APP_NAME} from '../brand';
 /** Add the original verses below the real GPU painting, at its export resolution. */
 export async function exportSignatureCard(painting:Blob,verses:readonly string[],paper:string,seed:number,dedication='',title=''):Promise<Blob>{
   const image=await createImageBitmap(painting);
@@ -11,7 +12,7 @@ export async function exportSignatureCard(painting:Blob,verses:readonly string[]
   ctx.fillStyle='#46554d';ctx.textAlign='center';ctx.font=`${output.width*.026}px Georgia`;
   verses.forEach((line,index)=>ctx.fillText(line,output.width/2,output.height-footer*.72+index*footer*.16));
   ctx.fillStyle='#909785';ctx.font=`${output.width*.009}px sans-serif`;
-  ctx.fillText(`${dedication.trim()?`Pour ${dedication.trim()} · `:''}HAÏKUARELLE •°  ·  ${seed.toString(16).toUpperCase()}`,output.width/2,output.height-footer*.12);
+  ctx.fillText(`${dedication.trim()?`Pour ${dedication.trim()} · `:''}${APP_NAME}  ·  ${seed.toString(16).toUpperCase()}`,output.width/2,output.height-footer*.12);
   return await new Promise<Blob>((resolve,reject)=>output.toBlob(value=>value?resolve(value):reject(new Error('Export impossible.')),'image/png'));
   }finally{image.close();}
 }

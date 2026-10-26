@@ -23,6 +23,12 @@ describe('one direct contact owns audio, water and pigment',()=>{
     expect(t.bank.play.mock.calls[0][3]).toEqual({loop:true,breath:.28});
     t.brush.move({x:.7,y:.7},80,.6);expect(t.engine.moveBrush).toHaveBeenLastCalledWith({x:.7,y:.7},80,.6);
   });
+  it('passes the selected brush opacity through audio startup to the painter',async()=>{
+    const t=open(),pending=t.brush.begin(BIRD_BRUSHES[7],{x:.3,y:.4},10,.5,8,.8,0,.27);
+    t.start();await pending;
+    expect(t.engine.startBirdBrush.mock.calls[0]).toHaveLength(8);
+    expect((t.engine.startBirdBrush.mock.calls[0] as unknown[])[7]).toBe(.27);
+  });
   it('never resurrects a released touch after a late decode or a late source callback',async()=>{
     const t=open(),pending=t.brush.begin(BIRD_BRUSHES[0],{x:.2,y:.3},10,.5,8,.7,0);
     t.brush.end();t.start();await pending;t.brush.move({x:.9,y:.9},100);

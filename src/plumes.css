@@ -1,0 +1,116 @@
+/* A quiet writing desk: linen, graphite, copper and feather-shaped tools. */
+.direct-studio{background:#f3efe7;color:#51483e;--plume-ink:#51483e;--plume-muted:#887a67;--plume-line:#dcd2c2}
+.direct-studio .bird-header{border-color:var(--plume-line);gap:24px}
+.direct-studio .feather-wordmark{display:flex;align-items:center;gap:12px;min-width:0;letter-spacing:0;color:var(--plume-ink)}
+.feather-wordmark .brand-feathers{position:relative;display:block;flex:none;width:43px;height:44px;margin:0;color:#8c6748}
+.brand-feathers .feather-glyph{position:absolute;width:29px;height:40px;top:0;left:7px}
+.brand-feathers .feather-glyph:first-child{transform:rotate(-24deg) translate(-7px,1px);opacity:.55}
+.brand-feathers .feather-glyph:last-child{transform:rotate(24deg) translate(8px,1px);opacity:.55}
+.feather-wordmark .brand-copy{display:flex;flex-direction:column;margin:0;letter-spacing:0;color:inherit;font-family:Georgia,'Times New Roman',serif}
+.brand-copy>span{font-size:22px;line-height:1.05;font-weight:400;letter-spacing:-.035em}
+.brand-copy>small{font-size:11px;line-height:1.5;letter-spacing:.08em;color:#8c7961}
+.direct-studio .bird-edition{font-size:8px;letter-spacing:.15em;color:#94846e}
+.direct-studio .bird-view-controls button,.direct-studio .bird-view-controls select{color:#76634f;border-color:var(--plume-line)}
+.direct-studio .bird-view-controls button{border-radius:7px}
+.direct-studio .bird-flow{color:#a49784;gap:40px;font-size:9px;padding-top:22px}
+.direct-studio .bird-flow [aria-current=step]{color:#795b3e}
+.direct-studio .bird-selection{max-width:960px;margin:38px auto 48px}
+.direct-studio .bird-selection>.bird-eyebrow{display:block;color:#9a7855;font-size:9px;letter-spacing:.2em}
+.direct-studio .bird-selection h1{color:#51483e;font-size:clamp(38px,4.5vw,60px);font-weight:400;line-height:1.08;margin:17px 0 21px}
+.direct-studio .bird-selection h1 em{color:#9b7b58;font-weight:400}
+.direct-studio .bird-selection>p:not(.bird-eyebrow){color:#847663;max-width:410px;font-size:12px;line-height:1.8;margin-bottom:28px}
+.direct-studio .bird-selection-grid{gap:12px}
+.direct-studio .trio-bird{min-height:178px;padding:18px 12px 16px;background:#faf7f0;border:1px solid #e1d7c7;border-radius:16px 5px 16px 5px;box-shadow:0 3px 12px #6b543504;transition:background .2s,border-color .2s,transform .2s}
+.direct-studio .trio-bird:hover:not(:disabled){background:#fffaf1;border-color:#bba17f;transform:translateY(-3px)}
+.direct-studio .trio-bird.chosen{background:#ebe3d6;border-color:#aa8963;box-shadow:inset 0 -2px var(--bird-color)}
+.direct-studio .trio-bird:disabled{opacity:.45}
+.direct-studio .trio-bird>.feather-glyph{display:block;width:48px;height:67px;margin:0 auto 8px;transform:rotate(-9deg)}
+.direct-studio .trio-bird:nth-child(2n)>.feather-glyph{transform:rotate(6deg)}
+.direct-studio .trio-bird strong{font-size:16px;color:#5a5044;font-weight:400}
+.direct-studio .trio-bird small{color:#94816b;font-size:9px}
+.direct-studio .trio-bird .pad-pigments{margin-top:11px}
+.direct-studio .trio-order{color:#a48a6a;font-family:Georgia,serif;font-size:14px}
+.direct-studio .trio-start{color:#8b7961;gap:24px}
+.direct-studio .trio-start button,.direct-studio .finalize-art{background:#766044;color:#fffaf1;border-radius:8px;font-size:11px;letter-spacing:.015em}
+.direct-studio .trio-start button:hover:not(:disabled),.direct-studio .finalize-art:hover:not(:disabled){background:#624c35}
+.direct-studio .bird-footer{border-color:var(--plume-line);color:#998a76}
+.direct-studio .bird-paper{box-shadow:0 16px 50px #5b44230c,0 1px 5px #5b44231c}
+.direct-studio .bird-paper-invitation{color:#a69a85;gap:10px;font-size:clamp(14px,1.5vw,19px)}
+.direct-studio .bird-paper-invitation .invitation-feather{height:58px;width:44px;margin-bottom:8px;opacity:.58;transform:rotate(-12deg)}
+.direct-studio .bird-paper-invitation small{color:#a79a85;font-size:10px;max-width:90%;text-align:center;line-height:1.6}
+.direct-studio .bird-pads{isolation:isolate}
+.direct-studio .bird-pad{border-radius:18px 7px 18px 7px;background:#faf7f0;box-shadow:0 3px 16px #624a2c0b}
+.direct-studio .bird-pad .feather-glyph{width:30px;height:40px;transform:rotate(8deg)}
+.direct-studio .bird-pad.is-selected{background:#f5ede0;border-color:var(--bird-color);box-shadow:0 0 0 3px #b79a6d20}
+.direct-studio .bird-pad.is-playing .feather-glyph{animation:plume-palette-breathe 1.8s ease-in-out infinite}
+.direct-studio .bird-pad strong{color:#78664f;font-size:9px}
+.direct-studio .bird-pad .pad-number{color:#a38b6d;top:2px;left:4px}
+.direct-studio .bird-pad .pad-pigments{bottom:4px}
+.direct-studio .atelier-panel,.direct-studio .atelier-more,.direct-studio .brush-context,.direct-studio .atelier-more .bird-actions{background:#fbf8f1;border-color:#dfd3c1;color:#685640;box-shadow:0 6px 25px #624a2c0a}
+.direct-studio .brush-context-heading strong{font:normal 18px Georgia,serif}
+.direct-studio .brush-context input,.direct-studio .atelier-panel input{accent-color:#9a7851}
+.direct-studio .brush-context output,.direct-studio .brush-context>small,.direct-studio .atelier-panel label{color:#89765d}
+.direct-studio .bird-live{color:#8c7d67}
+.direct-studio .bird-live-dot{background:#b6a184}
+.direct-studio .bird-live-dot.active{background:#8c6946}
+.direct-studio .continue-art,.direct-studio .artwork-drying,.direct-studio .artwork-drying button,.direct-studio .bird-actions button{color:#8c7151}
+.direct-studio .artwork-title h2,.direct-studio .poem-lines{color:#695642}
+.direct-studio .artwork-title>span{color:#a38b6c;font-size:8px;letter-spacing:.12em}
+.direct-studio .canvas-restore{background:#fbf8f1;border-color:#d9c7ad;color:#785e40}
+/* The quill is small and tip-anchored, independent of deposit radius. */
+.direct-studio .brush-cursor.feather-cursor{width:0;height:0;aspect-ratio:auto;border:0;border-radius:0;transform:none;transition:none;pointer-events:none;color:var(--sample-color);z-index:2;opacity:1}
+.feather-cursor>.feather-glyph{position:absolute;left:-6px;top:-44px;width:36px;height:48px;transform-origin:6px 43.5px;transform:rotate(var(--feather-tilt,0deg));filter:drop-shadow(0 2px 1px #42362620);animation:plume-hover 3s ease-in-out infinite}
+.direct-studio .feather-cursor>.feather-hotspot{position:absolute;inset:auto;left:-2px;top:-2px;width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.65}
+.direct-studio .feather-cursor.resonating>.feather-glyph{animation:plume-writing .55s ease-in-out infinite}
+.direct-studio.bird-viewing .feather-cursor{display:block}
+@keyframes plume-hover{0%,100%{transform:rotate(calc(var(--feather-tilt,0deg) - 2deg))}50%{transform:rotate(calc(var(--feather-tilt,0deg) + 2deg))}}
+@keyframes plume-writing{0%,100%{transform:rotate(calc(var(--feather-tilt,0deg) - 4deg)) scaleY(.97)}50%{transform:rotate(calc(var(--feather-tilt,0deg) + 4deg)) scaleY(1)}}
+@keyframes plume-palette-breathe{50%{transform:rotate(1deg);opacity:.65}}
+@media(hover:hover) and (pointer:fine){.direct-studio.flow-paint .bird-paper{cursor:none}}
+@media(max-width:760px){
+ .direct-studio .bird-header{gap:10px}
+ .feather-wordmark .brand-feathers{width:29px;height:35px}
+ .brand-feathers .feather-glyph{width:23px;height:33px;left:4px}
+ .direct-studio .feather-wordmark{gap:9px}
+ .brand-copy>span{font-size:18px}
+ .brand-copy>small{font-size:9px;letter-spacing:.025em}
+ .direct-studio .bird-flow{gap:8px;font-size:8px;padding-top:19px}
+ .direct-studio .bird-selection{margin:31px auto 28px}
+ .direct-studio .bird-selection h1{font-size:40px;margin-bottom:16px}
+ .direct-studio .bird-selection>p:not(.bird-eyebrow){font-size:11px;margin-bottom:23px;max-width:290px}
+ .direct-studio .bird-selection-grid{gap:10px}
+ .direct-studio .trio-bird{min-height:158px;padding:15px 7px 13px}
+ .direct-studio .trio-bird>.feather-glyph{height:55px;width:41px;margin-bottom:7px}
+ .direct-studio .trio-bird strong{font-size:15px}
+ .direct-studio .trio-bird small{font-size:8px}
+ .direct-studio .trio-start{background:#f3efe7f5;gap:12px;padding:14px 0}
+ .direct-studio .trio-start>span{font-size:10px}
+ .direct-studio .trio-start button{font-size:11px;padding:12px}
+ .direct-studio:not(.flow-choose) .bird-instrument{background:#f3efe7f5;border-color:var(--plume-line)}
+ .direct-studio .bird-pad .feather-glyph{width:26px;height:34px}
+ .direct-studio .bird-pad strong{font-size:8px}
+ .direct-studio .bird-paper-invitation{font-size:15px}
+ .direct-studio .bird-paper-invitation small{font-size:9px}
+ .direct-studio .feather-wordmark{flex-shrink:1}
+}
+@media(max-width:360px){
+ .brand-copy>span{font-size:16px}
+ .brand-copy>small{font-size:8px}
+ .feather-wordmark .brand-feathers{width:23px}
+ .direct-studio .feather-wordmark{gap:5px}
+ .direct-studio .bird-header .bird-view-controls button{padding:7px;font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.direct-studio .feather-cursor>.feather-glyph,.direct-studio .bird-pad.is-playing .feather-glyph{animation:none;transform:rotate(var(--feather-tilt,0deg))}}
+/* Only size and opacity remain adjustable; secondary actions live in the header. */
+.direct-studio .bird-header .atelier-more{z-index:60}
+.direct-studio .bird-header .atelier-more .bird-actions{top:100%;bottom:auto;margin:8px 0 0;text-align:left}
+.direct-studio .bird-header .atelier-more .bird-actions button{border:0;background:none;font-size:12px;padding:10px 0;min-height:44px;justify-content:flex-start;color:#78634b;white-space:normal}
+@media(max-width:760px){
+ .direct-studio.flow-paint{--sheet-height:max(160px,calc(100svh - 170px));padding-bottom:100px}
+ .direct-studio.flow-paint .bird-instrument{min-height:82px;flex-wrap:nowrap}
+ .direct-studio.flow-paint .bird-pads{bottom:max(24px,env(safe-area-inset-bottom))}
+ .direct-studio.flow-paint .bird-live{bottom:87px}
+ .direct-studio .brush-context{bottom:112px;max-height:calc(100dvh - 180px)}
+ .direct-studio.canvas-only.flow-paint{--sheet-height:100dvh;padding:0}
+ .direct-studio .bird-header .atelier-more>summary{min-width:36px;min-height:40px;padding:2px 8px}
+}

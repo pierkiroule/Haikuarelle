@@ -86,6 +86,62 @@ describe('gesture and live audio create the brush together',()=>{
     expect(robin.some(s=>s.slot===0&&s.load<.2)).toBe(true);expect(robin.some(s=>s.slot===1)).toBe(true);
     expect(crow[0].strength).toBeGreaterThan(robin.find(s=>s.slot===1)!.strength);
   });
+  it('projects separate black magpie droplets with varied sizes, no connecting stroke and a fixed budget',()=>{
+    const pie=BIRD_BRUSHES.find(b=>b.id==='pie')!;
+    const run=(size=.6)=>{
+      const brush=new ResonantBrush(pie,75,settings,size),frames=[];
+      for(let i=0;i<30;i++){
+        brush.move({x:.2+i*.018,y:.5},i*1000/30);
+        frames.push(brush.step({...sound,time:i/30,energy:.9,flux:.9},i/30,settings));
+      }
+      return frames;
+    };
+    const frames=run(),drops=frames.flatMap(f=>f.segments.filter(s=>!s.water));
+    expect(frames).toEqual(run());expect(drops.length).toBeGreaterThan(20);
+    expect(drops.every(s=>s.slot===0&&s.effect==='splash'&&s.a.x===s.b.x&&s.a.y===s.b.y)).toBe(true);
+    expect(frames.every(f=>f.ink.length===0&&f.segments.length<=16)).toBe(true);
+    expect(Math.max(...drops.map(s=>s.radius))).toBeGreaterThan(Math.min(...drops.map(s=>s.radius))*3);
+    const radius=(size:number)=>run(size).flatMap(f=>f.segments.filter(s=>!s.water)).reduce((n,s)=>n+s.radius,0);
+    expect(radius(1)).toBeGreaterThan(radius(0)*3);
+  });
+  it('scales only new pigment and ink opacity, including magpie droplets, and deposits nothing at zero',()=>{
+    for(const bird of BIRD_BRUSHES){
+      const draw=(opacity:number)=>{
+        const b=new ResonantBrush(bird,58,settings,.7,0,opacity);
+        b.move({x:.3,y:.5},0);b.move({x:.4,y:.5},100);
+        return b.step({...sound,time:1,flux:.95},1,settings);
+      };
+      const full=draw(1),faint=draw(.25);
+      expect(faint.segments.filter(s=>s.water)).toEqual(full.segments.filter(s=>s.water));
+      const pigment=full.segments.filter(s=>!s.water);
+      faint.segments.filter(s=>!s.water).forEach((s,i)=>expect(s.load).toBeCloseTo(pigment[i].load*.25));
+      faint.ink.forEach((s,i)=>expect(s.opacity).toBeCloseTo(full.ink[i].opacity*.25));
+      expect(draw(0).segments).toEqual([]);expect(draw(0).ink).toEqual([]);
+    }
+  });
+  it('reserves short filaments for spaced strong attacks rather than each audio pulse',()=>{
+    const brush=new ResonantBrush(BIRD_PADS[2],72,settings,.7);
+    let filaments=0;
+    for(let i=0;i<60;i++){
+      brush.move({x:.2+i*.006,y:.5},i*1000/30);
+      filaments+=brush.step({...sound,time:i/30,flux:.95},i/30,settings).segments.filter(s=>s.effect==='filament').length/4;
+    }
+    expect(filaments).toBeGreaterThan(0);expect(filaments).toBeLessThanOrEqual(3);
+    const b=new ResonantBrush(BIRD_PADS[2],72,settings,.7);b.move({x:.4,y:.5},0);
+    expect(b.step({...sound,flux:.7},1,settings).segments.some(s=>s.effect==='filament')).toBe(false);
+  });
+  it('transduces the audible timbre and attacks into wet margins without adding independent animation',()=>{
+    const draw=(brightness:number,flux=.1,resonance=1)=>{
+      const b=new ResonantBrush(BIRD_PADS[2],42,settings,.6);
+      b.move({x:.4,y:.5},0);b.move({x:.42,y:.5},70);
+      return b.step({...sound,brightness,flux},0,{...settings,resonance}).segments.find(s=>s.water)!;
+    };
+    const dark=draw(.1),bright=draw(.9),attack=draw(.9,.75);
+    expect(dark.radius).toBeGreaterThan(bright.radius);
+    expect(dark.load).toBeGreaterThan(bright.load);
+    expect(attack.radius).toBeGreaterThan(bright.radius);
+    expect(draw(.1,.1,0)).toEqual(draw(.9,.1,0));
+  });
   it('maps the pointer accurately and rejects excursions outside the paper',()=>{
     const rect={left:20,top:40,width:300,height:600};
     expect(paperPoint(170,340,rect)).toEqual({x:.5,y:.5});

@@ -1,6 +1,7 @@
-export type BirdId='rougegorge'|'merle'|'rossignol'|'fauvette'|'hirondelle'|'geai'|'etourneau'|'chouette'|'hibou'|'corneille'|'mesange'|'bouvreuil'|'sittelle'|'picvert';
+export type BirdId='rougegorge'|'merle'|'rossignol'|'fauvette'|'hirondelle'|'geai'|'etourneau'|'chouette'|'hibou'|'corneille'|'mesange'|'bouvreuil'|'sittelle'|'picvert'|'pie';
 export interface Bird {id:BirdId;name:string;latin:string;gesture:string;motif:'plume'|'trille'|'branche'|'voile';slot:number;angle:number;color:string;source:string;author:string;plumage?:number[];signature?:'lace'|'velvet'|'twig'|'ripple'}
 const base='https://bigsoundbank.com/';
+export const PIE:Bird={id:'pie',name:'Pie',latin:'Pica pica',gesture:'Noir · pluie de gouttelettes',motif:'trille',slot:0,angle:.2,color:'#252b2c',plumage:[0],source:'/birds/credits.html#pie',author:'Haïkuarelle · rythme synthétique, sans enregistrement animal'};
 export const BIRDS:Bird[]=[
   {id:'rougegorge',name:'Rouge-gorge',latin:'Erithacus rubecula',gesture:'Une plume de lumière',motif:'plume',slot:1,angle:-.65,color:'#ae775a',source:base+'robin-4-s1670.html',author:'Joseph SARDIN'},
   {id:'merle',name:'Merle noir',latin:'Turdus merula',gesture:'Un lavis profond',motif:'voile',slot:0,angle:.28,color:'#5c747b',source:base+'common-blackbird-30-s3503.html',author:'Le tiroir du fond'},
@@ -16,6 +17,7 @@ export const BIRDS:Bird[]=[
   {id:'bouvreuil',name:'Bouvreuil',latin:'Pyrrhula pyrrhula',gesture:'Rose · gris & velours',motif:'voile',slot:5,angle:.2,color:'#ba667d',plumage:[5,6,7],signature:'velvet',source:'https://commons.wikimedia.org/wiki/File:Bullfinch_(Pyrrhula_pyrrhula)_(W1CDR0001509_BD14).ogg',author:'Aubrey John Williams · The British Library Board'},
   {id:'sittelle',name:'Sittelle',latin:'Sitta europaea',gesture:'Ardoise · roux & ramures',motif:'branche',slot:7,angle:-1.1,color:'#758795',plumage:[7,8,0],signature:'twig',source:'https://commons.wikimedia.org/wiki/File:Eurasian_Nuthatch_(Sitta_europaea)_(W1CDR0001520_BD24).ogg',author:'Aubrey John Williams · The British Library Board'},
   {id:'picvert',name:'Pic vert',latin:'Picus viridis',gesture:'Mousse · jaune & carmin',motif:'plume',slot:9,angle:.6,color:'#788647',plumage:[9,4,10],signature:'ripple',source:'https://commons.wikimedia.org/wiki/File:Picus_viridis-Clapiers_2018_04_21.ogg',author:'Manudouz'},
+  PIE,
 ];
 export const birdFor=(id:BirdId)=>BIRDS.find(b=>b.id===id)!;
 /** Three initial pads. The seven brushes share one stable optical pigment table. */
@@ -24,4 +26,4 @@ export const BIRD_PADS:Bird[]=[
   {...birdFor('rougegorge'),gesture:'Orange · gris & réserves',color:'#bd6545'},
   {...birdFor('geai'),gesture:'Bleu · plumes & traits vifs',color:'#4a83a7'},
 ];
-export const BIRD_BRUSHES:Bird[]=[...BIRD_PADS,...BIRDS.filter(b=>!!b.signature)];
+export const BIRD_BRUSHES:Bird[]=[...BIRD_PADS,...BIRDS.filter(b=>!!b.signature),PIE];

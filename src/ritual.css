@@ -1,0 +1,76 @@
+/* Five quiet thresholds; the current invitation stays outside the painting. */
+.ritual-progress{max-width:1000px;margin:18px auto 0;color:#aa9a82}
+.ritual-progress ol{display:flex;justify-content:center;gap:30px;list-style:none;padding:0;margin:0}
+.ritual-progress li{display:flex;align-items:center;gap:8px;font-size:10px;white-space:nowrap}
+.ritual-step-number{display:grid;place-items:center;width:25px;height:25px;border:1px solid #ded3c1;border-radius:50%;font-size:9px;font-variant-numeric:tabular-nums}
+.ritual-progress [aria-current=step]{color:#765936}
+.ritual-progress [aria-current=step] .ritual-step-number{background:#826647;border-color:#826647;color:#fffaf1}
+.ritual-progress .ritual-done{color:#8d8d75}
+.ritual-heading{text-align:center;max-width:760px;margin:16px auto 0;padding:0 20px;color:#86765e}
+.ritual-heading>p{font-size:8px;letter-spacing:.18em;margin:0 0 8px;color:#aa8b62}
+.ritual-heading h1{font:normal clamp(22px,2.4vw,32px)/1.2 Georgia,serif;letter-spacing:-.025em;margin:0 0 8px;color:#66533e}
+.ritual-heading>span{display:block;font-size:11px;line-height:1.7;max-width:590px;margin:auto}
+.direct-studio:not(.flow-choose){--sheet-height:max(160px,calc(100svh - 250px))}
+.direct-studio:not(.flow-choose) .bird-workbench{padding-top:18px}
+.direct-studio:not(.flow-choose) .bird-instrument{top:222px}
+.direct-studio.flow-water .bird-paper{touch-action:none;cursor:crosshair}
+.direct-studio.flow-water .bird-paper-invitation{color:#87999a}
+.direct-studio.flow-water .finalize-art{background:#6c8586}
+.direct-studio.flow-water .finalize-art:hover:not(:disabled){background:#526f70}
+.direct-studio.flow-water .bird-live{color:#85999a}
+.direct-studio.flow-water .bird-paper-invitation:has(+.water-cursor){opacity:.35}
+.water-cursor{position:absolute;pointer-events:none;width:34px;height:42px;transform:translate(-50%,-50%);color:#688d93;border-radius:50%;z-index:2}
+.water-cursor svg{width:25px;height:32px;display:block;margin:5px auto;opacity:.8}
+.water-cursor.is-wetting::before{content:'';position:absolute;inset:-5px;border:1px solid #6a8d8b44;border-radius:50%;animation:water-breath 1.8s ease-in-out infinite}
+.direct-studio .silence-sun{display:block;width:56px;height:56px;color:#b99250;animation:silence-sun-turn 80s linear infinite}
+.direct-studio .artwork-drying{min-width:180px;gap:12px;color:#9c8159}
+.direct-studio .artwork-drying progress::-webkit-progress-value{background:#ba9b64}
+.direct-studio .artwork-drying progress::-moz-progress-bar{background:#ba9b64}
+.direct-studio.flow-finished{--sheet-height:max(160px,calc(100svh - 400px))}
+.direct-studio .artwork-finished-actions{gap:10px}
+.direct-studio .download-art{display:flex;align-items:center;gap:7px}
+.direct-studio.canvas-only .ritual-progress,.direct-studio.canvas-only .ritual-heading,.direct-studio.bird-viewing .ritual-progress,.direct-studio.bird-viewing .ritual-heading{display:none}
+.direct-studio.canvas-only,.direct-studio.bird-viewing{--sheet-height:100dvh}
+.direct-studio.canvas-only.flow-finished,.direct-studio.bird-viewing.flow-finished{--sheet-height:max(160px,calc(100dvh - 235px))}
+@keyframes water-breath{50%{transform:scale(1.25);opacity:.35}}
+@keyframes silence-sun-turn{to{transform:rotate(360deg)}}
+@media(max-width:760px){
+ .ritual-progress{margin-top:12px}
+ .ritual-progress ol{justify-content:space-between;gap:5px}
+ .ritual-progress li{flex-direction:column;gap:4px;font-size:8px}
+ .ritual-step-number{width:23px;height:23px;font-size:8px}
+ .ritual-heading{padding:0 8px;margin-top:15px;min-height:99px}
+ .ritual-heading>p{font-size:7px;margin-bottom:6px}
+ .ritual-heading h1{font-size:22px;max-width:320px;margin:0 auto 7px;line-height:1.15}
+ .ritual-heading>span{font-size:10px;line-height:1.5;max-width:330px}
+ .direct-studio:not(.flow-choose){--sheet-height:max(150px,calc(100svh - 330px));padding-bottom:100px}
+ .direct-studio:not(.flow-choose) .bird-workbench{padding-top:12px}
+ .direct-studio:not(.flow-choose) .bird-instrument{top:auto;min-height:82px}
+ .direct-studio.flow-water .bird-instrument{justify-content:center}
+ .direct-studio.flow-water .bird-live{bottom:87px;max-width:calc(100vw - 24px);font-size:9px;text-align:center;line-height:1.5}
+ .direct-studio.flow-water .bird-pad-board{width:100%;display:flex;justify-content:center}
+ .direct-studio.flow-water .water-ready{max-width:none;font-size:12px;min-width:180px}
+ .direct-studio .artwork-drying{grid-template-columns:40px 1fr auto;min-width:0;gap:6px 12px}
+ .direct-studio .artwork-drying .silence-sun{grid-row:1/3;grid-column:1;width:40px;height:40px}
+ .direct-studio .artwork-drying progress{grid-column:2/4}
+ .direct-studio .artwork-drying>span{grid-column:2}
+ .direct-studio .artwork-drying>button{grid-column:3;max-width:80px;line-height:1.4}
+ .direct-studio.flow-finished{--sheet-height:max(150px,calc(100svh - 490px));padding-bottom:170px}
+ .direct-studio.flow-finished .artwork-finished-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px 15px;align-items:center}
+ .direct-studio.flow-finished .share-art{grid-column:1/-1;max-width:none;width:100%;font-size:12px}
+ .direct-studio .brush-context{max-height:calc(100dvh - 250px)}
+ .direct-studio.canvas-only,.direct-studio.canvas-only.flow-paint,.direct-studio.bird-viewing{--sheet-height:100dvh;padding:0}
+ .direct-studio.canvas-only .bird-workbench,.direct-studio.bird-viewing .bird-workbench{padding:0}
+ .direct-studio.canvas-only.flow-finished,.direct-studio.bird-viewing.flow-finished{--sheet-height:max(160px,calc(100dvh - 235px))}
+}
+@media(max-width:360px){.ritual-heading h1{font-size:20px}.ritual-heading>span{font-size:9px}.ritual-progress li{font-size:7px}}
+@media(prefers-reduced-motion:reduce){.water-cursor.is-wetting::before,.direct-studio .silence-sun{animation:none}}
+.direct-studio .bird-paper:focus-visible{outline:2px solid #b29976;outline-offset:4px}
+@media(max-width:760px){
+ /* The poem must be read before the sharing controls, without an overlay. */
+ .direct-studio.flow-finished{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+ .direct-studio.flow-finished .bird-instrument{position:static;display:flex;flex-direction:column;align-items:center;gap:15px;padding:20px 0 0;margin-top:22px;min-height:0;border:0;border-top:1px solid #ded3c1;background:transparent;box-shadow:none}
+ .direct-studio.flow-finished .bird-pad-board{width:100%;max-width:360px}
+ .direct-studio.flow-finished .artwork-finished-actions{width:100%;justify-content:center}
+ .direct-studio.flow-finished .final-dedication{align-items:center;gap:5px;padding:0 0 12px}
+}

@@ -18,7 +18,7 @@ export class DirectBrush {
   private sounding=false;
   private latest:Contact|null=null;
   constructor(private sounds:Sounds,private painter:Painter,private callbacks:Callbacks){}
-  async begin(bird:Bird,point:Point,time:number,pressure:number,seed:number,size:number,layer:number):Promise<void>{
+  async begin(bird:Bird,point:Point,time:number,pressure:number,seed:number,size:number,layer:number,opacity=1):Promise<void>{
     this.end();const token=++this.token;this.down=true;this.latest={point:{...point},time,pressure};
     this.callbacks.preparing(bird);
     try{
@@ -26,7 +26,7 @@ export class DirectBrush {
         if(token!==this.token||!this.down)return;
         const ok=this.painter.startBirdBrush(sound.analysis,bird,seed,size,layer,sound.elapsed,origin=>{
           if(token===this.token&&this.down)this.callbacks.marked(bird,origin,seed);
-        });
+        },opacity);
         if(!ok){this.end();this.callbacks.error('Ce chant ne contient pas de son exploitable. Choisissez une autre brosse.');return;}
         this.sounding=true;
         const at=this.latest;if(at)this.painter.moveBrush(at.point,at.time,at.pressure);

@@ -132,6 +132,13 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition.duration=Math.max(this.composition.duration,time+this.dryingDuration());this.request();
   }
   liftWaterBrush():void{this.waterLast=null;}
+  /** Commit even a quick water tap before holding the silent preparation. */
+  holdWater():void{
+    if(this.destroyed)return;
+    this.liftWaterBrush();
+    while(this.waterPending.length&&this.active)this.stepOnce();
+    this.paint.render(0);this.pause();
+  }
   waterAt(point:Point):number{return this.wetPaper.at(point,this.tick/TICK_RATE);}
   private dryingDuration():number{return dryingTime(this.settings.wetness)*5.6;}
   /** Drop one real sample into explicitly pre-wetted paper. No live pointer path. */
@@ -161,17 +168,18 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.fineInk.setStrokes(this.composition.ink??[],sheetFor(this.settings.format));this.emit();this.request();return true;
   }
   /** Arm an audible bird. Nothing is deposited before moveBrush receives input. */
-  startBirdBrush(analysis:AudioAnalysis,bird:Bird,seed:number,size=.55,layer=0,clock?:()=>number,onMark?:(p:Point)=>void):boolean{
+  startBirdBrush(analysis:AudioAnalysis,bird:Bird,seed:number,size=.55,layer=0,clock?:()=>number,onMark?:(p:Point)=>void,opacity=1):boolean{
     if(this.destroyed||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
     if(!this.performance)this.beginSignature(this.seed);
     this.stopBird();
-    this.brushVoice={brush:new ResonantBrush(bird,seed,this.settings,size,layer),analysis:{...analysis,frames:soundImprint(analysis)},start:this.tick/TICK_RATE,clock,marked:false,onMark};
+    this.brushVoice={brush:new ResonantBrush(bird,seed,this.settings,size,layer,opacity),analysis:{...analysis,frames:soundImprint(analysis)},start:this.tick/TICK_RATE,clock,marked:false,onMark};
     this.audio=analysis;this.composition.title=bird.gesture;this.composition.duration=this.tick/TICK_RATE+6;
     this.active=true;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();this.request();return true;
   }
   moveBrush(point:Point,timeMs:number,pressure=.5):void{this.brushVoice?.brush.move(point,timeMs,pressure);}
   liftBrush():void{this.brushVoice?.brush.lift();}
   setBrushSize(size:number):void{if(this.brushVoice)this.brushVoice.brush.size=clamp(size);}
+  setBrushOpacity(opacity:number):void{if(this.brushVoice)this.brushVoice.brush.opacity=clamp(opacity);}
   get brushFeedback():BrushFeedback|null{return this.brushVoice?{...this.brushVoice.brush.feedback}:null;}
   /** Stop new pigment on interruption/end. Existing water may continue to dry. */
   stopBird():void {

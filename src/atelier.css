@@ -1,0 +1,110 @@
+/* Keep the sheet's geometry independent of open tool panels. */
+.direct-studio:not(.flow-choose){--sheet-height:max(160px,calc(100svh - 130px));padding:0 24px 16px}
+.direct-studio:not(.flow-choose) .bird-header{height:58px}
+.direct-studio:not(.flow-choose) .bird-flow,
+.direct-studio:not(.flow-choose) .bird-footer,
+.direct-studio:not(.flow-choose) .bird-sheet-meta,
+.direct-studio:not(.flow-choose) .bird-art-caption{display:none}
+.direct-studio:not(.flow-choose) .bird-workbench{display:block;max-width:none;padding:18px 100px 0}
+.direct-studio:not(.flow-choose) .bird-instrument{position:fixed;right:24px;top:74px;z-index:35;display:flex;align-items:flex-end;gap:10px;padding:0;flex-direction:column}
+.direct-studio:not(.flow-choose) .bird-pad-board{position:static;padding:0;background:none;border:0;box-shadow:none}
+.direct-studio .bird-pads{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;overflow:visible}
+.direct-studio .bird-pad-slot{position:relative}
+.direct-studio .bird-pad{display:flex;align-items:center;justify-content:center;border-radius:50%;width:52px;height:52px;min-height:52px;padding:6px;border:2px solid transparent;box-shadow:0 3px 16px #39442c12;background:#f7f6ef;overflow:visible}
+.direct-studio .bird-pad.is-selected{border-color:var(--bird-color);box-shadow:0 0 0 4px #78896720}
+.direct-studio .bird-pad .bird-glyph{width:32px;height:30px;margin:0}
+.direct-studio .bird-pad .pad-number{top:0;left:0;font-size:9px}
+.direct-studio .bird-pad .pad-pigments{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);display:flex;gap:1px}
+.direct-studio .bird-pad .pad-pigments i{width:5px;height:5px;border-radius:50%}
+.direct-studio .bird-pad small,.direct-studio .bird-pad .pad-ready{display:none}
+.direct-studio .bird-pad strong{display:none;position:absolute;left:calc(100% + 12px);top:8px;padding:10px;background:#f7f6ef;border-radius:4px;font-size:11px;box-shadow:0 3px 15px #39442c15;pointer-events:none}
+.direct-studio .bird-pad:hover strong,.direct-studio .bird-pad:focus-visible strong{display:block}
+.direct-studio .bird-live{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 220px);margin:0;min-height:30px;font-size:10px}
+.direct-studio .finalize-art{width:auto;margin:0;min-height:44px;padding:10px 15px}
+.atelier-panel,.atelier-more{position:relative;background:#f5f4ed;border:1px solid #d6ddcc;border-radius:8px;color:#52694c;box-shadow:0 4px 18px #39442c0a}
+.atelier-panel>summary,.atelier-more>summary{cursor:pointer;min-height:44px;padding:12px 16px;list-style:none;box-sizing:border-box;font-size:12px}
+.atelier-more>summary{font-size:22px;padding:4px 16px}
+.direct-studio .atelier-panel[open]{width:min(310px,calc(100vw - 48px));padding:0 18px}
+.direct-studio .atelier-panel .bird-materials{padding:15px 0;margin:0;max-width:none}
+.direct-studio .atelier-panel .bird-brush-size{max-width:none;margin:0}
+.direct-studio .atelier-panel .bird-brush-size input{width:100%}
+.direct-studio .atelier-panel>div{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.direct-studio .atelier-panel label{font-size:11px;color:#596b50}
+.direct-studio .atelier-panel input[type=range]{min-height:32px}
+.direct-studio .atelier-more .bird-actions{position:absolute;right:0;top:100%;width:210px;background:#f5f4ed;border:1px solid #d6ddcc;border-radius:8px;padding:10px 16px;margin:8px 0;display:flex;flex-direction:column;align-items:stretch;box-shadow:0 8px 28px #39442c18}
+.direct-studio .atelier-more button,.atelier-more a{font-size:12px;min-height:44px;justify-content:flex-start;display:flex;align-items:center}
+.direct-studio .final-dedication{background:#f5f4ed;padding:12px;max-width:240px;flex-direction:column;align-items:flex-start}
+.direct-studio .artwork-finished-actions{padding:0;gap:8px}
+.direct-studio .artwork-finished-actions>p,.direct-studio .artwork-finished-actions>.poem-mark{display:none}
+.direct-studio.flow-finished{--sheet-height:max(160px,calc(100svh - 310px))}
+.direct-studio.flow-finished .bird-workbench{padding-right:240px}
+.direct-studio .artwork-drying{max-width:180px;padding:0;gap:8px}
+.canvas-restore{position:fixed;right:16px;bottom:max(16px,env(safe-area-inset-bottom));z-index:110;background:#f5f4ed;border:1px solid #b7c2aa;color:#52694c;border-radius:8px;padding:12px 16px;min-height:44px;cursor:pointer}
+.direct-studio.canvas-only{position:fixed;inset:0;z-index:90;padding:0;overflow:auto;--sheet-height:100dvh;background:var(--paper)}
+.direct-studio.canvas-only .bird-header,.direct-studio.canvas-only .bird-instrument{display:none}
+.direct-studio.canvas-only .bird-workbench{padding:0;min-height:100dvh;display:grid;place-items:center}
+.direct-studio.canvas-only.flow-finished{--sheet-height:max(160px,calc(100dvh - 230px))}
+.direct-studio.bird-viewing .bird-instrument{display:none}
+.direct-studio.bird-viewing .bird-workbench{padding:0;display:grid}
+@media(max-width:760px){
+ .direct-studio:not(.flow-choose){padding:0 12px 110px;--sheet-height:max(160px,calc(100svh - 172px))}
+ .direct-studio:not(.flow-choose) .bird-header{height:52px;gap:6px}
+ .direct-studio .bird-header .bird-view-controls{gap:5px}
+ .direct-studio .bird-header .bird-view-controls button{font-size:10px;padding:8px;min-height:40px}
+ .direct-studio:not(.flow-choose) .bird-header select{display:none}
+ .direct-studio:not(.flow-choose) .bird-workbench{padding:12px 0 0;max-width:none}
+ .direct-studio:not(.flow-choose) .bird-instrument{top:auto;bottom:0;left:0;right:0;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;padding:10px 12px max(10px,env(safe-area-inset-bottom));background:#eeeee7f5;border-top:1px solid #d6ddcc;min-height:68px;box-sizing:border-box}
+ .direct-studio .bird-pads{left:12px;top:auto;bottom:max(18px,env(safe-area-inset-bottom));transform:none;flex-direction:row;gap:8px}
+ .direct-studio .bird-pad{width:44px;height:44px;min-height:44px}
+ .direct-studio .bird-pad strong{left:0;top:auto;bottom:calc(100% + 10px)}
+ .direct-studio .bird-live{bottom:78px;max-width:calc(100vw - 24px);width:max-content;font-size:9px;min-height:20px}
+ .direct-studio .finalize-art{font-size:10px;padding:10px;max-width:150px;min-height:44px}
+ .direct-studio.flow-paint .bird-pad-board{margin-right:auto;padding-left:154px}
+ .direct-studio .atelier-panel>summary{padding:12px 10px;font-size:10px}
+ .direct-studio .atelier-panel[open]{position:absolute;bottom:calc(100% + 8px);right:12px;max-height:calc(100dvh - 150px);overflow:auto;box-sizing:border-box}
+ .direct-studio .atelier-more .bird-actions{top:auto;bottom:100%;margin:0 0 14px}
+ .direct-studio .atelier-more>summary{padding:4px 10px}
+ .direct-studio.flow-finished{--sheet-height:max(160px,calc(100svh - 330px));padding-bottom:150px}
+ .direct-studio.flow-finished .bird-instrument{flex-wrap:wrap}
+ .direct-studio .artwork-finished-actions{flex-direction:row}
+ .direct-studio .final-dedication{padding:0;background:none;gap:3px}
+ .direct-studio.flow-drying .bird-instrument{justify-content:center}
+ .direct-studio .artwork-drying{max-width:none;flex:1;display:grid;grid-template-columns:1fr auto;font-size:9px}
+ .direct-studio .artwork-drying progress{grid-column:1/-1}
+ .direct-studio.canvas-only{padding:0;--sheet-height:100dvh}
+ .direct-studio.canvas-only .bird-workbench,.direct-studio.bird-viewing .bird-workbench{padding:0}
+}
+@media(max-width:390px){.direct-studio .bird-pads{gap:4px;left:8px}.direct-studio.flow-paint .bird-pad-board{padding-left:136px}.direct-studio .bird-instrument{gap:4px;padding-left:8px;padding-right:8px}.direct-studio .finalize-art{max-width:110px;font-size:9px}.direct-studio .atelier-panel>summary{padding:12px 7px}}
+@media(max-width:760px){
+ .direct-studio.flow-paint{--sheet-height:max(160px,calc(100svh - 220px));padding-bottom:150px}
+ .direct-studio.flow-paint .bird-instrument{flex-wrap:wrap;min-height:116px}
+ .direct-studio.flow-paint .bird-pad-board{width:100%;margin:0;padding:0;display:flex;justify-content:flex-end;min-height:44px}
+ .direct-studio.flow-paint .bird-pads{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 54px)}
+ .direct-studio.flow-paint .bird-live{bottom:128px}
+ .direct-studio.flow-paint .atelier-panel[open]{position:absolute}
+ .direct-studio.canvas-only.flow-paint{--sheet-height:100dvh;padding:0}
+}
+.direct-studio:not(.flow-choose) .bird-paper.stable-sheet{max-width:none}
+.atelier-panel summary:focus-visible,.atelier-more summary:focus-visible,.canvas-restore:focus-visible{outline:2px solid #657e54;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.direct-studio .bird-pad{transition:none}}
+/* The three brushes stay available; each owns its contextual settings. */
+.direct-studio .bird-pad strong,.direct-studio .bird-pad:hover strong,.direct-studio .bird-pad:focus-visible strong{display:block;left:50%;top:calc(100% + 6px);bottom:auto;transform:translateX(-50%);padding:0;background:none;box-shadow:none;font-size:9px;color:#53644b}
+.direct-studio .bird-pads{gap:30px}
+.brush-context{position:absolute;z-index:60;left:calc(100% + 18px);top:0;width:220px;box-sizing:border-box;padding:14px 16px;border:1px solid #cbd5c1;border-radius:12px;background:#f7f6ef;box-shadow:0 8px 32px #39442c25;color:#52694c}
+.brush-context-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:13px}
+.brush-context-heading button{display:grid;place-items:center;border:0;background:none;color:inherit;min-width:36px;min-height:36px;cursor:pointer}
+.brush-context label{display:block;font-size:12px;margin-top:12px}
+.brush-context label>span{display:flex;justify-content:space-between;gap:12px}
+.brush-context output{font-variant-numeric:tabular-nums;color:#7b896f}
+.brush-context input{display:block;width:100%;min-height:36px;accent-color:#748a62;cursor:pointer}
+.brush-context>small{display:block;line-height:1.5;margin-top:8px;font-size:10px;color:#7b896f}
+.brush-context :focus-visible{outline:2px solid #657e54;outline-offset:3px}
+@media(max-width:760px){
+ .direct-studio .bird-pads{gap:12px}
+ .direct-studio .bird-pad strong{font-size:8px;max-width:62px;white-space:normal;line-height:1.1}
+ .direct-studio.flow-paint .bird-pads{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 64px)}
+ .direct-studio .brush-context{position:fixed;left:12px;right:12px;top:auto;bottom:150px;width:auto;max-width:320px;max-height:calc(100dvh - 220px);overflow:auto}
+ /* A transformed ancestor would anchor a fixed popover to the palette. */
+ .direct-studio .bird-pads{transform:none}
+}
+@media(max-width:390px){.direct-studio .bird-pads{gap:7px}}
