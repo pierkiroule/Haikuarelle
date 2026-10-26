@@ -219,3 +219,18 @@ it('plays an immersed water clock through the fluid response without creating pi
  expect(segs.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0)).toBe(true);
  expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);e.stopWaterSong();
 });
+
+it('breath drives wet pigment without depositing or refilling and stops accepting input during drying',()=>{
+ const e=open(),p={x:.5,y:.5};e.beginSignature(8);e.wetBrush(p,.8);e.holdWater();
+ const initial=e.waterAt(p);vi.mocked(e.paint.step).mockClear();
+ e.blow(p,0,.6);e.blow({x:.51,y:.5},30,.6);frame(1);frame(101);
+ const forces=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]);
+ expect(forces.length).toBeGreaterThan(0);
+ expect(forces.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0&&s.fx>0)).toBe(true);
+ expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);
+ e.liftBreath();vi.mocked(e.paint.step).mockClear();
+ e.blow({x:.9,y:.9},150,.6);e.blow({x:.91,y:.9},180,.6);frame(201);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2])).toEqual([]);
+ e.setDrying(true);e.blow(p,220,.6);e.blow({x:.51,y:.5},250,.6);frame(301);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2])).toEqual([]);
+});

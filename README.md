@@ -146,3 +146,11 @@ Le premier contact d’un geste d’eau joue le chant de l’oiseau à travers u
 La goutte utilise un canal d’analyse dédié au mouvement de l’eau et n’autorise jamais de pigment. Son enveloppe sonore pilote les courants. La plume conserve le chant clair, entier et sans boucle. Une seule source est partagée : si le chant de peinture joue déjà, l’eau le rejoint sans le relancer ; passer à la plume remplace le chant immergé sans superposer les samples. Les interruptions explicites, la fermeture et le masquage de l’onglet libèrent aussi le filtre.
 
 `python scripts/check-immersed-water.py` vérifie le vrai graphe audio dans Chromium aux formats ordinateur et mobile : filtre sur la goutte, diminution du volume et des aigus au relâchement, absence de pigment et chant naturel sur la plume.
+
+### Le souffle du vivant
+
+L’atelier propose Eau, Plume et Souffle. En mode Souffle, glisser sur une zone humide entraîne les pigments dans la direction du geste ; la vitesse module une force plafonnée et le curseur Taille règle sa largeur. Au clavier, maintenir espace ou Entrée puis utiliser les flèches. Aucun chant ni pigment supplémentaire n’est déclenché. Le souffle cesse à la levée du geste ; les courants existants se dissipent dans le solveur.
+
+Cette version conserve les flaques préparées sur le coton : le souffle déplace la matière dans les chemins humides, sans déplacer leur masque d’humidité ni augmenter leur quantité d’eau. Le papier sec reste une barrière. Le séchage, l’effacement et les interruptions retirent les forces en attente. Le repère de direction est décoratif et absent de l’export.
+
+Contrôle GPU optionnel : `PYTHONPATH=/chemin/vers/playwright python3 scripts/check-living-breath.py`, après `npm run dev`. Il compare une tache avec et sans souffle et vérifie le déplacement de pigment, la stabilité des zones sèches et l’absence d’ajout d’eau.

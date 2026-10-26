@@ -6,7 +6,7 @@ import type {EngineStatus,Point} from '../src/engine/types';
 import type {Bird} from '../src/birds/catalog';
 import {BIRD_POETICS} from '../src/birds/ornithopoetry';
 import {BirdStudio} from '../src/App';
-interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>;holdWater:ReturnType<typeof vi.fn>;setDrying:ReturnType<typeof vi.fn>}
+interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;blow:ReturnType<typeof vi.fn>;liftBreath:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>;holdWater:ReturnType<typeof vi.fn>;setDrying:ReturnType<typeof vi.fn>}
 const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{},placed:[] as Bird[]}));
 vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   status:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:30,ticks:0};composition={duration:20};
@@ -14,7 +14,7 @@ vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   beginSignature(seed:number){this.status={...this.status,seed,phase:'idle',ticks:0,hasPigment:false};this.change({...this.status});}
   startWaterSong(){}stopWaterSong(){}setBirdPalette(){}update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}
   holdWater=vi.fn();
-  wetBrush=vi.fn();
+  wetBrush=vi.fn();blow=vi.fn();liftBreath=vi.fn();
   setDrying=vi.fn();
   resume=vi.fn(()=>{this.status.paused=false;this.change({...this.status});});
   mark=()=>{this.status={...this.status,hasPigment:true,phase:'wash',ticks:50};this.change({...this.status});};
@@ -216,3 +216,18 @@ it('selects one plumage colour, keeps the same bird song and can restore the mul
   await click(host.querySelector('.bird-pad')!);await click(host.querySelector('.whole-plumage')!);await deposit();
   expect(h.placed.at(-1)!.pigmentSlot).toBeUndefined();expect(h.placed.at(-1)!.id).toBe(h.placed[0].id);
 });
+
+ it('offers breath with size only, supports keyboard gestures and never plays or deposits a new bird song',async()=>{
+  await paint();const starts=h.starts,previews=h.previews.length;
+  await click(button('Choisir le souffle du vivant'));
+  expect(button('Choisir le souffle du vivant').getAttribute('aria-pressed')).toBe('true');
+  expect(host.querySelector('input[aria-label="Taille du souffle"]')).not.toBeNull();
+  expect(host.querySelector('input[aria-label^="Opacité"]')).toBeNull();
+  const paper=host.querySelector<HTMLElement>('.bird-paper')!;
+  await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
+  await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
+  expect(h.painter!.blow).toHaveBeenCalledTimes(2);
+  await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+  expect(h.painter!.liftBreath).toHaveBeenCalled();
+  expect(h.starts).toBe(starts);expect(h.previews).toHaveLength(previews);
+ });
