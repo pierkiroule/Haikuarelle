@@ -226,7 +226,7 @@ it('breath drives wet pigment without depositing or refilling and stops acceptin
  e.blow(p,0,.6);e.blow({x:.51,y:.5},30,.6);frame(1);frame(101);
  const forces=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]);
  expect(forces.length).toBeGreaterThan(0);
- expect(forces.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0&&s.fx>0)).toBe(true);
+ expect(forces.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0&&s.fx>0&&s.breath===true)).toBe(true);
  expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);
  e.liftBreath();vi.mocked(e.paint.step).mockClear();
  e.blow({x:.9,y:.9},150,.6);e.blow({x:.91,y:.9},180,.6);frame(201);

@@ -149,7 +149,7 @@ La goutte utilise un canal d’analyse dédié au mouvement de l’eau et n’au
 
 ### Le souffle du vivant
 
-L’atelier propose Eau, Plume et Souffle. En mode Souffle, glisser sur une zone humide entraîne les pigments dans la direction du geste ; la vitesse module une force plafonnée et le curseur Taille règle sa largeur. Au clavier, maintenir espace ou Entrée puis utiliser les flèches. Aucun chant ni pigment supplémentaire n’est déclenché. Le souffle cesse à la levée du geste ; les courants existants se dissipent dans le solveur.
+L’atelier propose Eau, Plume et Souffle. En mode Souffle, glisser sur une zone humide entraîne les pigments dans la direction du geste ; la vitesse module une force plafonnée et le curseur Taille règle sa largeur. Au clavier, maintenir espace ou Entrée puis utiliser les flèches. Aucun chant ni pigment supplémentaire n’est déclenché. Le souffle étire surtout le bord avant de la peinture en filaments étroits, de longueurs irrégulières. Des couloirs de transport courbes et ancrés au papier entraînent uniquement les pigments déjà présents dans la pellicule humide ; leur direction suit le geste. Le souffle cesse à la levée du geste ; les courants existants se dissipent dans le solveur.
 
 Cette version conserve les flaques préparées sur le coton : le souffle déplace la matière dans les chemins humides, sans déplacer leur masque d’humidité ni augmenter leur quantité d’eau. Le papier sec reste une barrière. Le séchage, l’effacement et les interruptions retirent les forces en attente. Le repère de direction est décoratif et absent de l’export.
 

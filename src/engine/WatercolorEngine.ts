@@ -321,7 +321,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       const c=this.breathPending;this.breathPending=null;
       const x=c.point.x*sheet.width*this.paint.k,y=(1-c.point.y)*sheet.height*this.paint.k;
       segs.push({ax:x,ay:y,bx:x,by:y,radius:c.radius*unit*this.paint.k,target:0,strength:0,waterAmount:0,
-        kind:Kind.Water,slot:0,fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:c.coupling});
+        kind:Kind.Water,slot:0,breath:true,fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:c.coupling});
     }
     if(this.performance&&!this.drying&&!this.voice){
       const response=this.resonantWater.step(waterFeature,time,this.wetPaper);

@@ -300,6 +300,9 @@ uniform float uOptical;
 uniform vec3 uAbsorption[32];
 uniform float uDt;
 uniform float uFlowing;
+// Active breath only: center, air velocity; radius and bounded coupling.
+uniform vec4 uBreath;
+uniform vec2 uBreathShape;
 uniform float uBleed;        // 0..1 how far wet pigment spreads
 uniform float uDryKeep;      // wetness multiplier this step
 uniform float uMaterial;     // ritual: capillary transport and colour separation
@@ -382,8 +385,31 @@ void main() {
     src = d.xy + rel * sqrt(max(1.0 - (d.w - d.z) / max(ds, d.w), 0.0));
   }
 
+  float airMask=0.0;
+  vec2 airSide=vec2(0.0);
   if (uFlowing > 0.5) {
     vec2 destination=src-texture(uVel,src/uSize).xy*uDt;
+    if(uMaterial>0.5 && uBreathShape.y>0.0){
+      float speed=length(uBreath.zw);
+      vec2 direction=uBreath.zw/max(speed,0.0001);
+      vec2 side=vec2(-direction.y,direction.x);
+      vec2 rel=src-uBreath.xy;
+      float reach=length(rel)/max(uBreathShape.x,1.0);
+      float envelope=1.0-smoothstep(0.35,1.3,reach);
+      airMask=envelope*min(1.0,uBreathShape.y*2.0);airSide=side;
+      // Long, narrow channels, anchored in paper space rather than the frame
+      // clock: the rim grows tendrils instead of shimmering or combing evenly.
+      float across=dot(src,side)/uUnit;
+      float along=dot(src,direction)/uUnit;
+      float bend=0.32*gnoise(vec2(along*13.0,across*9.0)+uSeedOff);
+      float lanes=sin(across*200.0+bend*3.0+uSeedOff.x);
+      float fingers=pow(max(0.0,lanes),3.0)*(0.65+0.35*smoothstep(-0.4,0.4,gnoise(vec2(across*17.0,along*5.0)+uSeedOff)));
+      float behind=fieldAt(src-direction*uUnit*0.025).x;
+      float ahead=fieldAt(src+direction*uUnit*0.012).x;
+      float rim=smoothstep(0.001,0.025,behind-ahead);
+      float extension=min(speed*uDt*20.0,uUnit*0.03);
+      destination-=direction*extension*envelope*fingers*rim*uBreathShape.y;
+    }
     if(uMaterial>0.5){
       // Currents carry pigment only through a continuous wet route. Dry paper
       // and dry cuts between pools remain barriers even while the fluid coasts.
@@ -427,6 +453,8 @@ void main() {
       float difference = length(center.zw/max(center.x,1e-4)-neighbor.zw/max(neighbor.x,1e-4));
       mobility *= mix(1.0,0.004,smoothstep(0.015,0.08,difference));
     }
+    // Air combs the moving rim: limit lateral mixing while the jets act.
+    mobility*=1.0-0.92*airMask*abs(dot(normalize(offset),airSide));
     exchange += (neighbor.xzw * centerAffinity - center.xzw * neighborAffinity)
       * weight * mobility / max(centerAffinity,neighborAffinity);
   }

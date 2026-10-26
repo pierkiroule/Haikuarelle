@@ -51,6 +51,8 @@ export interface Segment {
   kind: Kind;
   /** HAÏKUARELLE: glaze only the existing damp film, without adding water. */
   wetOnly?: boolean;
+  /** Local air jets that stretch the wet pigment rim into fine tendrils. */
+  breath?: boolean;
   /** Explicit clear-water level, 0..1; omission preserves existing brush behavior. */
   waterAmount?: number;
   /** Ink 0..2 in legacy mode, optical pigment 0..15 when Look.pigments is set. */
@@ -442,8 +444,11 @@ export class PaintEngine {
       this.stopFlow();
     }
 
+    const breath=segs.slice(0,n).find(s=>s.breath);
     const bleed = this.look.bleed;
     this.run('fieldStep', this.field[1], (u) => {
+      gl.uniform4f(u.uBreath,breath?.ax??0,breath?.ay??0,breath?.fx??0,breath?.fy??0);
+      gl.uniform2f(u.uBreathShape,breath?.radius??1,breath?.coupling??0);
       gl.uniform1f(u.uOptical,this.absorption.length?1:0);
       if(this.absorption.length)gl.uniform3fv(u.uAbsorption,this.absorption);
       gl.uniform2f(u.uSize, this.fieldW, this.fieldH);
