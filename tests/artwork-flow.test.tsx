@@ -7,7 +7,7 @@ import type {Bird} from '../src/birds/catalog';
 import {BIRD_POETICS} from '../src/birds/ornithopoetry';
 import {BirdStudio} from '../src/App';
 import type {Journey} from '../src/voyage/VoyageDialog';
-interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>}
+interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>;holdWater:ReturnType<typeof vi.fn>;setDrying:ReturnType<typeof vi.fn>}
 const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{},journey:null as Journey|null}));
 vi.mock('../src/voyage/VoyageDialog',()=>({default:({journey,onClose}:{journey:Journey;onClose:()=>void})=>{
   h.journey=journey;return <section role="dialog" aria-label="Voyage 360"><button onClick={onClose}>Retour à mon haïkuarelle</button></section>;
@@ -16,7 +16,8 @@ vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   status:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:30,ticks:0};composition={duration:20};
   constructor(_canvas:unknown,_settings:unknown,private change:(s:EngineStatus)=>void){h.painter=this;}
   beginSignature(seed:number){this.status={...this.status,seed,phase:'idle',ticks:0,hasPigment:false};this.change({...this.status});}
-  update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}holdWater(){}
+  update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}
+  holdWater=vi.fn();
   wetBrush=vi.fn();
   setDrying=vi.fn();
   resume=vi.fn(()=>{this.status.paused=false;this.change({...this.status});});
@@ -48,7 +49,7 @@ async function water(){
   const paper=host.querySelector<HTMLElement>('.bird-paper')!;
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
-  await click(host.querySelector('.water-ready')!);
+  await click(host.querySelector('.bird-pad')!);
 }
 async function spin(){
   await click(host.querySelector('.wheel-spin')!);
@@ -57,6 +58,7 @@ async function spin(){
 async function paint(){
   await spin();
   await click(host.querySelector('.trio-start button')!);
+  await click(host.querySelector('.enter-atelier')!);
   await water();
   const paper=host.querySelector<HTMLElement>('.bird-paper')!;
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
@@ -71,7 +73,7 @@ beforeEach(async()=>{
   await act(async()=>root.render(<BirdStudio/>));
 });
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.useRealTimers();});
-describe('choose three birds, paint, finalize',()=>{
+describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   it('draws exactly one bird, locks the wheel during rotation and previews without pigment',async()=>{
     const start=host.querySelector<HTMLButtonElement>('.trio-start button')!;
     expect(start.disabled).toBe(true);
@@ -81,42 +83,43 @@ describe('choose three birds, paint, finalize',()=>{
     await act(async()=>{await vi.advanceTimersByTimeAsync(110);});
     expect(start.disabled).toBe(false);expect(h.previews).toHaveLength(1);expect(h.starts).toBe(0);
     expect(host.querySelector('.wheel-result strong')).not.toBeNull();
-    await click(start);expect(host.querySelector('.flow-water')).not.toBeNull();
-    await water();expect(host.querySelectorAll('.bird-pad')).toHaveLength(1);
+    await click(start);expect(host.querySelector('.flow-poem')).not.toBeNull();
+    expect(host.querySelectorAll('.poem-invitation .poem-lines>span')).toHaveLength(3);
+    await click(host.querySelector('.enter-atelier')!);await water();expect(host.querySelectorAll('.bird-pad')).toHaveLength(1);
   });
   it('replaces the previous encounter on another spin and stops its preview before water',async()=>{
     await spin();await spin();expect(h.previews).toHaveLength(2);
     await click(host.querySelector('.trio-start button')!);
-    expect(host.querySelector('.flow-water')).not.toBeNull();
+    expect(host.querySelector('.flow-poem')).not.toBeNull();
     expect(host.querySelector('.is-previewing')).toBeNull();expect(h.starts).toBe(0);
   });
-  it('offers silent water preparation and requires pigment before drying',async()=>{
+  it('shows the haiku before painting, then offers water and a plume on the same canvas',async()=>{
     expect(host.querySelectorAll('.ritual-progress li')).toHaveLength(5);
-    await spin();
-    await click(host.querySelector('.trio-start button')!);
-    expect(host.querySelector('#ritual-title')!.textContent).toBe('Dépose l’eau résonante sur ta toile');
-    expect(host.querySelector('.water-ready')!.hasAttribute('disabled')).toBe(false);
-    expect(host.querySelector('.bird-pads')).toBeNull();
-    const painter=h.painter;
-    await water();
+    await spin();await click(host.querySelector('.trio-start button')!);
+    const verses=[...host.querySelectorAll('.poem-invitation .poem-lines>span')].map(el=>el.textContent);
+    expect(verses).toHaveLength(3);expect(host.querySelector('.artwork-title')).toBeNull();expect(h.starts).toBe(0);
+    await click(host.querySelector('.enter-atelier')!);
+    expect(button('Choisir l’eau résonante').getAttribute('aria-pressed')).toBe('true');
+    const painter=h.painter,canvas=host.querySelector('canvas');await water();
     expect(painter!.wetBrush).toHaveBeenCalled();expect(h.starts).toBe(0);
-    expect(h.painter).toBe(painter);
+    expect(host.querySelector('canvas')).toBe(canvas);expect(h.painter).toBe(painter);
     expect(host.querySelector('.flow-paint')).not.toBeNull();
-    expect(host.querySelector('.finalize-art')!.hasAttribute('disabled')).toBe(true);
-    expect(host.querySelector('.ritual-progress [aria-current="step"]')!.textContent).toContain('Les chants');
-    expect(host.querySelector('.share-art')).toBeNull();
+    expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(true);
+    expect([...host.querySelectorAll('.poem-recall .poem-lines>span')].map(el=>el.textContent)).toEqual(verses);
+    expect(host.querySelector('.water-ready')).toBeNull();expect(host.querySelector('.share-art')).toBeNull();
   });
   it('waits for real marks and final drying before revealing words above and below the canvas',async()=>{
     await paint();expect(host.querySelector('.artwork-title')).toBeNull();
+    const openingVerses=[...host.querySelectorAll('.poem-recall .poem-lines>span')].map(el=>el.textContent);
     await click(host.querySelector('.finalize-art')!);
-    expect(host.querySelector('.flow-drying')).not.toBeNull();expect(h.painter!.resume).toHaveBeenCalledOnce();expect(host.querySelector('.artwork-poem')).toBeNull();
+    expect(host.querySelector('.flow-drying')).not.toBeNull();expect(h.painter!.resume).toHaveBeenCalledOnce();expect(host.querySelector('.artwork-title')).toBeNull();
     const starts=h.starts,paper=host.querySelector<HTMLElement>('.bird-paper')!;
     await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
     expect(h.starts).toBe(starts);
     await act(async()=>h.painter!.complete());
     expect(host.querySelector('.flow-finished')).not.toBeNull();expect(host.querySelector('.share-art')).not.toBeNull();expect(host.querySelector('.download-art')).not.toBeNull();expect(BIRD_POETICS[h.previews.at(-1)! as keyof typeof BIRD_POETICS].titles).toContain(host.querySelector('.artwork-title h2')!.textContent);
-    const lines=[...host.querySelectorAll('.artwork-poem .poem-lines>span')];
-    expect(lines).toHaveLength(3);
+    const lines=[...host.querySelectorAll('.bird-stage>.artwork-poem .poem-lines>span')];
+    expect(lines).toHaveLength(3);expect(lines.map(el=>el.textContent)).toEqual(openingVerses);
     const trio=[h.previews.at(-1)!] as (keyof typeof BIRD_POETICS)[];
     const voices=lines.map((line,i)=>trio.find(id=>BIRD_POETICS[id].lines[i].includes(line.textContent!)));
     expect(voices.every(Boolean)).toBe(true);expect(new Set(voices).size).toBe(1);
@@ -146,9 +149,9 @@ describe('choose three birds, paint, finalize',()=>{
   });
   it('offers one full-plumage brush with contextual size and opacity controls',async()=>{
     expect(host.querySelectorAll('.wheel-feather')).toHaveLength(8);
-    await spin();await click(host.querySelector('.trio-start button')!);await water();
+    await spin();await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);await water();
     const brushes=host.querySelectorAll<HTMLButtonElement>('.bird-pad');expect(brushes).toHaveLength(1);
-    await click(brushes[0]);expect(host.querySelectorAll('.brush-context input[type=range]')).toHaveLength(2);
+    await click(button('Fermer les réglages de la plume'));await click(brushes[0]);expect(host.querySelectorAll('.brush-context input[type=range]')).toHaveLength(2);
     await click(button('Fermer les réglages de la plume'));expect(host.querySelector('.brush-context')).toBeNull();
     expect(document.activeElement).toBe(brushes[0]);expect(h.starts).toBe(0);
   });
@@ -171,7 +174,7 @@ describe('choose three birds, paint, finalize',()=>{
   });
   it('paints along the gesture with one complete sample after release and selection changes',async()=>{
     await spin();
-    await click(host.querySelector('.trio-start button')!);await water();
+    await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);await water();
     const paper=host.querySelector<HTMLElement>('.bird-paper')!;
     const stopped=h.stops,moves=h.moves;
     await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
@@ -189,19 +192,24 @@ describe('choose three birds, paint, finalize',()=>{
     await act(async()=>h.painter!.complete());expect(host.querySelector('.artwork-title')).toBeNull();
     await click(host.querySelector('.finalize-art')!);expect(host.querySelector('.flow-finished')).not.toBeNull();
     const clear=[...host.querySelectorAll('button')].find(b=>b.textContent==='Effacer tout')!;await click(clear);
-    expect(host.querySelector('.flow-water')).not.toBeNull();expect(host.querySelector('.bird-pads')).toBeNull();expect(host.querySelector('.artwork-title')).toBeNull();
-    expect(host.querySelector<HTMLButtonElement>('.water-ready')!.disabled).toBe(false);
+    expect(host.querySelector('.flow-paint')).not.toBeNull();expect(host.querySelector('.bird-pads')).not.toBeNull();expect(host.querySelector('.artwork-title')).toBeNull();
+    expect(button('Choisir l’eau résonante').getAttribute('aria-pressed')).toBe('true');
   });
 });
 
-it('can skip water preparation and deposit spontaneously on dry paper',async()=>{
-  await spin();
-  await click(host.querySelector('.trio-start button')!);
-  expect(host.querySelector('.water-ready')!.textContent).toContain('Peindre sur le papier sec');
-  await click(host.querySelector('.water-ready')!);expect(h.painter!.wetBrush).not.toHaveBeenCalled();
-  const paper=host.querySelector<HTMLElement>('.bird-paper')!;
+it('can paint dry, then rewet without cancelling the full sample or replacing the canvas',async()=>{
+  await spin();await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);
+  await click(host.querySelector('.bird-pad')!);expect(h.painter!.wetBrush).not.toHaveBeenCalled();
+  const paper=host.querySelector<HTMLElement>('.bird-paper')!,canvas=host.querySelector('canvas');
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
-  expect(h.starts).toBe(1);expect(host.querySelector('.bird-live')!.textContent).not.toContain('zone humide');
+  await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+  const stops=h.stops;await click(button('Choisir l’eau résonante'));
+  await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
+  await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+  expect(h.painter!.wetBrush).toHaveBeenCalled();expect(h.painter!.holdWater).toHaveBeenLastCalledWith(false);expect(h.painter!.setDrying).not.toHaveBeenCalled();expect(h.stops).toBe(stops);expect(h.starts).toBe(1);
+  expect(host.querySelector('canvas')).toBe(canvas);expect(host.querySelector('.flow-paint')).not.toBeNull();
+  expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(true);
+  await act(async()=>h.finish());expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(false);
 });
 it('opens the finished work as a separate journey and restores the painting with audio cleanup',async()=>{
   const close=vi.fn(async()=>{}),resume=vi.fn(async()=>{});

@@ -134,12 +134,12 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition.duration=Math.max(this.composition.duration,time+this.dryingDuration());this.request();
   }
   liftWaterBrush():void{this.waterLast=null;}
-  /** Commit even a quick water tap before holding the silent preparation. */
-  holdWater():void{
+  /** Commit a water tap; keep the clock running when rewetting living pigment. */
+  holdWater(pause=true):void{
     if(this.destroyed)return;
     this.liftWaterBrush();
     while(this.waterPending.length&&this.active)this.stepOnce();
-    this.paint.render(0);this.pause();
+    this.paint.render(0);if(pause)this.pause();
   }
   setDrying(enabled:boolean):void{
     if(!this.performance||this.destroyed)return;

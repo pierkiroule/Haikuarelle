@@ -177,3 +177,12 @@ it('preserves water through successive sound clocks and dries only in the ritual
   const remaining=e.waterAt(p);e.setDrying(false);e.resume();await e.finish();
   expect(e.waterAt(p)).toBeCloseTo(remaining);
 });
+
+it('commits new water over pigment without pausing its clock or draining the water',async()=>{
+  const e=open(),p={x:.5,y:.5};e.beginSignature(8);
+  expect(e.startSoundStain(music,BIRDS[0],p,8)).toBe(true);
+  frame(0);frame(100);e.wetBrush(p,.7);e.holdWater(false);
+  expect(e.status.paused).toBe(false);const wet=e.waterAt(p);expect(wet).toBeGreaterThan(0);
+  await e.finish();expect(e.waterAt(p)).toBeGreaterThanOrEqual(wet);
+  e.setDrying(true);await e.finish();expect(e.waterAt(p)).toBeLessThan(wet*.005);
+});
