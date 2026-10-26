@@ -1,0 +1,177 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "drying-blank",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "431001e95668fd1ab0be923e6bef6372632e6dda79c04e234c363a4cbfe572a1",
+      "clear_percent": 100.0,
+      "elapsed_s": 2.88
+    },
+    {
+      "name": "drying-blank-masks",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "431001e95668fd1ab0be923e6bef6372632e6dda79c04e234c363a4cbfe572a1",
+      "clear_percent": 100.0,
+      "elapsed_s": 3.26
+    },
+    {
+      "name": "drying-corneille-wet-before",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "6a0f6b4271d56e7c5e2c31be94d0eb5a953c503ed8073a7f6ee258614d2a48f8",
+      "clear_percent": 87.42,
+      "elapsed_s": 5.18
+    },
+    {
+      "name": "drying-corneille-wet",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "fe50107f167f33ff502de8b878cf163448b287242b23598d0c3d17f5511ce3e7",
+      "clear_percent": 87.42,
+      "elapsed_s": 5.64
+    },
+    {
+      "name": "drying-corneille-before",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "9a4a6b485f91f6fb031895c218fc100db826f3beff90da7ee8d6c43565cbcab2",
+      "clear_percent": 81.21,
+      "elapsed_s": 40.13
+    },
+    {
+      "name": "drying-corneille",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "dbe5224a94b9aaf5d28b39ef583bd7f42733259d79a8336da3169d4940133da3",
+      "clear_percent": 81.1,
+      "elapsed_s": 40.63
+    },
+    {
+      "name": "drying-rougegorge-wet-before",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "3ffb27e2bc169608033923eb8c1f694d8ce840f7781aaf4f8d5382e349350f47",
+      "clear_percent": 87.97,
+      "elapsed_s": 42.4
+    },
+    {
+      "name": "drying-rougegorge-wet",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "f6cdb788073071a1e5b828a56fd702f1849e83b59b49f926d085c7da213f6df5",
+      "clear_percent": 87.97,
+      "elapsed_s": 42.84
+    },
+    {
+      "name": "drying-rougegorge-before",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "2cf6b86f71351ef0c2c7193a926c267aaed0c627938984b100194f6d76d5544a",
+      "clear_percent": 80.54,
+      "elapsed_s": 79.12
+    },
+    {
+      "name": "drying-rougegorge",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "64114e8113729163bc4e5765153b118040f63df64c0c30cacfe8b2561818bb09",
+      "clear_percent": 80.44,
+      "elapsed_s": 79.63
+    },
+    {
+      "name": "drying-alpha-atlas",
+      "width": 576,
+      "height": 1024,
+      "sha256": "e6d5b4523861b333da9429be4a41c976be153e20423a156e576d22f064558680",
+      "clear_percent": 0.0,
+      "elapsed_s": 80.02
+    },
+    {
+      "name": "drying-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "08120523486c84ddbae674c76192d94f99e2860fb6a2e268c091b3a97191c135",
+      "clear_percent": 80.46,
+      "elapsed_s": 82.86
+    },
+    {
+      "name": "drying-stable",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "64114e8113729163bc4e5765153b118040f63df64c0c30cacfe8b2561818bb09",
+      "clear_percent": 80.44,
+      "elapsed_s": 83.47
+    },
+    {
+      "name": "drying-geai-wet-before",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "8c0755805424e623de98242a45ec517fbd5ebac42e1140f3bf5867db5f8949fe",
+      "clear_percent": 83.41,
+      "elapsed_s": 85.51
+    },
+    {
+      "name": "drying-geai-wet",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "375c3dcfa664bf519eaa802cb4be2888bc8bbdbe808b1d1c93faebe050e89b3c",
+      "clear_percent": 83.3,
+      "elapsed_s": 86.01
+    },
+    {
+      "name": "drying-geai-before",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "fa7709e4d3f22671f3eecb3c2a579b976cb3e9454a14e16ae3472b240271b184",
+      "clear_percent": 82.31,
+      "elapsed_s": 117.89
+    },
+    {
+      "name": "drying-geai",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "5219194e08daa648d60ad761c97dd6543a47a10096484551ff85db5fdfa19fc6",
+      "clear_percent": 82.27,
+      "elapsed_s": 118.38
+    }
+  ],
+  "version": "1.6.0",
+  "metrics": {
+    "corneille": {
+      "dry_mean_change_rgb": 16.258670178378207,
+      "wet_mean_change_rgb": 0.23072679277058836,
+      "dry_p95_change_rgb": 40.666666666666664
+    },
+    "rougegorge": {
+      "dry_mean_change_rgb": 10.575029853493003,
+      "wet_mean_change_rgb": 0.10416661508841338,
+      "dry_p95_change_rgb": 25.666666666666668
+    },
+    "geai": {
+      "dry_mean_change_rgb": 7.497469410757443,
+      "wet_mean_change_rgb": 1.3348271215585972,
+      "dry_p95_change_rgb": 18.333333333333332
+    }
+  },
+  "tests": 73,
+  "checks": {
+    "blank_paper_unchanged": true,
+    "dry_frame_stable": true,
+    "stronger_when_dry": true,
+    "export_4096": [
+      2304,
+      4096
+    ],
+    "alpha_bank": [
+      "wash-density-alpha",
+      "backrun-rims-alpha",
+      "pale-blooms-alpha",
+      "sediment-alpha"
+    ],
+    "physical_phone_fps": "not measured",
+    "browser_webgl2": "not available; actual shader calls replayed on Mesa/EGL"
+  }
+}

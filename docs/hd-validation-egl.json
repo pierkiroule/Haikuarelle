@@ -1,0 +1,61 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "paper-landscape",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "9075065b8eae4dfe9a8c923e3eba93a8ca5789d7462fa71768e4081761c142a3",
+      "clear_percent": 100.0,
+      "elapsed_s": 0.75
+    },
+    {
+      "name": "hd-landscape",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "2752d5c49ee74c93d42cabf627f182d1420b8a5cd7c2cb1bf78ad65df4316052",
+      "clear_percent": 75.88,
+      "elapsed_s": 19.74
+    },
+    {
+      "name": "hd-landscape-4096",
+      "width": 4096,
+      "height": 2304,
+      "sha256": "f5a3fedf9e791721f231c237e58a5daa81108a47bdc69e8ca595a2d1c2720717",
+      "clear_percent": 75.88,
+      "elapsed_s": 22.09
+    },
+    {
+      "name": "paper-portrait",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "e118a2b3222a53838c3a460ae66f93aa12fe15885af064ffc9ec8328464ba158",
+      "clear_percent": 100.0,
+      "elapsed_s": 22.54
+    },
+    {
+      "name": "hd-portrait",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "0c26019b21058ce90ad87268ef9e302cf162fb4d1ee55871f7748703bc964c4d",
+      "clear_percent": 75.6,
+      "elapsed_s": 42.99
+    },
+    {
+      "name": "hd-portrait-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "fb65304ad71e7f7bcbd0b556be65e0370b42f56e610f73ed78966a57121def93",
+      "clear_percent": 75.6,
+      "elapsed_s": 45.31
+    },
+    {
+      "name": "hd-replay",
+      "width": 1920,
+      "height": 1080,
+      "sha256": "2752d5c49ee74c93d42cabf627f182d1420b8a5cd7c2cb1bf78ad65df4316052",
+      "clear_percent": 75.88,
+      "elapsed_s": 64.88
+    }
+  ]
+}

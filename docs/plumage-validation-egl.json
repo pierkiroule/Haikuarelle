@@ -1,0 +1,142 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "seeds": {
+    "mesange": 95001,
+    "bouvreuil": 95002,
+    "sittelle": 95003,
+    "picvert": 95004,
+    "rencontre": 95011
+  },
+  "checks": {
+    "same_seed_same_water_pixel_identical": true,
+    "unchanged_render_pixel_identical": true,
+    "five_distinct_results": true,
+    "first_three_swatches_after_eight_more_mean_RGB_delta": 1.1493236212278877,
+    "first_three_swatches_max_RGB_delta": 25.0,
+    "picvert_visible_red_pixels": 1681,
+    "portrait_4k": [
+      2304,
+      4096
+    ],
+    "extending_available_pigments_without_physics_pixel_identical": true
+  },
+  "results": [
+    {
+      "name": "plumage-mesange",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "550254cd690f0e41dc6f28ce42b930fcfd527249887cf3b7bc7c9585611c6378",
+      "clear_percent": 81.58,
+      "elapsed_s": 35.81
+    },
+    {
+      "name": "plumage-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "d7a5fe0560ef93d36f2e347579172b6cb49498128151eb58d385ca95fd0d3882",
+      "clear_percent": 81.61,
+      "elapsed_s": 38.25
+    },
+    {
+      "name": "plumage-mesange-stable",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "550254cd690f0e41dc6f28ce42b930fcfd527249887cf3b7bc7c9585611c6378",
+      "clear_percent": 81.58,
+      "elapsed_s": 38.78
+    },
+    {
+      "name": "plumage-bouvreuil",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "099b8442a504081a118218f6d3299b0f685873617baa144ec1d72d0c7544789a",
+      "clear_percent": 83.25,
+      "elapsed_s": 78.89
+    },
+    {
+      "name": "plumage-sittelle",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "e9d3f99d1f893c82fd922c2a470d08adfef08ef1d12b91b04df58178f188a661",
+      "clear_percent": 81.74,
+      "elapsed_s": 113.64
+    },
+    {
+      "name": "plumage-picvert",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a820806b47a7542d9caeed05e0d10d47e69d26d506fcfd1df910fe8175f44335",
+      "clear_percent": 81.48,
+      "elapsed_s": 48.14
+    },
+    {
+      "name": "plumage-mesange-replay",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "550254cd690f0e41dc6f28ce42b930fcfd527249887cf3b7bc7c9585611c6378",
+      "clear_percent": 81.58,
+      "elapsed_s": 187.4
+    },
+    {
+      "name": "plumage-rencontre",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "280725396b51e30b392a991194ff4b86666e70eb853df40b79c3bef285027e62",
+      "clear_percent": 72.35,
+      "elapsed_s": 265.58
+    },
+    {
+      "name": "plumage-rencontre-stable",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "280725396b51e30b392a991194ff4b86666e70eb853df40b79c3bef285027e62",
+      "clear_percent": 72.35,
+      "elapsed_s": 266.25
+    },
+    {
+      "name": "plumage-first-three",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "0193af65969430f052099478e7f759fe12fcff16210722f787fcfcf116eec12f",
+      "clear_percent": 97.62,
+      "elapsed_s": 267.06
+    },
+    {
+      "name": "plumage-eleven-pigments",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "d977195a814133a9b9cdf432c24e2fe7a221730093b6a3dc36ce3b0245b6e11d",
+      "clear_percent": 91.7,
+      "elapsed_s": 268.48
+    },
+    {
+      "name": "plumage-picvert-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "033ceba41210ebe18cab8f4094d2b3561adfb157ab1075731d7c78d1234db016",
+      "clear_percent": 81.52,
+      "elapsed_s": 50.93
+    },
+    {
+      "name": "plumage-basis-three",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "38e88ac99269028eb6b176a19af760f3974d90949eee67d84c61d0996d7dc60b",
+      "clear_percent": 96.58,
+      "elapsed_s": 0.74
+    },
+    {
+      "name": "plumage-basis-eleven",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "38e88ac99269028eb6b176a19af760f3974d90949eee67d84c61d0996d7dc60b",
+      "clear_percent": 96.58,
+      "elapsed_s": 1.18
+    }
+  ],
+  "limits": [
+    "Actual TypeScript GL calls replayed on Mesa EGL, not a browser GPU.",
+    "No physical phone FPS test.",
+    "Manual water paths and deposition timings are inputs in addition to the seed."
+  ]
+}

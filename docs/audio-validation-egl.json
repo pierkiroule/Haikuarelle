@@ -1,0 +1,53 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "audio-0",
+      "width": 1024,
+      "height": 768,
+      "sha256": "8dad8c39c5bcd49bb2b2e0d7c4c897a54a5627043ea9b3967a1f6b5e0118dbb8",
+      "clear_percent": 76.04,
+      "elapsed_s": 9.45
+    },
+    {
+      "name": "audio-4096",
+      "width": 4096,
+      "height": 3072,
+      "sha256": "72ce830cdd9cfdb6e4d29d2a8bad67abbf7c8a5b7dd7bbf75ba376cbf1dbef34",
+      "clear_percent": 76.03,
+      "elapsed_s": 13.47
+    },
+    {
+      "name": "audio-1",
+      "width": 1024,
+      "height": 768,
+      "sha256": "be8c608cedca5b7de6d8a33c5a1329564461d491607d6f8f2aa205b35def7581",
+      "clear_percent": 70.36,
+      "elapsed_s": 22.37
+    },
+    {
+      "name": "audio-2",
+      "width": 1024,
+      "height": 768,
+      "sha256": "d5bdbee10f4907e721b549f712038d65b820087e2a0c8c61ed79d851b35fbd2c",
+      "clear_percent": 96.75,
+      "elapsed_s": 28.52
+    },
+    {
+      "name": "audio-replay",
+      "width": 1024,
+      "height": 768,
+      "sha256": "8dad8c39c5bcd49bb2b2e0d7c4c897a54a5627043ea9b3967a1f6b5e0118dbb8",
+      "clear_percent": 76.04,
+      "elapsed_s": 37.66
+    },
+    {
+      "name": "audio-without-ink",
+      "width": 1024,
+      "height": 768,
+      "sha256": "7a2b8947426e264253e7092b9b974c81177d084365e75d94d0ff456c5e8f9fa1",
+      "clear_percent": 76.04,
+      "elapsed_s": 37.91
+    }
+  ]
+}

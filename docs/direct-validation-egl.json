@@ -1,0 +1,144 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "checks": {
+    "replay_pixel_identical": true,
+    "stable_frame_pixel_identical": true,
+    "no_new_segments_after_release": true,
+    "segment_budget_respected": true,
+    "portrait_4k": [
+      2304,
+      4096
+    ],
+    "unit_tests": 87
+  },
+  "metrics": [
+    {
+      "bird": "corneille",
+      "seed": 106101,
+      "replay": false,
+      "maxSegments": 7,
+      "segmentsAfterRelease": 0,
+      "feedback": {
+        "speed": 0.14884420000928972,
+        "radius": 0.03582061606492431,
+        "splashes": 6,
+        "filaments": 8
+      }
+    },
+    {
+      "bird": "geai",
+      "seed": 106103,
+      "replay": false,
+      "maxSegments": 7,
+      "segmentsAfterRelease": 0,
+      "feedback": {
+        "speed": 0.18829643224336323,
+        "radius": 0.03445738761981248,
+        "splashes": 2,
+        "filaments": 6
+      }
+    },
+    {
+      "bird": "mesange",
+      "seed": 106104,
+      "replay": false,
+      "maxSegments": 8,
+      "segmentsAfterRelease": 0,
+      "feedback": {
+        "speed": 0.1611234319780017,
+        "radius": 0.035378787645767656,
+        "splashes": 4,
+        "filaments": 12
+      }
+    },
+    {
+      "bird": "picvert",
+      "seed": 106107,
+      "replay": false,
+      "maxSegments": 8,
+      "segmentsAfterRelease": 0,
+      "feedback": {
+        "speed": 0.14024111846004303,
+        "radius": 0.03614112820853441,
+        "splashes": 7,
+        "filaments": 11
+      }
+    },
+    {
+      "bird": "geai",
+      "seed": 106103,
+      "replay": true,
+      "maxSegments": 7,
+      "segmentsAfterRelease": 0,
+      "feedback": {
+        "speed": 0.18829643224336323,
+        "radius": 0.03445738761981248,
+        "splashes": 2,
+        "filaments": 6
+      }
+    }
+  ],
+  "results": [
+    {
+      "name": "direct-corneille",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "7fe88183a064df766cf0f9af338cfb0bc79b215ab4b177cdc0348d8e5027a99e",
+      "clear_percent": 92.41,
+      "elapsed_s": 69.68
+    },
+    {
+      "name": "direct-geai",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a3162e2d76876e46a4255b3f4525e6e90f57f6632a0caa2deb4165f2684dc002",
+      "clear_percent": 92.12,
+      "elapsed_s": 122.03
+    },
+    {
+      "name": "direct-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "e2092999adb2a94a123331f0716a56d460d629a724667f2eb074223cc106f4fb",
+      "clear_percent": 92.14,
+      "elapsed_s": 124.27
+    },
+    {
+      "name": "direct-stable",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a3162e2d76876e46a4255b3f4525e6e90f57f6632a0caa2deb4165f2684dc002",
+      "clear_percent": 92.12,
+      "elapsed_s": 124.71
+    },
+    {
+      "name": "direct-mesange",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "31269905a41167ba59893ead2c4672a549369e2906dd2ec41a606f8314f73850",
+      "clear_percent": 94.52,
+      "elapsed_s": 159.09
+    },
+    {
+      "name": "direct-picvert",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "e28b1adf2a226a2674e1c2444141f2e06b1db235036c2a99daf74dd1e42ad6d5",
+      "clear_percent": 93.45,
+      "elapsed_s": 192.19
+    },
+    {
+      "name": "direct-replay",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a3162e2d76876e46a4255b3f4525e6e90f57f6632a0caa2deb4165f2684dc002",
+      "clear_percent": 92.12,
+      "elapsed_s": 225.98
+    }
+  ],
+  "limits": [
+    "Actual TypeScript engine GL calls replayed on Mesa EGL.",
+    "No WebGL2 on the browser QA machine; no physical phone FPS measurement.",
+    "Seed replay also requires the same manual path, settings and audio clock."
+  ]
+}

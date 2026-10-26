@@ -1,0 +1,53 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "plumage-corneille-lente",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "48424cd46f7e927b3f3ad924c45e8b4dd344bedf469508ca15e2cc44f193ce15",
+      "clear_percent": 98.08,
+      "elapsed_s": 6.92
+    },
+    {
+      "name": "plumage-corneille-vive",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "3aadd0c9a772f5d23813699469ddb6a95895fdeb14688a7f4d6f9ef013c1040c",
+      "clear_percent": 99.09,
+      "elapsed_s": 11.14
+    },
+    {
+      "name": "plumage-rougegorge",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "dad3667d2575f3293264c6986e3d6906c8d00f33a439a66471a5d2b631d3dec3",
+      "clear_percent": 97.34,
+      "elapsed_s": 17.61
+    },
+    {
+      "name": "plumage-geai",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "f3a11fc85cff8f1c9bed1943836cb1baa456066ded5f77eb69ae09cf5b60cb2c",
+      "clear_percent": 99.43,
+      "elapsed_s": 21.61
+    },
+    {
+      "name": "signature-mouvement",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "e05a8c45b510060392cc43784cea7c5b646aa6a28ef78edca9487775e2a58a79",
+      "clear_percent": 96.27,
+      "elapsed_s": 36.29
+    },
+    {
+      "name": "signature-mouvement-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "3e5d40aa189d34ad3f1f9d55a9b759c6b7b28710b75badfd948b63e438d0d07b",
+      "clear_percent": 96.26,
+      "elapsed_s": 38.05
+    }
+  ]
+}

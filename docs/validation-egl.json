@@ -1,0 +1,77 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "etude-240105",
+      "width": 1024,
+      "height": 768,
+      "sha256": "376d90f5819791dfa074402a6f15472bdf35a24cc87e190c18e23d15f2f4c58a",
+      "clear_percent": 73.18,
+      "elapsed_s": 11.22
+    },
+    {
+      "name": "etude-240106",
+      "width": 1024,
+      "height": 768,
+      "sha256": "96e897fb83e0d8be64f9f7a3a52b34acc8a12b1c6371cc005c1d7a3348b99edf",
+      "clear_percent": 74.02,
+      "elapsed_s": 20.99
+    },
+    {
+      "name": "etude-240107",
+      "width": 1024,
+      "height": 768,
+      "sha256": "9e026b881f9efef32541c65c3636abed47a61971ad065c716188f74b2dbacd28",
+      "clear_percent": 74.44,
+      "elapsed_s": 30.47
+    },
+    {
+      "name": "etude-240108",
+      "width": 1024,
+      "height": 768,
+      "sha256": "266434eb13751a49428f9db8c1dd4bec5fc30cf260a553e2984e6af4fb797741",
+      "clear_percent": 68.81,
+      "elapsed_s": 40.34
+    },
+    {
+      "name": "etude-240109",
+      "width": 1024,
+      "height": 768,
+      "sha256": "561d35bfa00224da96c9a00b92a669c99743571462b890a577260bc612a0720d",
+      "clear_percent": 65.37,
+      "elapsed_s": 50.63
+    },
+    {
+      "name": "haikuarelle-240109-4096",
+      "width": 4096,
+      "height": 3072,
+      "sha256": "3cfbf39dbe40aaa2bf5f1d00ce8b321fef1008b757dd7562cb1618e28f703d01",
+      "clear_percent": 65.35,
+      "elapsed_s": 55.26
+    },
+    {
+      "name": "texture-0",
+      "width": 1024,
+      "height": 768,
+      "sha256": "3763f6049b99cfb849e2550b17647f11b51c3fc51aea37317d138c9b9707b904",
+      "clear_percent": 65.28,
+      "elapsed_s": 55.43
+    },
+    {
+      "name": "texture-100",
+      "width": 1024,
+      "height": 768,
+      "sha256": "c00ed63177313b18575f047e634424aab3cd9846f564c7ac4caa95acd820512d",
+      "clear_percent": 65.45,
+      "elapsed_s": 55.76
+    },
+    {
+      "name": "replay-240109",
+      "width": 1024,
+      "height": 768,
+      "sha256": "561d35bfa00224da96c9a00b92a669c99743571462b890a577260bc612a0720d",
+      "clear_percent": 65.37,
+      "elapsed_s": 65.93
+    }
+  ]
+}

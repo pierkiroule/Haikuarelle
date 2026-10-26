@@ -1,0 +1,123 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "papier-humide",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "76e2ab585c179ea097ba534437099b65f31bbb86cb553d2c2bfa43e2567e5a89",
+      "clear_percent": 100.0,
+      "elapsed_s": 1.2
+    },
+    {
+      "name": "eau-chant-corneille",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "e52687563b9c1697f7b46d5b118620c622e9199790b071f137e4708df019a841",
+      "clear_percent": 95.15,
+      "elapsed_s": 33.17
+    },
+    {
+      "name": "eau-chant-en-formation",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "c3ac34c2294809a9a1f222c56580e6d07b42879fd0a6e1715033d64afc0bda92",
+      "clear_percent": 98.25,
+      "elapsed_s": 35.05
+    },
+    {
+      "name": "eau-chant-rougegorge",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "21f313665bd56cb552237ac47188f1662fd6029a84253e4b9487e4657bed04e4",
+      "clear_percent": 94.03,
+      "elapsed_s": 64.99
+    },
+    {
+      "name": "eau-chant-geai",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "fcf89081ab590d6d1bacfcc2df31332f20854852955a375e515c4f46fea69d3e",
+      "clear_percent": 96.33,
+      "elapsed_s": 93.46
+    },
+    {
+      "name": "eau-chant-62004",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "692d5e479c94c828823c6e3e2885d8fcf3a4c2c8d137cfbc0586a25760a579bb",
+      "clear_percent": 92.56,
+      "elapsed_s": 182.07
+    },
+    {
+      "name": "eau-chant-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "d21468ce9bceb20fae7e268b7a277299d3cf80f41a9fc511a3f822edad327965",
+      "clear_percent": 92.55,
+      "elapsed_s": 184.46
+    },
+    {
+      "name": "eau-chant-62005",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "61d6a0a883a4ae461a33bf43f098fc68c11f481f4851613c851309751417b16c",
+      "clear_percent": 90.82,
+      "elapsed_s": 273.62
+    }
+  ],
+  "replay": [
+    {
+      "name": "eau-chant-replay",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "692d5e479c94c828823c6e3e2885d8fcf3a4c2c8d137cfbc0586a25760a579bb",
+      "clear_percent": 92.56,
+      "elapsed_s": 92.46
+    },
+    {
+      "name": "eau-chant-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "d21468ce9bceb20fae7e268b7a277299d3cf80f41a9fc511a3f822edad327965",
+      "clear_percent": 92.55,
+      "elapsed_s": 94.86
+    }
+  ],
+  "checks": {
+    "five_seeds": [
+      62001,
+      62002,
+      62003,
+      62004,
+      62005
+    ],
+    "identical_seed_replay": true,
+    "identical_4k_replay": true,
+    "pigment_field": [
+      1440,
+      2560
+    ],
+    "unit_tests": 69,
+    "typescript": "pass",
+    "browser_audio": "one intact phrase, clock progresses, natural end observed",
+    "browser_png_card": {
+      "width": 2304,
+      "height": 4741,
+      "type": "image/png",
+      "dedication": true
+    },
+    "mobile_layout": {
+      "frame": [
+        390,
+        844
+      ],
+      "content_width": 375,
+      "scroll_width": 375,
+      "paper_overlaps_dock": false
+    },
+    "browser_webgl2": false,
+    "physical_phone_performance": "not verified",
+    "upstream_patch_reproduces_vendor_files": true
+  }
+}

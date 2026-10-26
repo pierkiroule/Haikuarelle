@@ -1,0 +1,75 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "circulation-papier",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "25592c3511f7f32079466edaf9998bf1bd6c67040dbaff982d591b5e75919424",
+      "clear_percent": 100.0,
+      "elapsed_s": 0.93
+    },
+    {
+      "name": "circulation-eau",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "e1ee2dbbabdce9f075742b2cbed96a1c5367344c8826c874b016d2e27609f0d7",
+      "clear_percent": 84.75,
+      "elapsed_s": 2.65
+    },
+    {
+      "name": "circulation-chant",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a2d235bcc04d0d36ecaf08066d11c9ce8114034ca9f99e58b3defdc742cbc3e6",
+      "clear_percent": 79.88,
+      "elapsed_s": 5.14
+    },
+    {
+      "name": "circulation-migration",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "6e444d0b07d322ab2a039657f05dfe48ba0b3e3f39e314cd334f889e3c02aa2e",
+      "clear_percent": 82.48,
+      "elapsed_s": 11.41
+    },
+    {
+      "name": "circulation-seche",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "cdad0fa40a1de78cc0116c6af73d216e0056c66ce4931c862801936051802812",
+      "clear_percent": 82.52,
+      "elapsed_s": 36.67
+    },
+    {
+      "name": "circulation-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "cad067e0c8dd740dc5798d90a4c1b86ba588c44d15c6bac35d5e0441b4cba9bb",
+      "clear_percent": 82.51,
+      "elapsed_s": 38.97
+    }
+  ],
+  "metrics": {
+    "wet_contrast_mean_rgb": 24.092421709331187,
+    "connected_wet_pixels": 261214,
+    "connected_pigment_coverage": 0.9861378027211405,
+    "separate_pool_pigment_coverage": 0.0,
+    "left_end_blue": 1.0,
+    "right_end_blue": 1.0,
+    "lower_arm_blue": 0.9949714638284745
+  },
+  "version": "1.5.1",
+  "unit_tests": 71,
+  "typescript": "pass",
+  "measurement": {
+    "wet_mask": "mean RGB difference from blank paper > 14",
+    "pigment_mask": "blue minus red > 1",
+    "connected_region": "upper connected T-shaped pool",
+    "separate_region": "lower independent pool"
+  },
+  "limits": [
+    "Mesa/EGL shader replay; the cloud browser has no WebGL2.",
+    "Performance on a physical phone is not measured."
+  ]
+}

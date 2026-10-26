@@ -1,0 +1,30 @@
+/* One physical sheet throughout painting, drying and the poetic reveal.
+ * The bitmap is a positioned layer: its intrinsic GPU dimensions must never
+ * contribute to the flex item's height or feed back through ResizeObserver.
+ */
+.bird-studio.direct-studio{--sheet-height:71svh}
+.bird-studio.direct-studio .bird-stage{width:100%;min-width:0}
+.bird-studio.direct-studio .bird-paper.stable-sheet{
+  width:min(100%,calc(var(--sheet-height)*var(--art-ratio)));
+  aspect-ratio:var(--art-ratio);
+  flex:none;
+  min-height:0;
+  isolation:isolate;
+}
+.bird-paper.stable-sheet>canvas{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  max-width:none;
+  max-height:none;
+  object-fit:contain;
+}
+@media(max-width:760px){
+  .bird-studio.direct-studio{--sheet-height:max(160px,calc(100svh - 385px))}
+}
+.bird-studio.direct-studio.bird-viewing{--sheet-height:100dvh}
+.bird-studio.direct-studio.bird-viewing.flow-finished{
+  --sheet-height:max(160px,calc(100dvh - 235px));
+}

@@ -1,0 +1,1 @@
+Rendus issus du moteur WebGL réel, rejoués sous Mesa/EGL. Les comparaisons utilisent le même champ de pigment et la même humidité ; seul le rendu des masques change. La planche ne montre donc pas deux compositions différentes.

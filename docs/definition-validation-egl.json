@@ -1,0 +1,275 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "geai-blank-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a8616745057cabc6cc5c7ad980d317be14d806cb19a23b92ba9602138e57c814",
+      "clear_percent": 100.0,
+      "elapsed_s": 3.92
+    },
+    {
+      "name": "geai-blank",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a8616745057cabc6cc5c7ad980d317be14d806cb19a23b92ba9602138e57c814",
+      "clear_percent": 100.0,
+      "elapsed_s": 4.36
+    },
+    {
+      "name": "geai-wet-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "df7d9d87afd745d70a517bde7e67910cd75fcf5196cd51db2ae11c2a82a3ca0c",
+      "clear_percent": 95.84,
+      "elapsed_s": 8.84
+    },
+    {
+      "name": "geai-wet",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "89ff6d268c90bb52301a731d94a658e86d17bc3c6ac101295de7830288352c3b",
+      "clear_percent": 95.84,
+      "elapsed_s": 9.31
+    },
+    {
+      "name": "geai-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a1af462a2b68f55e5844287d23ee200bb0969d6704f3610497c15cff73364c67",
+      "clear_percent": 92.12,
+      "elapsed_s": 52.1
+    },
+    {
+      "name": "geai-dry",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "f967e67ebc5edaacb539e2785fb5dd9eaec1385482201682d44ca90500727479",
+      "clear_percent": 92.16,
+      "elapsed_s": 52.57
+    },
+    {
+      "name": "geai-dry-stable",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "f967e67ebc5edaacb539e2785fb5dd9eaec1385482201682d44ca90500727479",
+      "clear_percent": 92.16,
+      "elapsed_s": 53.04
+    },
+    {
+      "name": "geai-threshold-low",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "780b5abfd80101f784b5dfd91800af12a9b7f45d1ffd56b651783187adea6602",
+      "clear_percent": 92.15,
+      "elapsed_s": 53.51
+    },
+    {
+      "name": "geai-threshold-high",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "4ae55d94917ce1deb46df39ba481a9e23747035f225a25bb17487bac35dafa38",
+      "clear_percent": 92.16,
+      "elapsed_s": 53.98
+    },
+    {
+      "name": "definition-soft-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "2949f20e5eed776c0a08f0cd669adaefce302b0c0bfb5ee9ade00d1f5a469a6b",
+      "clear_percent": 92.14,
+      "elapsed_s": 56.78
+    },
+    {
+      "name": "definition-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "d934d05c7462ee669f77b9fdd100d1df9de3626ce15f0a6227994dcaa966cc66",
+      "clear_percent": 92.18,
+      "elapsed_s": 59.17
+    },
+    {
+      "name": "definition-cleared",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a8616745057cabc6cc5c7ad980d317be14d806cb19a23b92ba9602138e57c814",
+      "clear_percent": 100.0,
+      "elapsed_s": 59.63
+    },
+    {
+      "name": "bouvreuil-blank-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "2a3b441ef4629d107f734b4c198d3a6c17f3b5f4db4f9a463a18de02d791c13d",
+      "clear_percent": 100.0,
+      "elapsed_s": 60.08
+    },
+    {
+      "name": "bouvreuil-blank",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "2a3b441ef4629d107f734b4c198d3a6c17f3b5f4db4f9a463a18de02d791c13d",
+      "clear_percent": 100.0,
+      "elapsed_s": 60.5
+    },
+    {
+      "name": "bouvreuil-wet-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "2182a1d4f05636d72d3e354ac1181c5e625849c67a4fb65a3b2612026976301f",
+      "clear_percent": 92.68,
+      "elapsed_s": 64.1
+    },
+    {
+      "name": "bouvreuil-wet",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "55cc7c52e717e558318cbe76ef9e11141c2d6f356fd3cddb3c6ba88288713442",
+      "clear_percent": 92.68,
+      "elapsed_s": 64.59
+    },
+    {
+      "name": "bouvreuil-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "a2a29e8e455a3e2809ba6bcca7b1bac25d5c4fb5aa75d41683eb11e1f345663d",
+      "clear_percent": 88.41,
+      "elapsed_s": 109.17
+    },
+    {
+      "name": "bouvreuil-dry",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "19e0534196d02e8bf2d84448f3e5e7fce9b401d7eac6e8be0aa1dbc216ae4191",
+      "clear_percent": 88.46,
+      "elapsed_s": 109.69
+    },
+    {
+      "name": "bouvreuil-dry-stable",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "19e0534196d02e8bf2d84448f3e5e7fce9b401d7eac6e8be0aa1dbc216ae4191",
+      "clear_percent": 88.46,
+      "elapsed_s": 110.2
+    },
+    {
+      "name": "bouvreuil-threshold-low",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "00877d7fc51b95fcac115957422b77cea5cc827d7911a8227489d6ea2feb506d",
+      "clear_percent": 88.44,
+      "elapsed_s": 110.72
+    },
+    {
+      "name": "bouvreuil-threshold-high",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "9cb2684340b1e6edd69cf1d76a8225c85fd2c11b4714a65e5fb46c7b2cbb2e31",
+      "clear_percent": 88.46,
+      "elapsed_s": 111.23
+    },
+    {
+      "name": "corneille-blank-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "9ebf32a1768d928db67bc98c42b8e06f29c647f8601de4b53b529f28ed83f263",
+      "clear_percent": 100.0,
+      "elapsed_s": 111.71
+    },
+    {
+      "name": "corneille-blank",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "9ebf32a1768d928db67bc98c42b8e06f29c647f8601de4b53b529f28ed83f263",
+      "clear_percent": 100.0,
+      "elapsed_s": 112.17
+    },
+    {
+      "name": "corneille-wet-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "bd352e417e25115f0a33db83932a78e37080d28f44ee672e94a32d1d030fdce6",
+      "clear_percent": 96.6,
+      "elapsed_s": 115.94
+    },
+    {
+      "name": "corneille-wet",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "17adbf73c6ccad559bcf99fd198b716edc13cea43a482e2ad8aab8f26a674c55",
+      "clear_percent": 96.6,
+      "elapsed_s": 116.4
+    },
+    {
+      "name": "corneille-soft",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "2b26249909cd42f974f51534531ed90388076c0b05d573c366bf4474f24fa8e7",
+      "clear_percent": 92.41,
+      "elapsed_s": 158.74
+    },
+    {
+      "name": "corneille-dry",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "69f3fbf214a9392c69fb308beeded52b99332d87434a1d333f42ec2fa3c95b46",
+      "clear_percent": 92.44,
+      "elapsed_s": 159.27
+    },
+    {
+      "name": "corneille-dry-stable",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "69f3fbf214a9392c69fb308beeded52b99332d87434a1d333f42ec2fa3c95b46",
+      "clear_percent": 92.44,
+      "elapsed_s": 159.77
+    },
+    {
+      "name": "corneille-threshold-low",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "be754a6432506b7193d9ef26271d03db603a9389ccd0d0c73bb399791afa13ec",
+      "clear_percent": 92.43,
+      "elapsed_s": 160.26
+    },
+    {
+      "name": "corneille-threshold-high",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "379f8ad597d5851a3b18e410af118fe30fb01fb0af3dac96b9c49364f957b3c8",
+      "clear_percent": 92.44,
+      "elapsed_s": 160.75
+    }
+  ],
+  "comparisons": [
+    {
+      "bird": "geai",
+      "paper_unchanged": true,
+      "dry_stable": true,
+      "dry_mean_delta": 0.26715679655349794,
+      "wet_mean_delta": 0.0031028163580246915,
+      "threshold_density_low": 65.1524949738641,
+      "threshold_density_high": 63.091373140329715
+    },
+    {
+      "bird": "bouvreuil",
+      "paper_unchanged": true,
+      "dry_stable": true,
+      "dry_mean_delta": 0.32263888888888886,
+      "wet_mean_delta": 0.0013186406893004115,
+      "threshold_density_low": 58.68174952964831,
+      "threshold_density_high": 56.917110906799586
+    },
+    {
+      "bird": "corneille",
+      "paper_unchanged": true,
+      "dry_stable": true,
+      "dry_mean_delta": 0.38718573173868315,
+      "wet_mean_delta": 0.0035209297839506174,
+      "threshold_density_low": 107.45891100822722,
+      "threshold_density_high": 104.52418225106321
+    }
+  ],
+  "clear_restores_identical_paper": true
+}

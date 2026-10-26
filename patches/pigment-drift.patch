@@ -1,0 +1,734 @@
+--- upstream/src/paint/engine.ts
++++ src/vendor/pigment-drift/paint/engine.ts
+@@ -6,6 +6,7 @@
+ import { createRng } from '../engine/params';
+ import { breathe } from './noise';
+ import * as SH from './shaders';
++import {absorptionTable} from './optics';
+ 
+ /** A painting can hold this many inks at once. */
+ export const MAX_INKS = 3;
+@@ -14,6 +15,8 @@
+   paper: string;
+   /** One to three inks, each five colors from deepest to palest, like the generator's palettes. */
+   inks: string[][];
++  /** HAÏKUARELLE: optional stable optical pigments; legacy three-ink mode otherwise. */
++  pigments?: string[];
+   layers: number;
+   bleed: number;
+   drift: number;
+@@ -24,6 +27,16 @@
+   ridge: number;
+   feather: number;
+   density: number;
++  /** HAÏKUARELLE: preserve crisp pigment deposits around transparent washes. */
++  detail?: number;
++  /** HAÏKUARELLE: e-folding time of water in seconds; upstream default retained. */
++  dryingTime?: number;
++  /** HAÏKUARELLE: dry-pigment alpha masks; zero retains the upstream wash. */
++  dryingDetail?: number;
++  /** HAÏKUARELLE: dry material contrast and edge definition, 0..1. */
++  dryingSharpness?: number;
++  /** HAÏKUARELLE: select mineral deposits; higher values reveal fewer pockets. */
++  dryingThreshold?: number;
+ }
+ 
+ export const Kind = { Paint: 0, Water: 1, Lift: 2 } as const;
+@@ -36,7 +49,9 @@
+   target: number;
+   strength: number;
+   kind: Kind;
+-  /** Which ink (0..2) a paint stroke lays down. */
++  /** HAÏKUARELLE: glaze only the existing damp film, without adding water. */
++  wetOnly?: boolean;
++  /** Ink 0..2 in legacy mode, optical pigment 0..15 when Look.pigments is set. */
+   slot: number;
+   /** Velocity the water is pulled toward (texels/s) and how hard. */
+   fx: number; fy: number; coupling: number;
+@@ -76,7 +91,7 @@
+ interface Prog { p: WebGLProgram; u: Record<string, WebGLUniformLocation | null> }
+ interface Format { internal: number; format: number }
+ /** Per-canvas-size helpers for the look: baked paper and the quarter-res breathing noise. */
+-interface Aux { w: number; h: number; paper: Target; flow: Target; flowTex: WebGLTexture[]; key: string }
++interface Aux { w: number; h: number; paper: Target; flow: Target; flowTex: WebGLTexture[]; drying:Target; key: string; flowKey: string; dryingKey:string }
+ 
+ const MAX_SEGS = 16;
+ const MAX_DROPS = 4;
+@@ -89,6 +104,8 @@
+ export class PaintEngine {
+   readonly canvas: HTMLCanvasElement;
+   readonly gl: WebGL2RenderingContext;
++  /** HAÏKUARELLE: optional overlay on the current target, including export. */
++  afterRender?: (width: number, height: number) => void;
+   meta!: SheetMeta;
+   /** Field texels per CSS px. */
+   k = 1;
+@@ -100,6 +117,7 @@
+ 
+   private progs: Record<string, Prog> = {};
+   private vao: WebGLVertexArrayObject;
++  private vertexBuffer: WebGLBuffer;
+   private rg: Format;
+   private r: Format;
+   private rgba: Format;
+@@ -120,10 +138,13 @@
+   private wetUntil = 0;
+   private velDirty = false;
+   private maxTexels: number;
++  private maxScale: number;
++  private maxDimension: number;
+   private paperFrom: number[] = [];
+   private paperTo: number[] = [];
+   private labFrom: number[] = [];
+   private labTo: number[] = [];
++  private absorption: number[] = [];
+   private tweenStart = 0;
+   private tweenMs = 0;
+   private segBuf = new Float32Array(MAX_SEGS * 4);
+@@ -132,7 +153,7 @@
+   private dropBuf = new Float32Array(MAX_DROPS * 4);
+   private dropInkBuf = new Float32Array(MAX_DROPS * 4);
+ 
+-  constructor(canvas: HTMLCanvasElement, opts: { coarse: boolean }) {
++  constructor(canvas: HTMLCanvasElement, opts: { coarse: boolean; fieldBudget?: number; fieldScale?:number; maxDimension?:number }) {
+     this.canvas = canvas;
+     const gl = canvas.getContext('webgl2', {
+       antialias: false, alpha: false, depth: false, stencil: false,
+@@ -149,12 +170,15 @@
+     this.rg = rg;
+     this.r = r;
+     this.rgba = rgba;
+-    this.maxTexels = opts.coarse ? 0.55e6 : 2.1e6;
++    this.maxTexels = opts.fieldBudget ?? (opts.coarse ? 0.55e6 : 2.1e6);
++    this.maxScale = opts.fieldScale ?? 1;
++    this.maxDimension = opts.maxDimension ?? 2048;
+     this.historyBytes = opts.coarse ? 28e6 : 100e6;
+ 
+     this.vao = gl.createVertexArray()!;
+     gl.bindVertexArray(this.vao);
+     const buf = gl.createBuffer()!;
++    this.vertexBuffer = buf;
+     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+     gl.enableVertexAttribArray(0);
+@@ -164,7 +188,7 @@
+       copy: SH.COPY, fill: SH.FILL, encode: SH.ENCODE, decode: SH.DECODE, settle: SH.SETTLE,
+       velStep: SH.VEL_STEP, curl: SH.CURL, vorticity: SH.VORTICITY, divergence: SH.DIVERGENCE,
+       scale: SH.SCALE, jacobi: SH.JACOBI, gradient: SH.GRADIENT,
+-      fieldStep: SH.FIELD_STEP, compose: SH.COMPOSE, paper: SH.PAPER, flow: SH.FLOW, render: SH.RENDER,
++      fieldStep: SH.FIELD_STEP, compose: SH.COMPOSE, paper: SH.PAPER, flow: SH.FLOW, drying:SH.DRYING_MASKS, render: SH.RENDER,
+     };
+     for (const [name, src] of Object.entries(sources)) this.progs[name] = this.program(src);
+   }
+@@ -321,6 +345,7 @@
+   setLook(look: Look, animate = false): void {
+     const prev = this.look;
+     this.look = { ...look, inks: look.inks.map((i) => [...i]) };
++    this.absorption=look.pigments?absorptionTable(look.pigments,look.paper):[];
+     const paper = hexToLinear(look.paper);
+     const inks = Array.from({ length: MAX_INKS }, (_, i) => look.inks[i] ?? look.inks[0]);
+     const lab = inks.flatMap((ink) => ink.flatMap((c) => hexToOklab(c)));
+@@ -352,7 +377,7 @@
+     const gl = this.gl;
+     const forcing = segs.some((s) => s.coupling > 0);
+     if (forcing) this.flowUntil = now + 2000;
+-    if (segs.length || drops.length) this.wetUntil = now + 2500 + 6000 * this.look.bleed;
++    if (segs.length || drops.length) this.wetUntil = now + Math.max(2500 + 6000 * this.look.bleed, (this.look.dryingTime ?? 0) * 5600);
+     const flowing = now < this.flowUntil;
+     const wet = now < this.wetUntil;
+     if (!flowing && !wet && !segs.length && !drops.length && this.settleLeft <= 0) {
+@@ -365,7 +390,7 @@
+     for (let i = 0; i < n; i++) {
+       const s = segs[i];
+       this.segBuf.set([s.ax, s.ay, s.bx, s.by], i * 4);
+-      this.segPBuf.set([s.radius, s.target, s.strength, s.kind + 4 * s.slot], i * 4);
++      this.segPBuf.set([s.radius, s.target, s.strength, s.kind + 4 * s.slot + (s.wetOnly ? 256 : 0)], i * 4);
+       this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.coupling], i * 4);
+     }
+     const nd = Math.min(drops.length, MAX_DROPS);
+@@ -410,11 +435,14 @@
+ 
+     const bleed = this.look.bleed;
+     this.run('fieldStep', this.field[1], (u) => {
++      gl.uniform1f(u.uOptical,this.absorption.length?1:0);
++      if(this.absorption.length)gl.uniform3fv(u.uAbsorption,this.absorption);
+       gl.uniform2f(u.uSize, this.fieldW, this.fieldH);
+       gl.uniform1f(u.uDt, dt);
+       gl.uniform1f(u.uFlowing, flowing ? 1 : 0);
+       gl.uniform1f(u.uBleed, bleed);
+-      gl.uniform1f(u.uDryKeep, Math.exp(-dt / (0.7 + 2.2 * bleed)));
++      gl.uniform1f(u.uDryKeep, Math.exp(-dt / (this.look.dryingTime ?? (0.7 + 2.2 * bleed))));
++      gl.uniform1f(u.uDryFloor, this.look.dryingTime === undefined ? 0.02 : 0);
+       gl.uniform2f(u.uSeedOff, this.meta.seed[0], this.meta.seed[1]);
+       gl.uniform1f(u.uUnit, this.meta.unit * this.k);
+       gl.uniform1i(u.uDropCount, nd);
+@@ -447,6 +475,7 @@
+     if (target) {
+       const aux = this.makeAux(w, h);
+       this.drawLook(timeS, target, aux);
++      this.afterRender?.(w, h);
+       this.deleteAux(aux);
+       return;
+     }
+@@ -455,6 +484,7 @@
+       this.aux = this.makeAux(w, h);
+     }
+     this.drawLook(timeS, null, this.aux);
++    this.afterRender?.(w, h);
+   }
+ 
+   private drawLook(timeS: number, target: Target | null, aux: Aux): void {
+@@ -478,6 +508,9 @@
+       aux.key = key;
+     }
+     // Breathing noise, at a quarter of the resolution (it's all low frequency).
++    // HAÏKUARELLE: static breathing field is baked once, not on every render.
++    const flowKey = key + ':' + look.drift + ':' + (look.drift ? timeS : 0);
++    if (aux.flowKey !== flowKey) {
+     this.run('flow', aux.flow, (u) => {
+       gl.uniform4f(u.uMap, map[0] * (w / aux.flow.w), map[1] * (h / aux.flow.h), map[2], map[3]);
+       gl.uniform1f(u.uUnit, unit);
+@@ -485,6 +518,18 @@
+       gl.uniform1f(u.uTime, timeS);
+       gl.uniform1f(u.uDrift, look.drift);
+     }, {});
++    aux.flowKey = flowKey;
++    }
++    // Four transparent material masks are baked once per sheet placement. They
++    // stay fixed in paper coordinates; only their humidity-driven reveal moves.
++    if ((look.dryingDetail ?? 0) > 0 && aux.dryingKey !== key) {
++      this.run('drying', aux.drying, (u) => {
++        gl.uniform4f(u.uMap, map[0] * (w / aux.drying.w), map[1] * (h / aux.drying.h), map[2], map[3]);
++        gl.uniform1f(u.uUnit, unit);
++        gl.uniform2f(u.uSeedOff, seed[0], seed[1]);
++      }, {});
++      aux.dryingKey = key;
++    }
+ 
+     const t = this.tweenT(performance.now());
+     this.run('render', target, (u) => {
+@@ -494,6 +539,7 @@
+       gl.uniform1f(u.uUnit, unit);
+       gl.uniform3fv(u.uPaper, mixArr(this.paperFrom, this.paperTo, t));
+       gl.uniform3fv(u.uLab, mixArr(this.labFrom, this.labTo, t));
++      gl.uniform1f(u.uOptical,this.absorption.length?1:0);
+       gl.uniform1i(u.uLayers, Math.round(look.layers));
+       gl.uniform1f(u.uEdge, look.edges);
+       gl.uniform1f(u.uTexture, look.texture);
+@@ -502,9 +548,13 @@
+       gl.uniform1f(u.uRidge, look.ridge);
+       gl.uniform1f(u.uFeather, look.feather);
+       gl.uniform1f(u.uDensity, look.density);
++      gl.uniform1f(u.uDetail, look.detail??0);
++      gl.uniform1f(u.uDryingDetail, look.dryingDetail??0);
++      gl.uniform1f(u.uDrySharpness, look.dryingSharpness??0);
++      gl.uniform1f(u.uDryThreshold, look.dryingThreshold??0);
+     }, {
+       uField: this.field[0].tex, uPaperTex: aux.paper.tex,
+-      uFlow0: aux.flowTex[0], uFlow1: aux.flowTex[1], uFlow2: aux.flowTex[2],
++      uFlow0: aux.flowTex[0], uFlow1: aux.flowTex[1], uFlow2: aux.flowTex[2], uDryingTex:aux.drying.tex,
+     });
+   }
+ 
+@@ -514,6 +564,9 @@
+     const fw = Math.max(1, Math.ceil(w / 4));
+     const fh = Math.max(1, Math.ceil(h / 4));
+     const flow = this.makeTarget(fw, fh, this.rgba, true);
++    // Material rims need finer sampling than the broad flow maps. This atlas is
++    // static per sheet, so doubling its resolution adds no simulation work.
++    const drying = this.makeTarget(Math.max(1,Math.ceil(w/2)), Math.max(1,Math.ceil(h/2)), {internal:gl.RGBA8,format:gl.RGBA}, true, gl.UNSIGNED_BYTE);
+     const flowTex = [flow.tex];
+     gl.bindFramebuffer(gl.FRAMEBUFFER, flow.fbo);
+     for (let i = 1; i < 3; i++) {
+@@ -529,11 +582,12 @@
+     }
+     gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2]);
+     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+-    return { w, h, paper, flow, flowTex, key: '' };
++    return { w, h, paper, flow, flowTex, drying, key: '', flowKey: '', dryingKey:'' };
+   }
+ 
+   private deleteAux(a: Aux): void {
+     this.deleteTarget(a.paper);
++    this.deleteTarget(a.drying);
+     for (const t of a.flowTex) this.gl.deleteTexture(t);
+     this.gl.deleteFramebuffer(a.flow.fbo);
+   }
+@@ -614,6 +668,7 @@
+     this.aux = null;
+     for (const p of Object.values(this.progs)) gl.deleteProgram(p.p);
+     gl.deleteVertexArray(this.vao);
++    gl.deleteBuffer(this.vertexBuffer);
+   }
+ 
+   // ------------------------------------------------------------- internals
+@@ -621,9 +676,9 @@
+   /** Creates the field and sim targets for this.meta (call release() first). */
+   private allocate(): void {
+     const gl = this.gl;
+-    const maxTex = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number);
++    const maxTex = Math.min(this.maxDimension, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number);
+     const { width, height } = this.meta;
+-    this.k = Math.min(1, Math.sqrt(this.maxTexels / (width * height)), maxTex / width, maxTex / height);
++    this.k = Math.min(this.maxScale, Math.sqrt(this.maxTexels / (width * height)), maxTex / width, maxTex / height);
+     this.fieldW = Math.max(1, Math.round(width * this.k));
+     this.fieldH = Math.max(1, Math.round(height * this.k));
+     // Snapshots are four bytes per texel (see ENCODE).
+--- upstream/src/paint/shaders.ts
++++ src/vendor/pigment-drift/paint/shaders.ts
+@@ -294,10 +294,15 @@
+ uniform sampler2D uField;
+ uniform sampler2D uVel;
+ uniform vec2 uSize;
++// HAÏKUARELLE optical basis; the original three-ink representation is retained
++// unless explicitly enabled. Coefficients are linear absorption / 8.
++uniform float uOptical;
++uniform vec3 uAbsorption[16];
+ uniform float uDt;
+ uniform float uFlowing;
+ uniform float uBleed;        // 0..1 how far wet pigment spreads
+ uniform float uDryKeep;      // wetness multiplier this step
++uniform float uDryFloor;     // upstream linear loss, disabled for the prepared-water guide
+ uniform vec2 uSeedOff;
+ uniform float uUnit;         // one sheet unit, in field texels
+ 
+@@ -314,7 +319,16 @@
+ 
+ /** What a pigment amount p of ink "slot" stores in the BA channels. */
+ vec2 inkOf(float slot, float p) {
++  if(uOptical>0.5){
++    vec3 a=uAbsorption[int(clamp(slot,0.0,15.0))];
++    return p*a.yz/max(a.x+a.y+a.z,1e-5);
++  }
+   return vec2(slot > 0.5 && slot < 1.5 ? p : 0.0, slot > 1.5 ? p : 0.0);
++}
++float pigmentLoad(float slot,float p){
++  if(uOptical<0.5)return p;
++  vec3 a=uAbsorption[int(clamp(slot,0.0,15.0))];
++  return p*(a.x+a.y+a.z);
+ }
+ 
+ // Catmull-Rom (9 bilinear taps), clamped to the four nearest texels. Plain bilinear
+@@ -355,7 +369,10 @@
+     if (i >= uDropCount) break;
+     vec4 d = uDrop[i];
+     vec2 rel = src - d.xy;
+-    float ds = max(dot(rel, rel), 1e-6);
++    // HAÏKUARELLE: clear-water blooms catch unevenly on the paper fibers.
++    float bloomRag = 1.0 + (uDropInk[i].z > 0.5 ? 1.0 : 0.0) *
++      (0.24 * fbm(q / uUnit * 19.0 + uSeedOff, 3) + 0.06 * gnoise(q * 0.14 + uSeedOff));
++    float ds = max(dot(rel, rel) / (bloomRag * bloomRag), 1e-6);
+     if (ds < d.w) {
+       float r1 = sqrt(d.w);
+       float cov = 1.0 - smoothstep(r1 - uDropInk[i].y, r1, sqrt(ds));
+@@ -387,13 +404,15 @@
+ 
+   if (inkCov > 0.0) {
+     if (inkKind < 0.5) {
++      inkVal=pigmentLoad(inkSlot,inkVal);
+       f.x = mix(f.x, inkVal, inkCov);
+       f.zw = mix(f.zw, inkOf(inkSlot, inkVal), inkCov);
+     } else {
+-      f.xzw *= 1.0 - 0.96 * inkCov;
++      // HAÏKUARELLE: fresh water dilutes and pushes pigment, without erasing a white disc.
++      f.xzw *= exp(-uDt * (0.45 + 0.50 * clamp(f.y, 0.0, 1.0)) * inkCov);
+     }
+     // Drops float rather than soak in, so their rings stay crisp.
+-    f.y = max(f.y, (inkKind < 0.5 ? 0.3 : 0.45) * inkCov);
++    f.y = max(f.y, (inkKind < 0.5 ? 0.3 : 0.80) * inkCov);
+   }
+ 
+   // Brush texture, worked out once per texel the first time a brush comes near.
+@@ -408,15 +427,26 @@
+     if (!shaped) {
+       vec2 S = q / uUnit;
+       // Ragged like the generator's washes: billows, fringes and fine tatters.
+-      rag = fbm(S * 5.0 + uSeedOff, 3) * 0.45 + gnoise(q * 0.05 + uSeedOff.yx) * 0.13 + gnoise(q * 0.16 + 7.0) * 0.05;
++      rag = fbm(S * 5.0 + uSeedOff, 3) * 0.70 + gnoise(q * 0.045 + uSeedOff.yx) * 0.15 + gnoise(q * 0.16 + 7.0) * 0.055;
+       // Never quite even inside: the load swells and thins like its turbulence.
+-      swell = fbm(S * 3.0 + uSeedOff.yx + 4.4, 2) * 0.7 + gnoise(S * 9.0 + uSeedOff + 1.9) * 0.3;
++      swell = fbm(S * 3.0 + uSeedOff.yx + 4.4, 2) * 0.7 + gnoise(S * 9.0 + uSeedOff + 1.9) * 0.3
++            + 0.32 * gnoise(S * 31.0 + uSeedOff) + 0.16 * gnoise(S * 79.0 + uSeedOff.yx);
+       // And the paper takes the water unevenly, so the edge softens in some places more than others.
+       bloom = smoothstep(-0.4, 0.4, gnoise(S * 2.2 + uSeedOff * 0.7 + 11.0));
+       shaped = true;
+     }
+     float kind = mod(sp.w, 4.0);
+-    float slot = floor(sp.w / 4.0);
++    float slot = mod(floor(sp.w / 4.0), 64.0);
++    bool wetOnly = sp.w >= 256.0;
++    float wetMask = wetOnly ? smoothstep(0.005, 0.030, f.y) : 1.0;
++    if (wetOnly && wetMask > 0.0) {
++      // A large pale glaze must not jump a dry slit into a neighbouring pool.
++      // Check the actual GPU water along the short capillary route to this texel.
++      vec2 anchor = mix(uSeg[i].xy, uSeg[i].zw, t);
++      float channel = f.y;
++      for (int j = 1; j <= 5; j++) channel = min(channel, fieldAt(mix(anchor, q, float(j) / 6.0)).y);
++      wetMask *= smoothstep(0.008, 0.025, channel);
++    }
+     float dn = d / sp.x + rag;
+     float cov = 1.0 - smoothstep(0.5, 1.0, dn);
+     // Dry-brush streaks run along the stroke.
+@@ -424,9 +454,9 @@
+     float side = dot(q - uSeg[i].xy, vec2(-ab.y, ab.x)) / max(length(ab), 1e-3) / sp.x;
+     float bristle = length(ab) > 0.5 ? 0.7 + 0.6 * smoothstep(-0.4, 0.4, gnoise(vec2(side * 3.2, 0.5) + uSeedOff)) : 1.0;
+     if (kind < 0.5) {
+-      float tgt = max(sp.y + (0.04 + 0.08 * sp.y) * swell, 0.0);
++      float tgt = pigmentLoad(slot,max(sp.y * (0.91 + 0.55 * swell) + 0.045 * swell, 0.0));
+       // The core takes the pan's pigment (and can lighten what's there)...
+-      float k = clamp((1.0 - smoothstep(0.2, 0.55, dn)) * sp.z * bristle, 0.0, 1.0);
++      float k = clamp((1.0 - smoothstep(0.2, 0.55, dn)) * sp.z * bristle * wetMask, 0.0, 1.0);
+       f.x = mix(f.x, tgt, k);
+       f.zw = mix(f.zw, inkOf(slot, tgt), k);
+       // ...and around it the wash thins out the way the generator's do: a firm edge
+@@ -434,12 +464,12 @@
+       // paper drinks more. It only adds.
+       float skirt = (0.08 + 0.14 * bloom) * (1.0 - 0.5 * smoothstep(0.3, 0.9, sp.y));
+       float shape = 1.1 * (1.0 - smoothstep(0.4, 1.0, dn)) + skirt * (1.0 - smoothstep(0.7, 1.2 + 0.6 * bloom, dn));
+-      float add = min(tgt, shape) - f.x;
++      float add = (min(tgt, shape) - f.x) * wetMask;
+       if (add > 0.0) {
+         f.x += add;
+         f.zw += inkOf(slot, add);
+       }
+-      f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
++      if (!wetOnly) f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
+     } else if (kind < 1.5) {
+       f.y = max(f.y, (1.0 - smoothstep(0.6, 1.25, dn)) * 0.45);
+     } else {
+@@ -448,7 +478,7 @@
+     }
+   }
+ 
+-  f.y = max(f.y * uDryKeep - uDt * 0.02, 0.0);
++  f.y = max(f.y * uDryKeep - uDt * uDryFloor, 0.0);
+   f.x = clamp(f.x, 0.0, 1.4);
+   // The inks can never add up to more than the pigment that's there.
+   f.zw = max(f.zw, 0.0);
+@@ -550,30 +580,49 @@
+ export const PAPER = HEAD + NOISE + MAPPING + /* glsl */ `
+ uniform float uPx;
+ out vec4 o;
+-void main() {
+-  vec2 frag = gl_FragCoord.xy;
+-  vec2 css = frag / uPx;
+-  vec2 S = (frag * uMap.xy + uMap.zw) / uUnit;
+-
+-  float grit = gnoise(css * 0.55 + 13.0) * 0.6 + gnoise(css * 0.21 + 5.0) * 0.4;
+-  float ragFine = gnoise(S * 40.0 + uSeedOff);
+-  float edge = 0.6 * grit + 0.4 * ragFine;
+-
+-  float g1 = gnoise(css * 0.45 + uSeedOff * 3.0);
+-  float g2 = gnoise(css * 0.14 + 7.0);
+-  float speck = smoothstep(0.25, 0.75, gnoise(css * 0.8 + 21.0));
+-  float gran = 0.1 * (0.6 * g1 + 0.4 * g2) + 0.12 * speck;
+-
+-  vec2 bp = mat2(0.866, 0.5, -0.5, 0.866) * css;
+-  float h = gnoise(bp * vec2(0.09, 0.42)) * 0.5 + gnoise(css * 0.5 + 3.0) * 0.5;
+-  vec3 nrm = normalize(vec3(-dFdx(h) * uPx, -dFdy(h) * uPx, 0.6));
+-  float light = dot(nrm, vec3(-0.451, 0.551, 0.702)) - 0.702;
+-
+-  float grain = gnoise(css * 0.95) * 0.55 + gnoise(css * 0.3 + 3.0) * 0.45;
+-  float fiber = gnoise(vec2(css.x * 0.05, css.y * 0.55) + 9.0);
+-  float paper = 0.045 * grain + 0.018 * fiber + 0.03 * fbm(S * 1.4 + 40.0, 2);
+-
+-  o = vec4(edge * 0.5 + 0.5, (gran + 0.15) / 0.4, clamp(light * 0.5 + 0.6, 0.0, 1.0), paper * 4.0 + 0.5);
++
++// V3: triangular simplex support, rather than a visible square fiber lattice.
++float paperCorner(vec2 lattice, vec2 delta) {
++  float falloff = max(0.5 - dot(delta, delta), 0.0);
++  vec2 gradient = hash22(lattice) * 2.0 - 1.0;
++  gradient *= inversesqrt(max(dot(gradient, gradient), 0.08));
++  return falloff * falloff * falloff * falloff * dot(gradient, delta);
++}
++float paperNoise(vec2 p) {
++  const float F2 = 0.3660254037844386;
++  const float G2 = 0.2113248654051871;
++  vec2 cell = floor(p + (p.x + p.y) * F2);
++  vec2 a = p - cell + (cell.x + cell.y) * G2;
++  vec2 corner = a.x > a.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
++  vec2 b = a - corner + G2;
++  vec2 c = a - 1.0 + 2.0 * G2;
++  return 70.0 * (paperCorner(cell, a) + paperCorner(cell + corner, b) + paperCorner(cell + 1.0, c));
++}
++void main() {
++  vec2 S = (gl_FragCoord.xy * uMap.xy + uMap.zw) / uUnit;
++  vec2 P = S * 900.0;
++  // Rotated supports remove horizontal/vertical repetition. No crossed fibers.
++  const mat2 A = mat2(0.781, 0.625, -0.625, 0.781);
++  const mat2 B = mat2(0.292, -0.956, 0.956, 0.292);
++  vec2 seed = uSeedOff * 2.71;
++  float footprint = max(length(dFdx(P)), length(dFdy(P)));
++  float fineWeight = 1.0 - smoothstep(0.45, 1.10, footprint * 0.76);
++  float pores = 0.65 * paperNoise(P * 0.23 + seed)
++              + 0.35 * paperNoise(A * P * 0.59 + seed.yx + 8.3);
++  float fine = paperNoise(B * P * 0.94 + seed + 27.0) * fineWeight;
++  float body = paperNoise(A * P * 0.032 + seed * 0.21 + 5.0);
++  float edge = 0.30 * pores + 0.17 * fine;
++
++  // Mineral variation belongs mainly to the pigment, not to bare paper.
++  float mineral = smoothstep(0.10, 0.70, pores * 0.75 + fine * 0.25);
++  float gran = 0.050 * pores + 0.033 * mineral - 0.004;
++  float relief = pores * 0.50 + fine * 0.10;
++  vec2 slope = vec2(dFdx(relief), dFdy(relief)) / max(footprint, 0.05);
++  vec3 normal = normalize(vec3(-slope * 0.22, 1.8));
++  float light = dot(normal, vec3(-0.451, 0.551, 0.702)) - 0.702;
++  float paper = 0.008 * pores + 0.004 * fine + 0.007 * body;
++  o = vec4(edge * 0.5 + 0.5, (gran + 0.15) / 0.4,
++           clamp(light * 0.5 + 0.6, 0.0, 1.0), paper * 4.0 + 0.5);
+ }
+ `;
+ 
+@@ -617,6 +666,31 @@
+ }
+ `;
+ 
++/** HAÏKUARELLE: reusable RGBA alpha atlas. R = broad wash density, G = broken
++ * backrun rims, B = diluted bloom interiors, A = mineral sediment pockets.
++ * The same warped scalar field defines a pale bloom and its dark rim, so the
++ * marks have a common structure rather than being unrelated uniform noise.
++ * Grain/fibres still come from the full-resolution paper texture.
++ */
++export const DRYING_MASKS = HEAD + NOISE + MAPPING + /* glsl */ `
++out vec4 o;
++void main() {
++  vec2 P = (gl_FragCoord.xy * uMap.xy + uMap.zw) / uUnit;
++  vec2 seed = uSeedOff * 0.73;
++  vec2 warp = vec2(fbm(P * 3.4 + seed, 3), fbm(ROT * P * 4.1 + seed.yx + 13.2, 3));
++  float wash = fbm(P * 4.8 + warp * 1.9 + seed, 4);
++  float bloom = fbm(P * 15.0 + warp * 3.2 + seed.yx + 9.7, 4);
++  float edge = 0.065 + 0.035 * gnoise(P * 5.3 + seed + 19.0);
++  float pale = smoothstep(edge, edge + 0.15, bloom);
++  float arcs = exp(-abs(bloom - edge) / 0.022);
++  arcs *= 0.3 + 0.7 * smoothstep(-0.22, 0.24, fbm(P * 29.0 + warp + seed, 2));
++  float sediment = fbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3);
++  float pockets = smoothstep(0.015, 0.28, sediment);
++  float activity = smoothstep(-0.06, 0.18, fbm(P * 3.3 + warp * 0.5 + seed + 47.5, 3));
++  o = vec4(smoothstep(-0.32, 0.32, wash), clamp(arcs * activity, 0.0, 1.0), pale * activity, pockets * (0.3 + 0.7 * activity));
++}
++`;
++
+ /**
+  * The look: the generator's wash stack, fed by the painted field instead of
+  * procedural noise. Bare paper stays bare; edges are as soft as the generator's
+@@ -628,12 +702,14 @@
+ uniform sampler2D uFlow0;
+ uniform sampler2D uFlow1;
+ uniform sampler2D uFlow2;
++uniform sampler2D uDryingTex;
+ uniform vec2 uFieldSize;
+ uniform vec2 uRes;
+ uniform vec3 uPaper;        // linear rgb
+ uniform vec3 uLab[15];      // three inks, each five OKLab colors, deepest -> palest
++uniform float uOptical;
+ uniform int uLayers;
+-uniform float uEdge, uTexture, uHueDrift, uMist, uRidge, uFeather, uDensity;
++uniform float uEdge, uTexture, uHueDrift, uMist, uRidge, uFeather, uDensity, uDetail, uDryingDetail, uDrySharpness, uDryThreshold;
+ out vec4 fragColor;
+ 
+ vec3 oklabToLinear(vec3 c) {
+@@ -652,14 +728,17 @@
+ 
+ // x in 0..4 along the ramps (0 = deepest), the inks mixed in OKLab by their shares.
+ vec3 pigment(float x) {
++  if(uOptical>0.5)return uPaper*exp(-8.0*inkShare*max(0.0,(4.4-x)/3.25));
+   x = clamp(x, 0.0, 4.0);
+   int a = int(min(floor(x), 3.0));
+   float f = x - float(a);
+   f = f * f * (3.0 - 2.0 * f);
+-  vec3 lab = inkShare.x * mix(uLab[a], uLab[a + 1], f)
+-           + inkShare.y * mix(uLab[a + 5], uLab[a + 6], f)
+-           + inkShare.z * mix(uLab[a + 10], uLab[a + 11], f);
+-  return max(oklabToLinear(lab), vec3(0.0));
++  // HAÏKUARELLE: approximate subtractive mixing in optical density.
++  // This is a reflectance approximation, not a spectral pigment model.
++  vec3 c0 = max(oklabToLinear(mix(uLab[a], uLab[a + 1], f)), vec3(0.003));
++  vec3 c1 = max(oklabToLinear(mix(uLab[a + 5], uLab[a + 6], f)), vec3(0.003));
++  vec3 c2 = max(oklabToLinear(mix(uLab[a + 10], uLab[a + 11], f)), vec3(0.003));
++  return exp(inkShare.x * log(c0) + inkShare.y * log(c1) + inkShare.z * log(c2));
+ }
+ 
+ vec3 toSrgb(vec3 c) {
+@@ -674,6 +753,26 @@
+ }
+ 
+ float hAt(vec2 t) { return heightOf(texture(uField, t / uFieldSize).x); }
++
++// Reconstruct the wet field sharply when exporting above its native resolution.
++// Clamping to the four adjacent texels prevents ringing and invented pigment.
++vec4 pigmentField(vec2 p) {
++  if (uDetail < 0.5 || min(uMap.x, uMap.y) >= 0.95) return texture(uField, p / uFieldSize);
++  vec2 pos = p - 0.5, cell = floor(pos), f = pos - cell;
++  vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
++  vec2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
++  vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f));
++  vec2 w3 = f * f * (-0.5 + 0.5 * f), w12 = w1 + w2;
++  vec2 t0 = (cell - 0.5) / uFieldSize, t3 = (cell + 2.5) / uFieldSize;
++  vec2 t12 = (cell + 0.5 + w2 / w12) / uFieldSize;
++  vec4 r = (texture(uField,vec2(t0.x,t0.y))*w0.x+texture(uField,vec2(t12.x,t0.y))*w12.x+texture(uField,vec2(t3.x,t0.y))*w3.x)*w0.y
++    +(texture(uField,vec2(t0.x,t12.y))*w0.x+texture(uField,vec2(t12.x,t12.y))*w12.x+texture(uField,vec2(t3.x,t12.y))*w3.x)*w12.y
++    +(texture(uField,vec2(t0.x,t3.y))*w0.x+texture(uField,vec2(t12.x,t3.y))*w12.x+texture(uField,vec2(t3.x,t3.y))*w3.x)*w3.y;
++  ivec2 base=ivec2(cell),limit=ivec2(uFieldSize)-1;
++  vec4 a=texelFetch(uField,clamp(base,ivec2(0),limit),0),b=texelFetch(uField,clamp(base+ivec2(1,0),ivec2(0),limit),0);
++  vec4 c=texelFetch(uField,clamp(base+ivec2(0,1),ivec2(0),limit),0),d=texelFetch(uField,clamp(base+ivec2(1,1),ivec2(0),limit),0);
++  return clamp(r,min(min(a,b),min(c,d)),max(max(a,b),max(c,d)));
++}
+ 
+ void main() {
+   vec2 frag = gl_FragCoord.xy;
+@@ -683,7 +782,7 @@
+   vec2 ft = frag * uMap.xy + uMap.zw;
+   vec2 at = ft + f0.xy;
+ 
+-  vec4 fv = texture(uField, at / uFieldSize);
++  vec4 fv = pigmentField(at);
+   float pv = fv.x;
+   float wet = fv.y;
+   vec2 other = pv > 1e-4 ? clamp(fv.zw / pv, 0.0, 1.0) : vec2(0.0);
+@@ -704,8 +803,12 @@
+     float body = clamp(pv * (1.25 - pv) * 3.2, 0.0, 1.0);
+     float H = heightOf(pv) + (uRidge * 0.1 * turb + uFeather * 0.035 * rag) * body;
+     // How fast the height changes, per sheet unit (the generator's is about 1.8).
+-    vec2 g = vec2(hAt(at + vec2(1.0, 0.0)) - hAt(at - vec2(1.0, 0.0)),
+-                  hAt(at + vec2(0.0, 1.0)) - hAt(at - vec2(0.0, 1.0))) * 0.5 * uUnit;
++    vec4 neighbours = vec4(texture(uField,(at+vec2(1.0,0.0))/uFieldSize).r,
++      texture(uField,(at-vec2(1.0,0.0))/uFieldSize).r,
++      texture(uField,(at+vec2(0.0,1.0))/uFieldSize).r,
++      texture(uField,(at-vec2(0.0,1.0))/uFieldSize).r);
++    vec2 g = vec2(heightOf(neighbours.x)-heightOf(neighbours.y),
++                  heightOf(neighbours.z)-heightOf(neighbours.w)) * 0.5 * uUnit;
+     float slope = length(g);
+     float gH = max(slope, 1.6);
+     // Softness is the generator's, measured in height, scaled by how steeply the
+@@ -732,11 +835,12 @@
+       float own = f2.x * cos(ph) + f2.y * sin(ph);
+       float dH = thr + 0.03 * own * body - H;
+ 
+-      float soft = mix(0.05, 0.012, fi) * (0.4 + 1.2 * uMist * (1.0 - fi));
++      float soft = mix(0.029, 0.008, fi) * (0.4 + 1.2 * uMist * (1.0 - fi));
+       soft *= mix(0.4, 2.0, smoothstep(-0.45, 0.45, f1.w + 0.35 * sin(fl * 2.3)));
+       soft *= 1.0 + wet;
++      soft *= mix(1.0, 0.36, uDetail);
+       float toward = min(slope, mix(slopeDown, slopeUp, smoothstep(-0.03, 0.03, thr - H)));
+-      float sH = min(soft * clamp(toward, 0.35, 8.0), 0.19);
++      float sH = max(min(soft * clamp(toward, 0.35, 8.0), 0.11), fwidth(dH) * 0.65);
+       float m = smoothstep(-sH, sH, dH + sH * 0.9 * edgeN + tooth);
+       if (m <= 0.0) continue;
+       float inside = dH / gH;
+@@ -747,7 +851,7 @@
+       float pool = uEdge * dry * exp(-max(dH, 0.0) / (0.022 + 0.5 * sH)) * min(1.0, 3.0 / gH);
+       float a = clamp(m * (wash * mix(0.7, 1.15, fi) * uDensity + 0.4 * pool), 0.0, 1.0);
+ 
+-      float idx = mix(clamp(H, 0.0, 1.1) * 3.8, (1.0 - fi) * 3.6 + 0.2, 0.35);
++      float idx = mix(clamp(H, 0.0, 1.1) * 3.8, (1.0 - fi) * 3.6 + 0.2, 0.18);
+       idx += uHueDrift * driftN * 3.4;
+       idx -= clamp(inside * 1.5, 0.0, 0.6);
+       vec3 lc = pigment(idx);
+@@ -759,7 +863,7 @@
+       pig = pig + a * (1.0 - pig);
+     }
+ 
+-    col *= 1.0 - pig * (0.16 * rag + 0.12 * f1.y);
++    col *= 1.0 - pig * (0.28 * rag + 0.24 * f1.y);
+ 
+     // Mist, as in the generator: a granular haze where the palest wash dissolves
+     // into paper, and a veil over the far washes.
+@@ -773,15 +877,75 @@
+ 
+     // Wet paint reads a little deeper.
+     col *= 1.0 - 0.08 * wet * pig;
++    if (uDetail > 0.5) {
++      // HAÏKUARELLE: continuous optical concentration for a real wet-on-wet
++      // wash, instead of visible quantization into the generator's six terraces.
++      // The upstream transported pigment, paper relief and ink shares remain
++      // the source. Absorption is an approximation, not a spectral simulation.
++      float mineral = (paperT.g * 0.4 - 0.15) * 5.0;
++      float mottling = 0.88 + 0.36 * rag + 0.22 * f1.y;
++      float concentration = max(0.0, pv * mottling * (1.0 + uTexture * mineral * (0.25 + 0.75 * (1.0 - clamp(pv, 0.0, 1.0)))));
++      // Sharpen transported pigment only as it dries. Reuse the four gradient
++      // samples; bounded local contrast cannot add paint outside the field.
++      float crisp = uDrySharpness * uDryingDetail * (1.0-smoothstep(0.015,0.28,wet));
++      float localDetail = pv-dot(neighbours,vec4(0.25));
++      concentration += crisp*1.3*clamp(localDetail,-0.12*pv,0.30*pv);
++      // A narrow broken tide mark, derived from the actual concentration slope.
++      float rim = exp(-abs(pv - 0.065) / 0.018) * dry * min(slope * 0.12, 0.85);
++      concentration += rim * (0.045 + 0.035 * edgeN) * uEdge;
++      if (uDryingDetail > 0.0) {
++        vec4 alpha = texture(uDryingTex, suv);
++        float reveal = (1.0 - smoothstep(0.015, 0.30, wet)) * uDryingDetail;
++        float material = reveal * (0.45 + 0.55 * uTexture);
++        // A soft threshold selects coherent sediment pockets instead of laying
++        // uniform noise over the wash. Threshold and sharpness are independent:
++        // the first selects deposits, the second defines their edges/contrast.
++        float threshold = mix(0.16,0.70,uDryThreshold);
++        float pockets = smoothstep(threshold-0.12,threshold+0.12,alpha.a);
++        alpha.a = mix(alpha.a,pockets,reveal*min(4.0*uDryThreshold,1.0));
++        alpha.r = mix(alpha.r,smoothstep(0.19,0.81,alpha.r),crisp*0.6);
++        alpha.g = mix(alpha.g,smoothstep(0.04,0.45,alpha.g),crisp*0.68);
++        // Same pigment, different optical thickness: transparent lakes beside
++        // denser islands. These masks never draw on unpainted paper.
++        concentration *= mix(1.0, 0.62 + 1.0 * alpha.r + (0.28+0.30*crisp) * alpha.a, material);
++        concentration *= 1.0 - material * alpha.b * 0.52;
++        concentration += material * alpha.g * (0.025 + (0.20+0.16*crisp) * min(pv, 0.5));
++        // Full-resolution paper tooth catches the selected mineral deposits.
++        concentration *= 1.0+crisp*uTexture*alpha.a*0.58*clamp(mineral,-0.7,0.9);
++        // Coffee-ring deposit follows the REAL outer pigment boundary. A
++        // second, interrupted inner rim suggests receding water, not a contour
++        // pasted around every procedural mask. Width is in paper units.
++        float inset = max(0.0, (heightOf(0.028) - H0) / max(slope, 1.0));
++        float width = (0.0015 + 0.0018 * alpha.a) * (1.0-0.22*crisp);
++        float broken = 0.52 + 0.48 * alpha.r;
++        float outer = exp(-inset / width) * smoothstep(0.8, 7.0, slope);
++        float inner = exp(-abs(inset - width * 3.1) / (width * 0.65));
++        inner *= smoothstep(0.35, 0.75, alpha.r) * smoothstep(1.0, 6.0, slope);
++        concentration += reveal * uEdge * broken * ((0.19+0.11*crisp) * outer + (0.052+0.035*crisp) * inner);
++      }
++      vec3 reflectance = clamp(pigment(1.15) / max(uPaper, vec3(0.03)), vec3(0.003), vec3(1.0));
++      col = uPaper * pow(reflectance, vec3(concentration * 1.55));
++      float edgeAA = max(fwidth(pv) * mix(0.8,0.48,crisp), mix(0.0015,0.0007,crisp));
++      float boundary = smoothstep(0.028 - edgeAA, 0.028 + edgeAA, pv + edgeN * 0.006);
++      col = mix(uPaper, col, boundary);
++      pig = 1.0 - exp(-concentration * 4.0);
++      col *= 1.0 - 0.035 * wet * pig;
++    }
+   }
+ 
+   float gran = paperT.g * 0.4 - 0.15;
+   float light = (paperT.b - 0.6) * 2.0;
+   float grain = (paperT.a - 0.5) * 0.25;
+   float tooth = pig * (0.6 + 0.8 * (1.0 - pig));
+-  col *= 1.0 - 1.1 * uTexture * tooth * gran;
+-  col *= 1.0 + 0.9 * uTexture * mix(0.15, 1.0, pig) * light * 0.5;
+-  col *= 1.0 + 0.9 * uTexture * grain;
++  // Clear water on cotton is visible before pigment arrives. This comes from the
++  // actual wetness channel and evaporates with it; it is never baked into paper.
++  float damp = smoothstep(0.008, 0.28, wet) * uDetail;
++  col *= 1.0 - damp * 0.22 * (1.0 - pig * 0.82);
++  col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
++  // Correlate mineral pigment density with the depressions in the paper.
++  col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * tooth * gran;
++  col *= 1.0 + 0.35 * uTexture * mix(0.06, 0.65, pig) * light;
++  col *= 1.0 + 0.65 * uTexture * grain;
+ 
+   vec3 outc = toSrgb(col) + (hash12(frag) - 0.5) / 255.0;
+   fragColor = vec4(outc, 1.0);
+--- /dev/null
++++ src/vendor/pigment-drift/paint/optics.ts
+@@ -0,0 +1,17 @@
++import {hexToLinear} from '../engine/color';
++
++/** HAÏKUARELLE: an RGB optical-density basis, not a spectral pigment model.
++ * The existing R/BA pigment field carries total absorption and the green/blue
++ * shares; red is the remainder. All colours therefore use the SAME upstream
++ * advection, diffusion, bloom and drying, without an extra simulation texture.
++ * Eight is the common unit used by FIELD_STEP and RENDER. Never change the
++ * basis when a pad changes: old paint must keep its deposited coefficients.
++ */
++export const OPTICAL_UNIT=8;
++export const MAX_PIGMENTS=16;
++export function absorptionTable(pigments:readonly string[],paper:string):number[]{
++  if(!pigments.length||pigments.length>MAX_PIGMENTS)throw new RangeError('One to sixteen optical pigments are supported.');
++  const white=hexToLinear(paper);
++  return Array.from({length:MAX_PIGMENTS},(_,i)=>hexToLinear(pigments[i]??pigments[0])
++    .map((v,c)=>-Math.log(Math.max(.003,Math.min(1,v/Math.max(.003,white[c]))))/OPTICAL_UNIT)).flat();
++}

@@ -1,0 +1,37 @@
+{
+  "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "results": [
+    {
+      "name": "bird-paper",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "c60d33fc1669ab7394c3e3864dfaf2300d52745e491a066a58952aaa94cd84ef",
+      "clear_percent": 100.0,
+      "elapsed_s": 0.74
+    },
+    {
+      "name": "bird-first",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "3f488d3779b453ba974d754b9a86b699454425eef0cf3d0cb89d5d708033b48d",
+      "clear_percent": 96.69,
+      "elapsed_s": 7.9
+    },
+    {
+      "name": "bird-signature",
+      "width": 1080,
+      "height": 1920,
+      "sha256": "c0934081ea0d25fe03cc62b7ebc5e56362017121cd9c48a79bd4f19028a649e3",
+      "clear_percent": 89.53,
+      "elapsed_s": 35.7
+    },
+    {
+      "name": "bird-signature-4096",
+      "width": 2304,
+      "height": 4096,
+      "sha256": "7180f98bf9eccc2e4b7884505cafdaab0d60514f85ed68a7a5d8a8366487e7d6",
+      "clear_percent": 89.53,
+      "elapsed_s": 37.96
+    }
+  ]
+}

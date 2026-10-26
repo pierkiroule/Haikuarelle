@@ -1,0 +1,99 @@
+{
+  "note": "Five actual native GPU paintings from V9/V10. No shader or simulation change in V11.",
+  "results": [
+    {
+      "bird": "geai",
+      "title": "Archipel d’azur",
+      "verses": [
+        "Le bleu prend son vol",
+        "Un chant se déplie dans l’eau",
+        "L’espace est resté"
+      ],
+      "reading": {
+        "tones": [
+          "blue"
+        ],
+        "coverage": 0.07775919732441472,
+        "centerY": 0.4227416509349158,
+        "islands": 3,
+        "vertical": true
+      }
+    },
+    {
+      "bird": "bouvreuil",
+      "title": "L’envol de rose",
+      "verses": [
+        "Le jour devient rose",
+        "La cendre accueille la pivoine",
+        "L’espace est resté"
+      ],
+      "reading": {
+        "tones": [
+          "rose",
+          "silver"
+        ],
+        "coverage": 0.11389817911557042,
+        "centerY": 0.4685664983285345,
+        "islands": 2,
+        "vertical": true
+      }
+    },
+    {
+      "bird": "corneille",
+      "title": "Souffle d’ombre",
+      "verses": [
+        "L’ombre ouvre ses bras",
+        "La nuit laisse passer le jour",
+        "L’espace est resté"
+      ],
+      "reading": {
+        "tones": [
+          "ink",
+          "silver"
+        ],
+        "coverage": 0.07422891118543293,
+        "centerY": 0.4585095818477755,
+        "islands": 2,
+        "vertical": true
+      }
+    },
+    {
+      "bird": "mesange",
+      "title": "Constellation d’azur",
+      "verses": [
+        "Un ciel dans la main",
+        "Un peu de soleil dans le bleu",
+        "Le blanc nous répond"
+      ],
+      "reading": {
+        "tones": [
+          "blue",
+          "ochre"
+        ],
+        "coverage": 0.05434782608695652,
+        "centerY": 0.44522726646451033,
+        "islands": 5,
+        "vertical": true
+      }
+    },
+    {
+      "bird": "picvert",
+      "title": "Îlots de sous-bois",
+      "verses": [
+        "Un jardin prend l’air",
+        "L’or frissonne au creux des mousses",
+        "Le blanc nous répond"
+      ],
+      "reading": {
+        "tones": [
+          "moss",
+          "ochre"
+        ],
+        "coverage": 0.0641025641025641,
+        "centerY": 0.4541283928287686,
+        "islands": 5,
+        "vertical": true
+      }
+    }
+  ]
+}
