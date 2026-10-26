@@ -124,3 +124,9 @@ L’eau déposée sur un pigment encore vivant déclenche désormais de petites 
 ### Une feuille composée dès le premier geste
 
 Le titre occupe une bande en haut du papier, les trois vers une bande en bas et « •°○ » signe discrètement le coin inférieur droit. Le canvas et les interactions sont limités au rectangle central : ni l’eau ni les pigments ne peuvent recouvrir les textes. Les lettres restent du texte HTML net et l’export PNG réserve les mêmes zones. La zone centrale conserve ses proportions ; les marges de texte ne déforment pas la peinture.
+
+### Correctif de la trame au séchage
+
+Le relief du papier utilisait les dérivées GPU de la valeur du bruit : leur calcul par groupes de 2 × 2 pixels imprimait une structure régulière dans l’éclairage. Le relief utilise maintenant le gradient analytique du bruit, sans ces facettes. Le grain et les octaves des masques de séchage sont filtrés selon la résolution réellement affichée pour éviter les fréquences sous-pixel et le moiré, tout en conservant les détails résolus à l’export.
+
+`python scripts/check-paper-grain.py` compile le vrai shader et contrôle l’absence de relief bloqué sur les quads GPU ainsi que le filtrage du grain trop fin. Il nécessite numpy, Pillow, moderngl et EGL ; les gros plans à contraste amplifié sont écrits dans `/tmp`. Le contrôle échoue sur le shader antérieur au correctif. `scripts/check-plumage-render.py` vérifie ensuite le moteur WebGL réel, les couleurs, la diffusion et le séchage.

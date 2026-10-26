@@ -625,9 +625,37 @@ float paperNoise(vec2 p) {
   vec2 c = a - 1.0 + 2.0 * G2;
   return 70.0 * (paperCorner(cell, a) + paperCorner(cell + corner, b) + paperCorner(cell + 1.0, c));
 }
+// Analytic simplex gradients: derivatives of sampled relief inherit the GPU's
+// 2x2 derivative quads and stamp a tiny embossed checkerboard onto the paper.
+vec2 paperCornerGradient(vec2 lattice, vec2 delta) {
+  float t = max(0.5-dot(delta,delta),0.0);
+  vec2 g = hash22(lattice)*2.0-1.0;
+  g *= inversesqrt(max(dot(g,g),0.08));
+  return t*t*t*t*g-8.0*t*t*t*dot(g,delta)*delta;
+}
+vec2 paperNoiseGradient(vec2 p) {
+  const float F2=0.3660254037844386,G2=0.2113248654051871;
+  vec2 cell=floor(p+(p.x+p.y)*F2);
+  vec2 a=p-cell+(cell.x+cell.y)*G2;
+  vec2 corner=a.x>a.y?vec2(1,0):vec2(0,1);
+  return 70.0*(paperCornerGradient(cell,a)
+    +paperCornerGradient(cell+corner,a-corner+G2)
+    +paperCornerGradient(cell+1.0,a-1.0+2.0*G2));
+}
+float cottonBandWeight(float footprint) {
+  return 1.0-smoothstep(0.35,0.85,footprint);
+}
+float filteredPaperNoise(vec2 p) {
+  return paperNoise(p)*cottonBandWeight(max(length(dFdx(p)),length(dFdy(p))));
+}
 float cottonFbm(vec2 p,int octaves) {
   float sum=0.0,weight=0.5;
-  for(int i=0;i<6;i++){if(i>=octaves)break;sum+=weight*paperNoise(p);p=ROT*p*2.03+vec2(13.7,8.1);weight*=0.5;}
+  float footprint=max(length(dFdx(p)),length(dFdy(p)));
+  for(int i=0;i<6;i++){
+    if(i>=octaves)break;
+    sum+=weight*cottonBandWeight(footprint)*paperNoise(p);
+    p=ROT*p*2.03+vec2(13.7,8.1);footprint*=2.03;weight*=0.5;
+  }
   return sum;
 }
 `;
@@ -644,9 +672,11 @@ void main() {
   const mat2 B = mat2(0.292, -0.956, 0.956, 0.292);
   vec2 seed = uSeedOff * 2.71;
   float footprint = max(length(dFdx(P)), length(dFdy(P)));
-  float fineWeight = 1.0 - smoothstep(0.45, 1.10, footprint * 0.76);
-  float pores = 0.65 * paperNoise(P * 0.23 + seed)
-              + 0.35 * paperNoise(A * P * 0.59 + seed.yx + 8.3);
+  float lowWeight=cottonBandWeight(footprint*0.23);
+  float midWeight=cottonBandWeight(footprint*0.59);
+  float fineWeight=cottonBandWeight(footprint*0.94);
+  float pores = 0.65 * paperNoise(P * 0.23 + seed) * lowWeight
+              + 0.35 * paperNoise(A * P * 0.59 + seed.yx + 8.3) * midWeight;
   float fine = paperNoise(B * P * 0.94 + seed + 27.0) * fineWeight;
   float body = paperNoise(A * P * 0.032 + seed * 0.21 + 5.0);
   float edge = 0.30 * pores + 0.17 * fine;
@@ -654,8 +684,10 @@ void main() {
   // Mineral variation belongs mainly to the pigment, not to bare paper.
   float mineral = smoothstep(0.10, 0.70, pores * 0.75 + fine * 0.25);
   float gran = 0.050 * pores + 0.033 * mineral - 0.004;
-  float relief = pores * 0.50 + fine * 0.10;
-  vec2 slope = vec2(dFdx(relief), dFdy(relief)) / max(footprint, 0.05);
+  vec2 poresGradient=0.65*0.23*lowWeight*paperNoiseGradient(P*0.23+seed)
+    +0.35*0.59*midWeight*transpose(A)*paperNoiseGradient(A*P*0.59+seed.yx+8.3);
+  vec2 fineGradient=0.94*fineWeight*transpose(B)*paperNoiseGradient(B*P*0.94+seed+27.0);
+  vec2 slope=0.50*poresGradient+0.10*fineGradient;
   vec3 normal = normalize(vec3(-slope * 0.22, 1.8));
   float light = dot(normal, vec3(-0.451, 0.551, 0.702)) - 0.702;
   float paper = 0.008 * pores + 0.004 * fine + 0.007 * body;
@@ -724,7 +756,7 @@ void main() {
   arcs *= 0.3 + 0.7 * smoothstep(-0.22, 0.24, cottonFbm(P * 29.0 + warp + seed, 2));
   // Fine mineral islands follow the same warped wash, not independent speckle.
   float sediment = cottonFbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3)
-                 + 0.16 * paperNoise(P * 137.0 + warp * 6.0 + seed.yx);
+                 + 0.16 * filteredPaperNoise(P * 137.0 + warp * 6.0 + seed.yx);
   float pockets = smoothstep(0.015, 0.28, sediment);
   float activity = smoothstep(-0.06, 0.18, cottonFbm(P * 3.3 + warp * 0.5 + seed + 47.5, 3));
   o = vec4(smoothstep(-0.32, 0.32, wash), clamp(arcs * activity, 0.0, 1.0), pale * activity, pockets * (0.3 + 0.7 * activity));
