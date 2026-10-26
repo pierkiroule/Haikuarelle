@@ -14,13 +14,13 @@ export interface SculptureInput {frame:PaintingFrame;paper:string;marks:readonly
  * share contour vertices: both outside contours AND white holes are sealed.
  * Interior vertices are exact +/- height pairs, never a paper slab or a sphere.
  */
-export function buildSculpture({frame,paper,marks,resolution=176}:SculptureInput):Sculpture {
+export function buildSculpture({frame,paper,marks,resolution=288}:SculptureInput):Sculpture {
   const {width,height,pixels}=frame;
   if(width<1||height<1||pixels.length!==width*height*4)throw new Error('Cette peinture ne peut pas encore devenir une sculpture.');
-  const limit=Math.max(24,Math.min(240,Math.round(resolution)));
+  const limit=Math.max(24,Math.min(384,Math.round(resolution)));
   const shrink=limit/Math.max(width,height);
   const nx=Math.max(2,Math.round(width*shrink)),ny=Math.max(2,Math.round(height*shrink)),w=nx+2,h=ny+2,n=w*h;
-  const density=new Float32Array(n),mask=new Uint8Array(n),paintU=new Float32Array(n),paintV=new Float32Array(n);
+  const density=new Float32Array(n),mask=new Uint8Array(n);
   const white=[1,3,5].map(i=>parseInt(paper.slice(i,i+2),16));
   const sample=(x:number,y:number)=>{
     x=Math.max(0,Math.min(width-1,x));y=Math.max(0,Math.min(height-1,y));
@@ -31,21 +31,20 @@ export function buildSculpture({frame,paper,marks,resolution=176}:SculptureInput
   // Max pigment per footprint retains thin branches. The threshold excludes
   // the cotton's slight colour variation; the white paper is NOT geometry.
   for(let y=1;y<=ny;y++)for(let x=1;x<=nx;x++){
-    let amount=0,best=-1,bestX=0,bestY=0;
-    const remember=(px:number,py:number)=>{const value=sample(px,py);if(value>best){best=value;bestX=Math.max(0,Math.min(width-1,px));bestY=Math.max(0,Math.min(height-1,py));}return value;};
+    let amount=0;
     if(shrink>=1){
       // Reconstruct low-resolution captures continuously, rather than turning
       // each source pixel into a large square extrusion.
       const sx=(x-.5)*width/nx-.5,sy=(y-.5)*height/ny-.5,xx=Math.floor(sx),yy=Math.floor(sy),u=sx-xx,v=sy-yy;
-      amount=remember(xx,yy)*(1-u)*(1-v)+remember(xx+1,yy)*u*(1-v)+remember(xx,yy+1)*(1-u)*v+remember(xx+1,yy+1)*u*v;
+      amount=sample(xx,yy)*(1-u)*(1-v)+sample(xx+1,yy)*u*(1-v)+sample(xx,yy+1)*(1-u)*v+sample(xx+1,yy+1)*u*v;
     }else{
       let total=0,samples=0;
       for(let py=Math.floor((y-1)*height/ny);py<Math.ceil(y*height/ny);py++)for(let px=Math.floor((x-1)*width/nx);px<Math.ceil(x*width/nx);px++){
-        const value=remember(px,py);amount=Math.max(amount,value);total+=value;samples++;
+        const value=sample(px,py);amount=Math.max(amount,value);total+=value;samples++;
       }
       amount=.55*amount+.45*total/Math.max(1,samples);
     }
-    const i=y*w+x;density[i]=Math.max(0,amount);paintU[i]=(bestX+.5)/width;paintV[i]=1-(bestY+.5)/height;
+    const i=y*w+x;density[i]=Math.max(0,amount);
     if(amount>=17/255){mask[i]=1;count++;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
   }
   if(!count)throw new Error('Il faut une trace de pigment visible pour faire naître la sculpture.');
@@ -98,13 +97,12 @@ export function buildSculpture({frame,paper,marks,resolution=176}:SculptureInput
   };
   type V={key:string;x:number;y:number;z:number;u:number;v:number;boundary:boolean};
   const grid=(i:number):V=>({key:`v${i}`,x:i%w,y:Math.floor(i/w),z:heights[i],
-    u:outside[i]<=2.1?paintU[i]:(i%w-.5)/nx,v:outside[i]<=2.1?paintV[i]:1-(Math.floor(i/w)-.5)/ny,boundary:false});
+    u:(i%w-.5)/nx,v:1-(Math.floor(i/w)-.5)/ny,boundary:false});
   const cross=(a:number,b:number):V=>{
     const t=signed[a]/(signed[a]-signed[b]),p=grid(a),q=grid(b);
-    const pigment=mask[a]?a:b;
-    // At a cut contour, sample the adjacent pigment, never the white paper
-    // just outside it. Otherwise the closed edge looks like a thick white rim.
-    return {key:`e${Math.min(a,b)}:${Math.max(a,b)}`,x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t,z:0,u:paintU[pigment],v:paintV[pigment],boundary:true};
+
+    // Preserve continuous projection; worker colour extension prevents white fringes.
+    return {key:`e${Math.min(a,b)}:${Math.max(a,b)}`,x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t,z:0,u:p.u+(q.u-p.u)*t,v:p.v+(q.v-p.v)*t,boundary:true};
   };
   const face=(a:number,b:number,c:number)=>{
     const source=[a,b,c],polygon:V[]=[];
@@ -132,7 +130,7 @@ export function buildSculpture({frame,paper,marks,resolution=176}:SculptureInput
   for(let pass=0;pass<2;pass++){
     const updates:{id:number;x:number;y:number}[]=[];
     for(const [id,neighbors] of contour){if(neighbors.size!==2)continue;const [a,b]=[...neighbors];updates.push({id,x:pos[id*3]*.5+(pos[a*3]+pos[b*3])*.25,y:pos[id*3+1]*.5+(pos[a*3+1]+pos[b*3+1])*.25});}
-    for(const p of updates){pos[p.id*3]=p.x;pos[p.id*3+1]=p.y;}
+    for(const p of updates){pos[p.id*3]=p.x;pos[p.id*3+1]=p.y;uv[p.id*2]=Math.max(0,Math.min(1,(p.x/unit+cx-.5)/nx));uv[p.id*2+1]=Math.max(0,Math.min(1,1-(cy-p.y/unit-.5)/ny));}
   }
   const positions=new Float32Array(pos),normals=new Float32Array(pos.length);
   for(let i=0;i<index.length;i+=3){

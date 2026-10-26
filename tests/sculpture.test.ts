@@ -1,5 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {buildSculpture,type Sculpture} from '../src/voyage/sculpture';
+import {extendPigmentColours} from '../src/voyage/texture';
 import {flightPose,resumeTime} from '../src/voyage/flight';
 import type {PaintingFrame} from '../src/birds/artworkPoetry';
 const paper='#f7f4ec';
@@ -61,6 +62,7 @@ describe('symmetric pigment sculpture',()=>{
   });
   it('colours closed cut edges from adjacent pigment rather than extruding a white paper rim',()=>{
     const frame=painting((x,y)=>Math.hypot(x-24,y-24)<17),mesh=buildSculpture({frame,paper,marks:[],resolution:24});
+    extendPigmentColours(frame,paper);
     for(let i=0;i<mesh.positions.length/3;i++)if(mesh.positions[i*3+2]===0){
       const x=Math.min(frame.width-1,Math.floor(mesh.uvs[i*2]*frame.width));
       const y=Math.min(frame.height-1,Math.floor((1-mesh.uvs[i*2+1])*frame.height));

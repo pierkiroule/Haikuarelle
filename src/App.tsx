@@ -22,7 +22,9 @@ import './ritual.css';
 import {APP_NAME} from './brand';
 import {FeatherDrift} from './birds/FeatherDrift';
 import './aquarelle.css';
+import {BirdWheel} from './birds/BirdWheel';
 import {FeatherGlyph} from './birds/FeatherGlyph';
+import {currentVoyageQuality} from './voyage/quality';
 import VoyageDialog,{type Journey} from './voyage/VoyageDialog';
 const Validation=lazy(()=>import('./Validation'));
 const Legacy=lazy(()=>import('./LegacyStudio'));
@@ -103,7 +105,7 @@ export function BirdStudio(){
     document.addEventListener('pointerdown',dismiss);
     return()=>document.removeEventListener('pointerdown',dismiss);
   },[brushMenu]);
-  const resetSheet=(next:number)=>{stop();setWaterPlaced(false);setSeed(next);setMarks([]);setPoetry(null);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===3?'water':'choose');setBrushMenu(null);};
+  const resetSheet=(next:number)=>{stop();setWaterPlaced(false);setSeed(next);setMarks([]);setPoetry(null);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===1?'water':'choose');setBrushMenu(null);};
   const fresh=()=>{resetSheet(randomSeed());setPadIds([]);setStage('choose');if(screen.viewing)screen.exit();};
   const erase=()=>{resetSheet(current.current.seed);setNotice('Tout est effacé. La feuille est prête.');};
   const wet=(p:Point,pressure=.5)=>{
@@ -126,16 +128,14 @@ export function BirdStudio(){
   const choose=(bird:Bird)=>{if(!canPaint)return;setSelected(bird.id);setBrushMenu(bird.id);prepare(bird);};
   const pickBird=(bird:Bird)=>{
     if(stage!=='choose')return;
-    const chosen=padIds.includes(bird.id);
-    if(!chosen&&padIds.length>=3)return;
     const token=++previewToken.current,sounds=bank.current;
     sounds?.stop();setPreviewing(null);
-    setPadIds(list=>chosen?list.filter(id=>id!==bird.id):[...list,bird.id]);
-    if(chosen||!sounds)return;
+    setPadIds([bird.id]);setSelected(bird.id);
+    if(!sounds)return;
     void sounds.play(bird.id,()=>{if(token===previewToken.current){setPreviewing(bird.id);setReady(list=>list.includes(bird.id)?list:[...list,bird.id]);}},()=>{if(token===previewToken.current)setPreviewing(null);})
       .catch(()=>{if(token===previewToken.current)setNotice('L’aperçu n’a pas pu démarrer. La plume reste sélectionnée ; tu pourras réécouter son chant lors du dépôt.');});
   };
-  const startRitual=()=>{if(padIds.length!==3)return;previewToken.current++;bank.current?.stop();setPreviewing(null);setSelected(padIds[0]);setWaterPlaced(false);engine.current?.beginSignature(seed);setStage('water');};
+  const startRitual=()=>{if(padIds.length!==1)return;previewToken.current++;bank.current?.stop();setPreviewing(null);setSelected(padIds[0]);setWaterPlaced(false);engine.current?.beginSignature(seed);setStage('water');};
   const inviteChants=()=>{if(!canWet||error)return;stop();setPoint(null);setStage('paint');};
   const finalize=()=>{
     if(!canPaint||!marks.length||!engine.current||error||busy||stroke.current?.busy)return;
@@ -160,7 +160,7 @@ export function BirdStudio(){
       if(event.key==='Escape'){if(brushMenu)studio.current?.querySelector<HTMLButtonElement>(`[aria-controls="brush-settings-${brushMenu}"]`)?.focus();setBrushMenu(null);setCanvasOnly(false);stop();if(screen.viewing)screen.exit();return;}
       if(event.target instanceof HTMLInputElement||event.target instanceof HTMLSelectElement||event.target instanceof HTMLButtonElement||event.repeat)return;
       if(event.key.toLowerCase()==='f'&&stage!=='choose')screen.toggle();
-      if(canPaint&&/^[1-3]$/.test(event.key)){event.preventDefault();choose(pads[Number(event.key)-1]);}
+      if(canPaint&&event.key==='1'&&pads[0]){event.preventDefault();choose(pads[0]);}
     };
     const visibility=()=>{if(document.hidden)stop();};
     document.addEventListener('keydown',keys);document.addEventListener('visibilitychange',visibility);window.addEventListener('blur',stop);
@@ -197,7 +197,7 @@ export function BirdStudio(){
     if(!engine.current||!poetry||stage!=='finished'||exporting)return;stop();setExporting(true);
     try{
       const png=await exportSignatureCard(await engine.current.exportPNG(),poetry.verses,palette.paper,seed,name,poetry.title);
-      const filename=`haikuarelle-des-trois-oiseaux-${seed}.png`;
+      const filename=`haikuarelle-${seed}.png`;
       const result=await deliverArtwork(png,filename,poetry.title,mode);
       if(result==='shared')setNotice('Ton haïkuarelle a pris son envol.');
       if(result==='saved')setNotice(mode==='share'?'Ton haïkuarelle est téléchargée : tu peux maintenant la partager.':'Ton haïkuarelle, son titre et son haïku sont téléchargés.');
@@ -208,7 +208,7 @@ export function BirdStudio(){
     journeyOpening.current=true;
     stop();engine.current.pause();
     try{
-      const frame=engine.current.capturePreview(),sounds=bank.current;
+      const frame=engine.current.capturePreview(currentVoyageQuality().textureSize),sounds=bank.current;
       // Unlock inside this actual button gesture, before the lazy 3D module
       // and geometry worker load. This context belongs only to the voyage.
       let context:AudioContext|null=null;
@@ -226,29 +226,26 @@ export function BirdStudio(){
   const dryingEnd=(engine.current?.composition.duration??1)*30;
   const dryingProgress=Math.min(1,Math.max(0,(status.ticks-dryingStart)/Math.max(1,dryingEnd-dryingStart)));
   const liveText=canWet?(waterPlaced?'L’eau attend les oiseaux. Tu peux encore étendre l’eau résonante.':'Glisse sur le papier pour déposer l’eau claire.') :stage==='drying'?'L’eau se retire. Le titre et le haïku vont apparaître…':stage==='finished'?'Ton œuvre a trouvé ses mots.':loading?'La plume prépare son chant…':playing?`${BIRDS.find(b=>b.id===playing)?.name} · le chant anime la matière`:status.paused&&status.hasPigment&&status.phase!=='complete'?'La diffusion est suspendue.':status.phase==='complete'&&marks.length?'L’eau reste disponible pour les prochains chants.':marks.length?'Les pigments se diffusent doucement. L’eau reste présente.':'Dépose un chant sur le papier sec ou dans l’eau.';
-  const secondaryActions=stage!=='choose'?<details className="atelier-more" onClick={event=>{if(event.target instanceof Element&&event.target.closest('button'))event.currentTarget.open=false;}}><summary aria-label="Autres actions">⋯</summary><div className="bird-actions"><button onClick={screen.toggle} aria-label="Grand écran HD"><Glyph name="screen"/>Grand écran</button><button onClick={fresh} disabled={exporting||busy}><Glyph name="refresh"/>Nouvelle œuvre</button>{(stage==='water'||stage==='paint')&&!marks.length&&!busy&&<button onClick={()=>{stop();setStage('choose');}}>Changer mes oiseaux</button>}{stage==='paint'&&<button disabled={busy||exporting} onClick={()=>{stop();setBrushMenu(null);setPoint(null);setWaterPlaced(false);setStage('water');}}>Ajouter de l’eau résonante</button>}<button onClick={erase} disabled={exporting||busy}><Glyph name="erase"/>Effacer tout</button><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="https://github.com/pierkiroule/Haikuarelle" target="_blank" rel="noreferrer">Code & installation ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Licence du moteur ↗</a></div></details>:null;
+  const secondaryActions=stage!=='choose'?<details className="atelier-more" onClick={event=>{if(event.target instanceof Element&&event.target.closest('button'))event.currentTarget.open=false;}}><summary aria-label="Autres actions">⋯</summary><div className="bird-actions"><button onClick={screen.toggle} aria-label="Grand écran HD"><Glyph name="screen"/>Grand écran</button><button onClick={fresh} disabled={exporting||busy}><Glyph name="refresh"/>Nouvelle œuvre</button>{(stage==='water'||stage==='paint')&&!marks.length&&!busy&&<button onClick={()=>{stop();setStage('choose');}}>Retrouver la roue</button>}{stage==='paint'&&<button disabled={busy||exporting} onClick={()=>{stop();setBrushMenu(null);setPoint(null);setWaterPlaced(false);setStage('water');}}>Ajouter de l’eau résonante</button>}<button onClick={erase} disabled={exporting||busy}><Glyph name="erase"/>Effacer tout</button><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="https://github.com/pierkiroule/Haikuarelle" target="_blank" rel="noreferrer">Code & installation ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Licence du moteur ↗</a></div></details>:null;
   return <div ref={studio} className={`bird-studio water-studio direct-studio flow-${stage} ${canvasOnly?'canvas-only':''} ${contact?'is-painting':''} ${screen.viewing?'bird-viewing':''} ${screen.hud?'show-hud':''}`} onPointerMove={screen.viewing?screen.reveal:undefined} onPointerDown={screen.viewing?screen.reveal:undefined} style={{'--paper':palette.paper,'--art-ratio':sheet.width/sheet.height,'--sample-color':selectedBird.color} as React.CSSProperties}>
     <FeatherDrift/>
     <header className="bird-header">
-      <a className="bird-wordmark feather-wordmark" href="/" aria-label={APP_NAME}><img className="watercolor-brand" src="/brand/plume-aquarelle.webp" alt="" width="48" height="48" decoding="async"/><span className="brand-copy"><span>HAÏKUARELLE</span><small>des trois plumes</small></span></a><span className="bird-edition">UN RITUEL D’EAU, DE CHANTS ET DE SILENCE</span>
+      <a className="bird-wordmark feather-wordmark" href="/" aria-label={APP_NAME}><img className="watercolor-brand" src="/brand/plume-aquarelle.webp" alt="" width="48" height="48" decoding="async"/><span className="brand-copy"><span>Plume</span><small>d’Haïkuarelle</small></span></a><span className="bird-edition">UN RITUEL D’EAU, DE CHANTS ET DE SILENCE</span>
       <div className="bird-view-controls">{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{if(canWet)stop();setBrushMenu(null);setCanvasOnly(v=>!v);}}>Toile seule</button>}{stage==='choose'&&<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="portrait">Portrait</option><option value="landscape">Paysage HD</option></select>}{secondaryActions}</div>
     </header>
     <RitualProgress stage={stage}/>
-    {stage==='choose'&&<section className="bird-selection" aria-labelledby="trio-title"><img className="selection-plume" src="/brand/plume-aquarelle.webp" alt="" width="88" height="88" decoding="async"/><p className="bird-eyebrow">01 · LA RENCONTRE</p><h1 id="trio-title">Trois plumes sonores<br/><em>qui t’inspirent.</em></h1><p>Un clic pour choisir et écouter. Trois voix t’accompagneront, de l’eau résonante aux premiers mots.</p><div className="bird-selection-grid">{BIRDS.map(bird=>{
-      const order=padIds.indexOf(bird.id),chosen=order>=0;
-      return <button key={bird.id} className={`trio-bird ${chosen?'chosen':''} ${previewing===bird.id?'is-previewing':''}`} aria-description="Sélectionner cette plume joue un aperçu de son chant, sans déposer de pigment." title={`Choisir et écouter ${bird.name}`} aria-pressed={chosen} aria-label={`Choisir la plume ${bird.name}`} disabled={!chosen&&padIds.length===3} onClick={()=>pickBird(bird)} style={{'--bird-color':bird.color} as React.CSSProperties}><span className="trio-order">{chosen?String(order+1).padStart(2,'0'):'+'}</span><FeatherGlyph bird={bird}/><strong>{bird.name}</strong><small>{previewing===bird.id?'♪ Le chant se présente…':bird.gesture}</small><span className="pad-pigments" aria-hidden="true">{[...(bird.plumage??[bird.slot,...(bird.id==='rougegorge'?[6]:[])]).map(slot=>PLUMAGE_PIGMENTS[slot]),palette.paper].map((c,i)=><i key={i} style={{background:c}}/>)}</span></button>;
-    })}</div><span className="sr-only" role="status">{previewing?`Aperçu du chant : ${BIRDS.find(b=>b.id===previewing)?.name}`:''}</span><div className="trio-start"><span role="status" aria-live="polite">{padIds.length} / 3 oiseaux choisis</span><button disabled={padIds.length!==3} onClick={startRitual}>Vers l’eau résonante <span aria-hidden="true">↗</span></button></div></section>}
+    {stage==='choose'&&<section className="bird-selection" aria-labelledby="trio-title"><p className="bird-eyebrow">01 · LA RENCONTRE</p><h1 id="trio-title">Une plume sonore<br/><em>confiée au hasard.</em></h1><p>Laisse la roue choisir ton oiseau. Son plumage devient ta palette, son univers inspire tes mots.</p><BirdWheel onSpin={()=>{stop();setPadIds([]);void bank.current?.unlock().catch(()=>{});}} onChoose={pickBird}/><span className="sr-only" role="status">{previewing?`Aperçu du chant : ${BIRDS.find(b=>b.id===previewing)?.name}`:''}</span><div className="trio-start"><span>{padIds.length?'Une plume, tout un monde.':'Tourne la roue pour rencontrer ton oiseau.'}</span><button disabled={padIds.length!==1} onClick={startRitual}>Vers l’eau résonante <span aria-hidden="true">↗</span></button></div></section>}
     {stage!=='choose'&&<section className="ritual-heading" aria-labelledby="ritual-title"><h1 id="ritual-title">{ritual.title}</h1><details className="ritual-help"><summary aria-label="Comment vivre cette étape ?">?</summary><div>{ritual.hint}</div></details></section>}
     <main className="bird-workbench">
       <section ref={artwork} className="bird-stage" aria-label="Votre œuvre d’aquarelle abstraite">
-        <div className="bird-sheet-meta"><span>{stage==='finished'?'VOTRE HAÏKUARELLE':stage==='drying'?'LE PAPIER GARDE LE CHANT':contact?'LE CHANT DEVIENT MATIÈRE':'VOS TROIS PLUMES · VOTRE GESTE'}</span><span>{String(marks.length).padStart(2,'0')} GESTES</span></div>
+        <div className="bird-sheet-meta"><span>{stage==='finished'?'VOTRE HAÏKUARELLE':stage==='drying'?'LE PAPIER GARDE LE CHANT':contact?'LE CHANT DEVIENT MATIÈRE':'UNE PLUME · VOTRE GESTE'}</span><span>{String(marks.length).padStart(2,'0')} GESTES</span></div>
         {poetry&&<ArtworkTitle poetry={poetry}/>}
         <div ref={paper} className="bird-paper stable-sheet tool-paint" tabIndex={canDraw?0:-1} role="button" aria-disabled={!canDraw} aria-label={canWet?"Toile : maintiens et glisse pour déposer l’eau résonante. Au clavier, maintiens espace ou Entrée et utilise les flèches.":"Papier : touche ou glisse sur le papier sec ou humide pour peindre avec un chant entier. Au clavier, place la plume avec les flèches puis presse espace ou Entrée."} onPointerDown={down} onPointerMove={position} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release} onPointerLeave={()=>{if(pointer.current===null){setPoint(null);cursorPrevious.current=null;setFeatherTilt(0);}}} onKeyDown={keyboardPaper} onKeyUp={event=>{if((event.key===' '||event.key==='Enter')&&keyHeld.current){event.preventDefault();keyHeld.current=false;if(canWet)stop();else setContact(false);}}} onBlur={()=>{if(keyHeld.current){keyHeld.current=false;if(canWet)stop();else setContact(false);}}} onContextMenu={event=>event.preventDefault()}>
           <canvas ref={canvas} aria-label="Aquarelle et traces de plumes sur papier coton"/>
-          {!marks.length&&!contact&&!error&&(!canWet||!waterPlaced)&&stage!=='drying'&&stage!=='finished'&&<div className="bird-paper-invitation">{canWet?<WaterDrop className="invitation-feather"/>:<FeatherGlyph bird={selectedBird} className="invitation-feather"/>}<span>{canWet?(waterPlaced?'L’eau résonante est déposée.':'Un peu d’eau, avant les voix.'):'Les oiseaux peuvent entrer.'}</span><small>{canWet?'Dessine des chemins d’eau, sans un bruit.':'Dépose ou glisse la plume. Le chant anime ta matière.'}</small></div>}
+          {!marks.length&&!contact&&!error&&(!canWet||!waterPlaced)&&stage!=='drying'&&stage!=='finished'&&<div className="bird-paper-invitation">{canWet?<WaterDrop className="invitation-feather"/>:<FeatherGlyph bird={selectedBird} className="invitation-feather"/>}<span>{canWet?(waterPlaced?'L’eau résonante est déposée.':'Un peu d’eau, avant les voix.'):'Ton oiseau peut entrer.'}</span><small>{canWet?'Dessine des chemins d’eau, sans un bruit.':'Dépose ou glisse la plume. Le chant anime ta matière.'}</small></div>}
           {point&&canPaint&&!error&&<div className={`brush-cursor feather-cursor ${contact?'resonating':''}`} aria-hidden="true" style={{left:`${point.x*100}%`,top:`${point.y*100}%`,'--feather-tilt':`${featherTilt}deg`} as React.CSSProperties}><span className="feather-hotspot"/><FeatherGlyph bird={selectedBird}/></div>}
           {point&&canWet&&!error&&<div className={`water-cursor ${contact?'is-wetting':''}`} aria-hidden="true" style={{left:`${point.x*100}%`,top:`${point.y*100}%`}}><WaterDrop/></div>}
-          {error&&<div className="bird-gpu-error" role="alert"><span>•°</span><p>Le papier attend votre GPU.</p><small>{error.includes('WebGL')?'Activez l’accélération graphique dans un navigateur compatible WebGL2.':error}</small><button onClick={event=>{event.stopPropagation();stop();setWaterPlaced(false);setMarks([]);setPoetry(null);setStage(padIds.length===3?'water':'choose');setPoint(null);setStatus(idle);setError('');setRetry(r=>r+1);}}>Réessayer</button></div>}
+          {error&&<div className="bird-gpu-error" role="alert"><span>•°</span><p>Le papier attend votre GPU.</p><small>{error.includes('WebGL')?'Activez l’accélération graphique dans un navigateur compatible WebGL2.':error}</small><button onClick={event=>{event.stopPropagation();stop();setWaterPlaced(false);setMarks([]);setPoetry(null);setStage(padIds.length===1?'water':'choose');setPoint(null);setStatus(idle);setError('');setRetry(r=>r+1);}}>Réessayer</button></div>}
         </div>
         {poetry&&<ArtworkPoem poetry={poetry} dedication={name}/>}
         <div className="bird-art-caption"><span>{stage==='finished'?'Trois plumes. Votre empreinte.':stage==='drying'?'Les contours se déposent. Les mots viendront ensuite.':marks.length?'Levez la plume. Laissez l’eau poursuivre son chemin.':'Un geste, un chant. Le papier et l’eau composent la matière.'}</span><span className="signature-id">N° {seed.toString(16).toUpperCase().padStart(8,'0')}</span></div>
@@ -256,7 +253,7 @@ export function BirdStudio(){
       <aside className="bird-instrument">
         <div className="bird-pad-board">
           {stage==='paint'&&<>
-          <div className="bird-pads" role="group" aria-label="Vos trois plumes">{pads.map((bird,index)=><div className="bird-pad-slot" key={index}>
+          <div className="bird-pads" role="group" aria-label="Votre plume sonore">{pads.map((bird,index)=><div className="bird-pad-slot" key={index}>
             <button className={`bird-pad ${selected===bird.id?'is-selected':''} ${playing===bird.id?'is-playing':''} ${loading===bird.id?'is-loading':''}`} disabled={exporting||!canPaint} onClick={()=>choose(bird)} aria-label={`Choisir la plume ${bird.name} — ${bird.gesture}`} aria-pressed={selected===bird.id} aria-expanded={brushMenu===bird.id} aria-controls={`brush-settings-${bird.id}`} title={`${bird.name} · ${bird.gesture} · touche ${index+1}`} style={{'--bird-color':bird.color} as React.CSSProperties}>
               <span className="pad-number">{index+1}</span><FeatherGlyph bird={bird}/><strong>{bird.name}</strong><small>{loading===bird.id?'Préparation…':playing===bird.id?'Le chant résonne…':bird.gesture}</small>
               <span className="pad-pigments" aria-hidden="true">{[...(bird.plumage??[bird.slot,...(bird.id==='rougegorge'?[6]:[])]).map(slot=>PLUMAGE_PIGMENTS[slot]),palette.paper].map((c,i)=><i key={i} style={{background:c}}/>)}</span><span className={`pad-ready ${ready.includes(bird.id)?'ready':''}`}/>
@@ -280,7 +277,7 @@ export function BirdStudio(){
       </aside>
 
     </main>
-    <footer className="bird-footer"><span>Trois oiseaux. De l’eau, des chants, du silence. Une haïkuarelle.</span><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="https://github.com/pierkiroule/Haikuarelle" target="_blank" rel="noreferrer">Code & installation ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Pigment Drift · MIT</a></footer>
+    <footer className="bird-footer"><span>Un oiseau. De l’eau, un chant, du silence. Une haïkuarelle.</span><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="https://github.com/pierkiroule/Haikuarelle" target="_blank" rel="noreferrer">Code & installation ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Pigment Drift · MIT</a></footer>
     {canvasOnly&&<button className="canvas-restore" onClick={()=>setCanvasOnly(false)}>Afficher les commandes <span aria-hidden="true">↗</span></button>}
     {screen.viewing&&<button className="bird-exit" aria-label="Quitter le plein écran" onClick={screen.exit} onFocus={screen.reveal} onPointerMove={screen.reveal}><Glyph name="close"/>Quitter</button>}
     {screen.viewing&&playing&&<button className="bird-finish-screen" onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/>Interrompre le chant</button>}

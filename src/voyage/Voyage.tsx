@@ -1,3 +1,5 @@
+import {currentVoyageQuality,renderPixelRatio} from './quality';
+import type {PaintingFrame} from '../birds/artworkPoetry';
 import {useEffect,useRef,useState} from 'react';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
@@ -19,8 +21,9 @@ export default function Voyage({journey}:{journey:Journey}){
   useEffect(()=>{silent.current=muted;landscape.current?.setMuted(muted);},[muted]);
   useEffect(()=>{
     let live=true,raf=0,worker:Worker|null=null,renderer:THREE.WebGLRenderer|null=null,controls:OrbitControls|null=null;
-    let observer:ResizeObserver|null=null,geometry:THREE.BufferGeometry|null=null,material:THREE.MeshStandardMaterial|null=null,texture:THREE.CanvasTexture|null=null;
+    let observer:ResizeObserver|null=null,geometry:THREE.BufferGeometry|null=null,material:THREE.MeshStandardMaterial|null=null,texture:THREE.DataTexture|null=null;
     let stars:THREE.Points|null=null,clock=0,last=0,manuallyMoved=false;
+    const quality=currentVoyageQuality();
     const container=host.current!;setReady(false);setError('');setAudioError('');
     const onBlur=()=>{fly.current=false;setFlying(false);landscape.current?.setPaused(true);};
     const onHidden=()=>{if(document.hidden){onBlur();cancelAnimationFrame(raf);last=0;}else if(live&&renderer)raf=requestAnimationFrame(frame);};
@@ -29,7 +32,7 @@ export default function Voyage({journey}:{journey:Journey}){
     let scene:THREE.Scene,camera:THREE.PerspectiveCamera,mesh:Sculpture,locations:Vec3[]=[];
     const frame=(time:number)=>{
       if(!live||!renderer||document.hidden)return;
-      const dt=last?Math.min(.06,(time-last)/1000):0;last=time;
+      const dt=last?Math.min(.25,(time-last)/1000):0;last=time;
       if(restart.current){clock=0;restart.current=false;camera.position.set(0,0,mesh.radius*2.3+1);controls!.target.set(0,0,0);}
       controls!.enabled=!fly.current;
       if(fly.current){
@@ -42,7 +45,7 @@ export default function Voyage({journey}:{journey:Journey}){
       landscape.current?.tick(camera.position.toArray() as Vec3,direction.toArray() as Vec3,camera.up.toArray() as Vec3);
       renderer.render(scene,camera);raf=requestAnimationFrame(frame);
     };
-    const start=async(data:Sculpture)=>{
+    const start=async(data:Sculpture,colour:PaintingFrame)=>{
       try{
         mesh=data;model.current=data;scene=new THREE.Scene();scene.background=new THREE.Color('#0b111b');
         camera=new THREE.PerspectiveCamera(53,1,.025,80);camera.position.set(0,0,mesh.radius*2.3+1);
@@ -53,10 +56,10 @@ export default function Voyage({journey}:{journey:Journey}){
         renderer.domElement.addEventListener('webglcontextlost',contextLost);renderer.domElement.addEventListener('pointerdown',manual,true);
         container.append(renderer.domElement);
         geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(mesh.positions,3));geometry.setAttribute('normal',new THREE.BufferAttribute(mesh.normals,3));geometry.setAttribute('uv',new THREE.BufferAttribute(mesh.uvs,2));geometry.setIndex(new THREE.BufferAttribute(mesh.indices,1));
-        const image=document.createElement('canvas');image.width=journey.frame.width;image.height=journey.frame.height;
-        const ctx=image.getContext('2d');if(!ctx)throw new Error('La couleur de cette sculpture ne peut pas être préparée.');
-        ctx.putImageData(new ImageData(new Uint8ClampedArray(journey.frame.pixels),image.width,image.height),0,0);
-        texture=new THREE.CanvasTexture(image);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+        texture=new THREE.DataTexture(colour.pixels,colour.width,colour.height,THREE.RGBAFormat);
+        texture.flipY=true;texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=true;
+        texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;
+        texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());texture.needsUpdate=true;
         material=new THREE.MeshStandardMaterial({map:texture,roughness:.88,metalness:0});scene.add(new THREE.Mesh(geometry,material));
         scene.add(new THREE.HemisphereLight('#c9dcf1','#605563',2.4));
         const sun=new THREE.DirectionalLight('#fff0d2',3);sun.position.set(-3,4,6);scene.add(sun);
@@ -68,9 +71,9 @@ export default function Voyage({journey}:{journey:Journey}){
         }
         const starGeometry=new THREE.BufferGeometry();starGeometry.setAttribute('position',new THREE.BufferAttribute(points,3));
         stars=new THREE.Points(starGeometry,new THREE.PointsMaterial({color:'#dacdb7',size:.026,sizeAttenuation:true,transparent:true,opacity:.65}));scene.add(stars);
-        controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.07;controls.minDistance=.36;controls.maxDistance=mesh.radius*5+3;controls.enablePan=false;
+        controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.07;controls.minDistance=.85;controls.maxDistance=mesh.radius*5+3;controls.enablePan=false;
         locations=[...mesh.sites.map(s=>s.position),...mesh.landmarks].slice(0,18);setReady(true);
-        const resize=()=>{if(!renderer)return;const box=container.getBoundingClientRect();camera.aspect=Math.max(1,box.width)/Math.max(1,box.height);camera.updateProjectionMatrix();renderer.setSize(Math.max(1,box.width),Math.max(1,box.height),false);};
+        const resize=()=>{if(!renderer)return;const box=container.getBoundingClientRect();camera.aspect=Math.max(1,box.width)/Math.max(1,box.height);camera.updateProjectionMatrix();renderer.setPixelRatio(renderPixelRatio(box.width,box.height,devicePixelRatio||1,quality.pixelBudget,quality.maxDpr));renderer.setSize(Math.max(1,box.width),Math.max(1,box.height),false);};
         observer=new ResizeObserver(resize);observer.observe(container);resize();
         document.addEventListener('visibilitychange',onHidden);window.addEventListener('blur',onBlur);
         if(document.hidden)onHidden();raf=requestAnimationFrame(frame);
@@ -78,12 +81,12 @@ export default function Voyage({journey}:{journey:Journey}){
     };
     try{
       worker=new Worker(new URL('./sculpture.worker.ts',import.meta.url),{type:'module'});
-      worker.onmessage=(event:MessageEvent<{mesh?:Sculpture;error?:string}>)=>{
+      worker.onmessage=(event:MessageEvent<{mesh?:Sculpture;frame?:PaintingFrame;error?:string}>)=>{
         worker?.terminate();worker=null;if(!live)return;
-        if(event.data.error)setError(event.data.error);else if(event.data.mesh)void start(event.data.mesh);
+        if(event.data.error)setError(event.data.error);else if(event.data.mesh&&event.data.frame)void start(event.data.mesh,event.data.frame);
       };
       worker.onerror=()=>{worker?.terminate();worker=null;if(live)setError('La sculpture n’a pas pu se former. Tu peux réessayer.');};
-      const pixels=journey.frame.pixels.slice();worker.postMessage({frame:{...journey.frame,pixels},paper:journey.paper,marks:journey.marks},[pixels.buffer]);
+      const pixels=journey.frame.pixels.slice();worker.postMessage({frame:{...journey.frame,pixels},paper:journey.paper,marks:journey.marks,resolution:quality.resolution},[pixels.buffer]);
     }catch{worker?.terminate();worker=null;setError('Ce navigateur ne peut pas préparer la sculpture. Ton aquarelle reste disponible.');}
     return()=>{
       live=false;rejoin.current=()=>{};cancelAnimationFrame(raf);worker?.terminate();observer?.disconnect();document.removeEventListener('visibilitychange',onHidden);window.removeEventListener('blur',onBlur);model.current=null;

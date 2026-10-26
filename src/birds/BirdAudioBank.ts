@@ -32,6 +32,10 @@ export class BirdAudioBank{
       while(index<BIRD_PADS.length&&!this.disposed){const bird=BIRD_PADS[index++];try{await this.prepare(bird.id);if(!this.disposed)onReady(bird.id);}catch{/* A tap can retry an individual recording. */}}
     }));
   }
+  async unlock():Promise<void>{
+    if(this.disposed)return;
+    this.context??=new AudioContext();await this.context.resume();
+  }
   async play(id:BirdId,onStart:(sound:BirdPlayback)=>void,onEnd:()=>void,options:{loop?:boolean;breath?:number}={}):Promise<void>{
     if(this.disposed)return;
     this.stop();const token=this.token;

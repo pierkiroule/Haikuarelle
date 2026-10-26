@@ -86,7 +86,7 @@ export class SoundStain {
       const colourBody=palette.length>1&&s.slot===this.bird.slot&&s.effect!=='splash';
       out.push({...s,radius:colourBody?s.radius*.78:s.radius,load:s.load*clamp(this.opacity)});
       if(!colourBody)continue;
-      for(let i=1;i<Math.min(3,palette.length)&&out.length<12;i++){
+      for(let i=1;i<palette.length&&out.length<12;i++){
         const dark=palette[i]===0||palette[i]===10;
         if(dark&&this.plumageAccents>=3)continue;
         const direction=i===1?1:-1,distance=s.radius*(i===1?.82:.78);

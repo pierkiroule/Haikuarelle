@@ -22,8 +22,8 @@ export const BIRDS:Bird[]=[
 export const birdFor=(id:BirdId)=>BIRDS.find(b=>b.id===id)!;
 /** Three initial pads. The seven brushes share one stable optical pigment table. */
 export const BIRD_PADS:Bird[]=[
-  {...birdFor('corneille'),name:'Corneille',gesture:'Noir · encre & éclats',color:'#344247'},
+  {...birdFor('corneille'),name:'Corneille',gesture:'Noir · encre & éclats',color:'#344247',plumage:[0,7,6]},
   {...birdFor('rougegorge'),gesture:'Orange · gris & réserves',color:'#bd6545',plumage:[1,6,0]},
-  {...birdFor('geai'),gesture:'Bleu · brun & traits vifs',color:'#4a83a7',plumage:[2,8,0]},
+  {...birdFor('geai'),gesture:'Bleu · brun & traits vifs',color:'#4a83a7',plumage:[2,8,5,0]},
 ];
 export const BIRD_BRUSHES:Bird[]=[...BIRD_PADS,...BIRDS.filter(b=>!!b.signature),PIE];

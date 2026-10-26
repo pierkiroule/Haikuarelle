@@ -68,6 +68,20 @@ export const BIRD_POETICS:Record<BirdId,BirdPoetics>={
     ['Les branches abritent le repos','La nuit reprend son murmure','Le jour le cache dans les aiguilles']]},
 };
 
+/** Titles keep the bird explicitly at the heart of the work. */
+const titleImages:Record<BirdId,readonly string[]>={
+ geai:['La mémoire','Le secret','La forêt'],mesange:['Le berceau','La danse','Le jardin'],
+ bouvreuil:['Le sifflet','Le verger','La tendresse'],sittelle:['Le secret','La réserve','La descente'],
+ picvert:['Le rire','La prairie','Le festin'],rougegorge:['La veille','Le royaume','Le refuge'],
+ corneille:['La mémoire','La veille','Le regard'],pie:['Le trésor','La famille','Le passage'],
+ merle:['Le soir','La pluie','Le jardin'],rossignol:['La nuit','Le secret','Le retour'],
+ fauvette:['La voix','Le passage','Le buisson'],hirondelle:['Le retour','Le voyage','Le berceau'],
+ etourneau:['La nuée','Le murmure','Le dortoir'],chouette:['La veille','Le refuge','La nuit'],
+ hibou:['Le repos','Le silence','Le pré'],
+};
+const titleBird:Record<BirdId,string>={geai:'du geai',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',rougegorge:'du rouge-gorge',corneille:'de la corneille',pie:'de la pie',merle:'du merle noir',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou'};
+for(const id of Object.keys(BIRD_POETICS) as BirdId[])BIRD_POETICS[id].titles=titleImages[id].map(image=>`${image} ${titleBird[id]}`);
+
 /** A trio contributes one living image per verse, including unpainted choices.
  * A single-species work explores three moments of the same bird's life.
  */
