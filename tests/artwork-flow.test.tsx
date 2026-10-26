@@ -8,7 +8,7 @@ import {BIRD_POETICS} from '../src/birds/ornithopoetry';
 import {BirdStudio} from '../src/App';
 import type {Journey} from '../src/voyage/VoyageDialog';
 interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>;holdWater:ReturnType<typeof vi.fn>;setDrying:ReturnType<typeof vi.fn>}
-const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{},journey:null as Journey|null}));
+const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{},placed:[] as Bird[],journey:null as Journey|null}));
 vi.mock('../src/voyage/VoyageDialog',()=>({default:({journey,onClose}:{journey:Journey;onClose:()=>void})=>{
   h.journey=journey;return <section role="dialog" aria-label="Voyage 360"><button onClick={onClose}>Retour à mon haïkuarelle</button></section>;
 }}));
@@ -16,7 +16,7 @@ vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   status:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:30,ticks:0};composition={duration:20};
   constructor(_canvas:unknown,_settings:unknown,private change:(s:EngineStatus)=>void){h.painter=this;}
   beginSignature(seed:number){this.status={...this.status,seed,phase:'idle',ticks:0,hasPigment:false};this.change({...this.status});}
-  update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}
+  setBirdPalette(){}update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}
   holdWater=vi.fn();
   wetBrush=vi.fn();
   setDrying=vi.fn();
@@ -38,7 +38,7 @@ vi.mock('../src/birds/BirdAudioBank',()=>({BirdAudioBank:class{
 vi.mock('../src/birds/SoundDeposit',()=>({SoundDeposit:class{
   busy=false;
   constructor(_sounds:unknown,_painter:unknown,private callbacks:{preparing:(b:Bird)=>void;started:(b:Bird)=>void;stopped:()=>void;marked:(b:Bird,p:Point,s:number)=>void}){}
-  async place(bird:Bird,point:Point,seed:number){this.busy=true;h.starts++;this.callbacks.started(bird);h.painter!.mark();this.callbacks.marked(bird,point,seed);h.finish=()=>{this.busy=false;this.callbacks.stopped();};}
+  async place(bird:Bird,point:Point,seed:number){this.busy=true;h.placed.push(bird);h.starts++;this.callbacks.started(bird);h.painter!.mark();this.callbacks.marked(bird,point,seed);h.finish=()=>{this.busy=false;this.callbacks.stopped();};}
   move(){h.moves++;}
   cancel(){h.stops++;this.busy=false;this.callbacks.stopped();}
 }}));
@@ -67,7 +67,7 @@ async function paint(){
 }
 beforeEach(async()=>{
   vi.useFakeTimers();
-  h.starts=0;h.moves=0;h.stops=0;h.painter=null;h.previews=[];h.previewStops=0;h.previewEnd=()=>{};vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  h.placed=[];h.starts=0;h.moves=0;h.stops=0;h.painter=null;h.previews=[];h.previewStops=0;h.previewEnd=()=>{};vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
   vi.stubGlobal('matchMedia',()=>({matches:true}));vi.stubGlobal('requestAnimationFrame',()=>1);vi.stubGlobal('cancelAnimationFrame',()=>{});
   host=document.createElement('div');document.body.append(host);root=createRoot(host);
   await act(async()=>root.render(<BirdStudio/>));
@@ -224,4 +224,17 @@ it('opens the finished work as a separate journey and restores the painting with
   await click([...host.querySelectorAll('button')].find(b=>b.textContent==='Retour à mon haïkuarelle')!);
   expect(host.querySelector('[role="dialog"]')).toBeNull();expect(close).toHaveBeenCalledOnce();
   expect(host.querySelector('canvas')).toBe(canvas);expect(host.querySelector('.artwork-title')!.textContent).toBe(title);
+});
+
+it('selects one plumage colour, keeps the same bird song and can restore the multicolour brush',async()=>{
+  await spin();await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);
+  await click(host.querySelector('.bird-pad')!);
+  const swatches=host.querySelectorAll<HTMLButtonElement>('.feather-colours button:not(.whole-plumage)');
+  expect(swatches.length).toBeGreaterThanOrEqual(6);await click(swatches[0]);
+  expect(host.querySelector('.brush-context')).toBeNull();expect(document.activeElement).toBe(host.querySelector('.bird-pad'));
+  const paper=host.querySelector<HTMLElement>('.bird-paper')!;
+  const deposit=async()=>{await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));await act(async()=>h.finish());};
+  await deposit();expect(h.placed.at(-1)!.pigmentSlot).toBe(11);expect(h.placed.at(-1)!.id).toBe(h.previews.at(-1));
+  await click(host.querySelector('.bird-pad')!);await click(host.querySelector('.whole-plumage')!);await deposit();
+  expect(h.placed.at(-1)!.pigmentSlot).toBeUndefined();expect(h.placed.at(-1)!.id).toBe(h.placed[0].id);
 });

@@ -126,3 +126,9 @@ Pigment Drift, commit `61d3cf57d5273105d7b9985973e4648d7a553c83`, © 2026 ossian
 ### Qualité du voyage sur mobile et ordinateur
 
 La sculpture utilise une capture dédiée de 2048 à 3072 pixels sur son grand côté, limitée par le GPU, indépendante de la résolution du maillage (224 à 384). Les UV restent continus jusque sur les contours : les couleurs sont prolongées dans les texels invisibles en worker avant génération des mipmaps, sans remplir les trous de la géométrie ni modifier la peinture originale. Une DataTexture évite la copie intermédiaire dans un canvas. Le filtrage anisotrope et un budget de pixels adapté à la surface de l’écran limitent les coûts GPU. Ces profils sont des budgets prudents, pas une garantie de cadence sur tous les téléphones.
+
+### Les couleurs séparées du plumage
+
+Toucher la plume ouvre son nuancier : six à huit couleurs par oiseau, soit 59 teintes nommées au total. Choisir une teinte ferme le menu et colore la plume ; les prochains dépôts utilisent uniquement ce pigment, avec le même chant et la même gestuelle. « Tout le plumage » rétablit la brosse multicolore. La sélection ne modifie jamais les dépôts précédents. Les teintes claires sont des lavis transparents, pas une gouache blanche opaque. Les HEX sont des approximations artistiques ; les reflets de pie et de corneille ne simulent pas une iridescence physique.
+
+La table optique est fixée pour l’oiseau sur la feuille vierge, avec les onze pigments historiques suivis des six à huit pigments dédiés. Changer de teinte ne change pas cette table. Le shader dispose de 32 emplacements sans ajouter de champ de simulation ni de texture par couleur.

@@ -79,6 +79,7 @@ export class SoundStain {
   /** Adjacent plumage zones follow the SAME geometry and fixed brush axis.
    * Secondary colours are not randomly layered into the primary wash. */
   private colours(segments:BrushSegment[]):BrushSegment[]{
+    if(this.bird.pigmentSlot!==undefined)return segments.map(s=>({...s,slot:s.water?s.slot:this.bird.pigmentSlot!,load:s.load*clamp(this.opacity)}));
     const palette=this.bird.plumage??[this.bird.slot],out:BrushSegment[]=[];
     for(const s of segments){
       if(out.length>=12)break;
@@ -185,7 +186,7 @@ export class SoundStain {
       const washLoad=load*(.48+.38*taper)*(crow?.92:1);
       segments.push({a:f.point,b:next,radius:Math.max(.003,radius),load:Math.min(.95,washLoad),slot:this.bird.slot,water:false,strength:.31,wetOnly:true,effect:'wash',coupling:(soft?.08:.12)+.22*energy});
       // Fine ink appears as sparse interrupted veins, never as a continuous outline.
-      if((this.settings.ink??.62)>0&&this.tick%30===0&&energy>.2){
+      if(this.bird.pigmentSlot===undefined&&(this.settings.ink??.62)>0&&this.tick%30===0&&energy>.2){
         const a=this.offset(f.point,angle+1.3,radius*(this.inkRng()-.5));
         const control=this.offset({x:(a.x+next.x)*.5,y:(a.y+next.y)*.5},angle+1.57,radius*.09*Math.sin(f.life*.7));
         ink.push({points:curvedVein(a,control,next),start:time,duration:1/30,width:(crow?.85:.5)+feature.brightness*.3,

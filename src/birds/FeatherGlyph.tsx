@@ -5,7 +5,7 @@ import {PLUMAGE_PIGMENTS} from '../engine/palettes';
 /** A shared quill silhouette: its tip is at (8,58), also the drawing hotspot. */
 export function FeatherGlyph({bird,className=''}:{bird?:Bird;className?:string}){
   const gradient=useId();
-  const colors=bird?(bird.plumage??[bird.slot]).map(slot=>PLUMAGE_PIGMENTS[slot]):['#9c7152','#c8aa78'];
+  const colors=bird?.pigmentSlot!==undefined?[bird.color]:bird?(bird.plumage??[bird.slot]).map(slot=>PLUMAGE_PIGMENTS[slot]):['#9c7152','#c8aa78'];
   const broad=bird?.signature==='velvet';
   return <svg className={`feather-glyph ${className}`} viewBox="0 0 48 64" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <defs><linearGradient id={gradient} x1="12" y1="46" x2="40" y2="6" gradientUnits="userSpaceOnUse">{colors.map((color,i)=><stop key={i} offset={`${colors.length===1?0:i/(colors.length-1)*100}%`} stopColor={color}/>)}</linearGradient></defs>

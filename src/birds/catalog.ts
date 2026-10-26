@@ -1,5 +1,5 @@
 export type BirdId='rougegorge'|'merle'|'rossignol'|'fauvette'|'hirondelle'|'geai'|'etourneau'|'chouette'|'hibou'|'corneille'|'mesange'|'bouvreuil'|'sittelle'|'picvert'|'pie';
-export interface Bird {id:BirdId;name:string;latin:string;gesture:string;motif:'plume'|'trille'|'branche'|'voile';slot:number;angle:number;color:string;source:string;author:string;plumage?:number[];signature?:'lace'|'velvet'|'twig'|'ripple'}
+export interface Bird {pigmentSlot?:number;id:BirdId;name:string;latin:string;gesture:string;motif:'plume'|'trille'|'branche'|'voile';slot:number;angle:number;color:string;source:string;author:string;plumage?:number[];signature?:'lace'|'velvet'|'twig'|'ripple'}
 const base='https://bigsoundbank.com/';
 export const PIE:Bird={id:'pie',name:'Pie',latin:'Pica pica',gesture:'Noir · pluie de gouttelettes',motif:'trille',slot:0,angle:.2,color:'#252b2c',plumage:[0],source:'https://freesound.org/people/naturenotesuk/sounds/555096/',author:'naturenotesuk'};
 export const BIRDS:Bird[]=[

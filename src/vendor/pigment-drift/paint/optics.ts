@@ -8,9 +8,9 @@ import {hexToLinear} from '../engine/color';
  * basis when a pad changes: old paint must keep its deposited coefficients.
  */
 export const OPTICAL_UNIT=8;
-export const MAX_PIGMENTS=16;
+export const MAX_PIGMENTS=32;
 export function absorptionTable(pigments:readonly string[],paper:string):number[]{
-  if(!pigments.length||pigments.length>MAX_PIGMENTS)throw new RangeError('One to sixteen optical pigments are supported.');
+  if(!pigments.length||pigments.length>MAX_PIGMENTS)throw new RangeError('One to thirty-two optical pigments are supported.');
   const white=hexToLinear(paper);
   return Array.from({length:MAX_PIGMENTS},(_,i)=>hexToLinear(pigments[i]??pigments[0])
     .map((v,c)=>-Math.log(Math.max(.003,Math.min(1,v/Math.max(.003,white[c]))))/OPTICAL_UNIT)).flat();
