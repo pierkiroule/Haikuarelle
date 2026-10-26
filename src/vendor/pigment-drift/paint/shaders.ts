@@ -302,6 +302,7 @@ uniform float uDt;
 uniform float uFlowing;
 uniform float uBleed;        // 0..1 how far wet pigment spreads
 uniform float uDryKeep;      // wetness multiplier this step
+uniform float uMaterial;     // ritual: capillary transport and colour separation
 uniform float uDryFloor;     // upstream linear loss, disabled for the prepared-water guide
 uniform vec2 uSeedOff;
 uniform float uUnit;         // one sheet unit, in field texels
@@ -385,22 +386,42 @@ void main() {
   // Untouched texels are copied exactly (and cheaply); only moved ones are resampled.
   vec4 f = length(src - q) < 0.002 ? texelFetch(uField, ivec2(q), 0) : fieldSharp(src);
 
-  // Wet paper: pigment creeps outward into the wet, unevenly along the paper fibers.
-  // The creep only ever adds, so a stroke's core keeps its color while its edge
-  // softens into nested washes; a little true diffusion smooths the result. Creeping
-  // pigment takes on the mix of inks it came from.
-  if (f.y > 0.002) {
-    float r = 1.0 + 1.6 * uBleed;
-    vec4 n = (fieldAt(src + vec2(r, 0.0)) + fieldAt(src - vec2(r, 0.0))
-            + fieldAt(src + vec2(0.0, r)) + fieldAt(src - vec2(0.0, r))) * 0.25;
-    vec4 lap = n - f;
-    float fiber = 0.35 + 1.0 * smoothstep(-0.5, 0.6, gnoise(q * 0.07 + uSeedOff) + 0.45 * gnoise(q * 0.23 + 5.0));
-    float wet = clamp(f.y * 1.4, 0.0, 1.0) * fiber;
-    float creep = wet * uBleed * 0.3 * max(lap.x, 0.0);
-    f.x += wet * 0.05 * lap.x + creep;
-    f.zw += wet * 0.05 * lap.zw + creep * n.zw / max(n.x, 1e-4);
-    f.y += lap.y * 0.22;
+  // Prepared water is held on the cotton until explicit evaporation. Moving
+  // pigment must not resample (inflate or erode) this stationary moisture mask.
+  if (uDryKeep >= 1.0) f.y = texelFetch(uField, ivec2(q), 0).y;
+
+  // Pairwise capillary exchange: mass moves toward the pinned, thinner wet
+  // margin. The symmetric conductance preserves pigment instead of painting a
+  // decorative outline. Mobility fades as water evaporates, leaving the rim.
+  vec4 center = f;
+  vec3 exchange = vec3(0.0);
+  // Adjacent cells and diagonal exchange keep ONE connected, isotropic film.
+  // Integer long strides used to isolate parity grids and reveal square pixels.
+  float centerAffinity = 1.0 + uMaterial * 2.6 *
+    (1.0-smoothstep(0.025,0.23,center.y)) * smoothstep(0.006,0.035,center.y);
+  for (int axis = 0; axis < 8; axis++) {
+    vec2 offset = axis == 0 ? vec2(1,0) : axis == 1 ? vec2(-1,0) : axis == 2 ? vec2(0,1) : axis == 3 ? vec2(0,-1)
+      : axis == 4 ? vec2(1,1) : axis == 5 ? vec2(-1,1) : axis == 6 ? vec2(1,-1) : vec2(-1,-1);
+    float weight = axis < 4 ? 1.0 : 0.5;
+    vec4 neighbor = fieldAt(src + offset);
+    // Sample the route too: a wider kernel cannot jump a dry slit.
+    float moisture = min(min(center.y, neighbor.y),fieldAt(src + offset * 0.5).y);
+    // A diagonal cannot leak across two pools touching only at a dry corner.
+    if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
+    float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
+    float mobility = smoothstep(0.006,0.22,moisture) * fibre;
+    float neighborAffinity = 1.0 + uMaterial * 2.6 *
+      (1.0-smoothstep(0.025,0.23,neighbor.y)) * smoothstep(0.006,0.035,neighbor.y);
+    // Distinct optical pigments diffuse much less across each other's boundary.
+    // Empty wet cotton remains permeable, so individual colour fields spread.
+    if (uMaterial > 0.5 && min(center.x,neighbor.x) > 0.015) {
+      float difference = length(center.zw/max(center.x,1e-4)-neighbor.zw/max(neighbor.x,1e-4));
+      mobility *= mix(1.0,0.004,smoothstep(0.015,0.08,difference));
+    }
+    exchange += (neighbor.xzw * centerAffinity - center.xzw * neighborAffinity)
+      * weight * mobility / max(centerAffinity,neighborAffinity);
   }
+  f.xzw += exchange * min(0.155, uDt * mix(0.8 + 2.4*uBleed,4.0 + 3.0*uBleed,uMaterial));
 
   if (inkCov > 0.0) {
     if (inkKind < 0.5) {
@@ -441,7 +462,7 @@ void main() {
     }
     float kind = mod(sp.w, 4.0);
     float slot = mod(floor(sp.w / 4.0), 64.0);
-    bool wetOnly = sp.w >= 256.0;
+    bool wetOnly = mod(floor(sp.w / 256.0), 2.0) > 0.5;
     float wetMask = wetOnly ? smoothstep(0.005, 0.030, f.y) : 1.0;
     if (wetOnly && wetMask > 0.0) {
       // A large pale glaze must not jump a dry slit into a neighbouring pool.
@@ -458,7 +479,10 @@ void main() {
     float side = dot(q - uSeg[i].xy, vec2(-ab.y, ab.x)) / max(length(ab), 1e-3) / sp.x;
     float bristle = length(ab) > 0.5 ? 0.7 + 0.6 * smoothstep(-0.4, 0.4, gnoise(vec2(side * 3.2, 0.5) + uSeedOff)) : 1.0;
     if (kind < 0.5) {
-      float tgt = pigmentLoad(slot,max(sp.y * (0.91 + 0.55 * swell) + 0.045 * swell, 0.0));
+      // Coherent colour planes retain subtle mineral variation without
+      // procedural holes swallowing quiet notes or fragmenting every wash.
+      float bodyVariation = uMaterial > 0.5 ? 0.94 + 0.16*swell : 0.91 + 0.55*swell;
+      float tgt = pigmentLoad(slot,max(sp.y * bodyVariation + (uMaterial > 0.5 ? 0.008 : 0.045)*swell, 0.0));
       // The core takes the pan's pigment (and can lighten what's there)...
       float k = clamp((1.0 - smoothstep(0.2, 0.55, dn)) * sp.z * bristle * wetMask, 0.0, 1.0);
       f.x = mix(f.x, tgt, k);
@@ -473,9 +497,11 @@ void main() {
         f.x += add;
         f.zw += inkOf(slot, add);
       }
-      if (!wetOnly) f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
+      if (!wetOnly && sp.w < 512.0) f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
     } else if (kind < 1.5) {
-      f.y = max(f.y, (1.0 - smoothstep(0.6, 1.25, dn)) * 0.45);
+      // Bit 512 denotes an explicit quantity from the silent-water tool.
+      float waterAmount = sp.w >= 512.0 ? clamp(sp.y, 0.0, 1.0) : 1.0;
+      f.y = max(f.y, (1.0 - smoothstep(0.6, 1.25, dn)) * 0.45 * waterAmount);
     } else {
       f.xzw *= 1.0 - cov * sp.z;
       f.y *= 1.0 - cov * 0.5;
@@ -581,10 +607,7 @@ uniform vec2 uSeedOff;
  * Paper: everything that never moves, baked once per canvas size.
  *   r: edge grit   g: granulation   b: brush relief light   a: grain & cockling
  */
-export const PAPER = HEAD + NOISE + MAPPING + /* glsl */ `
-uniform float uPx;
-out vec4 o;
-
+const COTTON_NOISE = /* glsl */ `
 // V3: triangular simplex support, rather than a visible square fiber lattice.
 float paperCorner(vec2 lattice, vec2 delta) {
   float falloff = max(0.5 - dot(delta, delta), 0.0);
@@ -602,6 +625,17 @@ float paperNoise(vec2 p) {
   vec2 c = a - 1.0 + 2.0 * G2;
   return 70.0 * (paperCorner(cell, a) + paperCorner(cell + corner, b) + paperCorner(cell + 1.0, c));
 }
+float cottonFbm(vec2 p,int octaves) {
+  float sum=0.0,weight=0.5;
+  for(int i=0;i<6;i++){if(i>=octaves)break;sum+=weight*paperNoise(p);p=ROT*p*2.03+vec2(13.7,8.1);weight*=0.5;}
+  return sum;
+}
+`;
+
+export const PAPER = HEAD + NOISE + MAPPING + COTTON_NOISE + /* glsl */ `
+uniform float uPx;
+out vec4 o;
+
 void main() {
   vec2 S = (gl_FragCoord.xy * uMap.xy + uMap.zw) / uUnit;
   vec2 P = S * 900.0;
@@ -676,21 +710,23 @@ void main() {
  * marks have a common structure rather than being unrelated uniform noise.
  * Grain/fibres still come from the full-resolution paper texture.
  */
-export const DRYING_MASKS = HEAD + NOISE + MAPPING + /* glsl */ `
+export const DRYING_MASKS = HEAD + NOISE + MAPPING + COTTON_NOISE + /* glsl */ `
 out vec4 o;
 void main() {
   vec2 P = (gl_FragCoord.xy * uMap.xy + uMap.zw) / uUnit;
   vec2 seed = uSeedOff * 0.73;
-  vec2 warp = vec2(fbm(P * 3.4 + seed, 3), fbm(ROT * P * 4.1 + seed.yx + 13.2, 3));
-  float wash = fbm(P * 4.8 + warp * 1.9 + seed, 4);
-  float bloom = fbm(P * 15.0 + warp * 3.2 + seed.yx + 9.7, 4);
-  float edge = 0.065 + 0.035 * gnoise(P * 5.3 + seed + 19.0);
+  vec2 warp = vec2(cottonFbm(P * 3.4 + seed, 3), cottonFbm(ROT * P * 4.1 + seed.yx + 13.2, 3));
+  float wash = cottonFbm(P * 4.8 + warp * 1.9 + seed, 4);
+  float bloom = cottonFbm(P * 15.0 + warp * 3.2 + seed.yx + 9.7, 4);
+  float edge = 0.065 + 0.035 * paperNoise(P * 5.3 + seed + 19.0);
   float pale = smoothstep(edge, edge + 0.15, bloom);
   float arcs = exp(-abs(bloom - edge) / 0.022);
-  arcs *= 0.3 + 0.7 * smoothstep(-0.22, 0.24, fbm(P * 29.0 + warp + seed, 2));
-  float sediment = fbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3);
+  arcs *= 0.3 + 0.7 * smoothstep(-0.22, 0.24, cottonFbm(P * 29.0 + warp + seed, 2));
+  // Fine mineral islands follow the same warped wash, not independent speckle.
+  float sediment = cottonFbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3)
+                 + 0.16 * paperNoise(P * 137.0 + warp * 6.0 + seed.yx);
   float pockets = smoothstep(0.015, 0.28, sediment);
-  float activity = smoothstep(-0.06, 0.18, fbm(P * 3.3 + warp * 0.5 + seed + 47.5, 3));
+  float activity = smoothstep(-0.06, 0.18, cottonFbm(P * 3.3 + warp * 0.5 + seed + 47.5, 3));
   o = vec4(smoothstep(-0.32, 0.32, wash), clamp(arcs * activity, 0.0, 1.0), pale * activity, pockets * (0.3 + 0.7 * activity));
 }
 `;
@@ -756,26 +792,20 @@ float hash12(vec2 p) {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-float hAt(vec2 t) { return heightOf(texture(uField, t / uFieldSize).x); }
+vec4 pigmentField(vec2 p);
+float hAt(vec2 t) { return heightOf(pigmentField(t).x); }
 
-// Reconstruct the wet field sharply when exporting above its native resolution.
-// Clamping to the four adjacent texels prevents ringing and invented pigment.
+// Positive cubic reconstruction when magnified: continuous rounded support,
+// no nearest-cell clamp terraces, negative ringing or invented pigment peaks.
 vec4 pigmentField(vec2 p) {
   if (uDetail < 0.5 || min(uMap.x, uMap.y) >= 0.95) return texture(uField, p / uFieldSize);
-  vec2 pos = p - 0.5, cell = floor(pos), f = pos - cell;
-  vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
-  vec2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
-  vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f));
-  vec2 w3 = f * f * (-0.5 + 0.5 * f), w12 = w1 + w2;
-  vec2 t0 = (cell - 0.5) / uFieldSize, t3 = (cell + 2.5) / uFieldSize;
-  vec2 t12 = (cell + 0.5 + w2 / w12) / uFieldSize;
-  vec4 r = (texture(uField,vec2(t0.x,t0.y))*w0.x+texture(uField,vec2(t12.x,t0.y))*w12.x+texture(uField,vec2(t3.x,t0.y))*w3.x)*w0.y
-    +(texture(uField,vec2(t0.x,t12.y))*w0.x+texture(uField,vec2(t12.x,t12.y))*w12.x+texture(uField,vec2(t3.x,t12.y))*w3.x)*w12.y
-    +(texture(uField,vec2(t0.x,t3.y))*w0.x+texture(uField,vec2(t12.x,t3.y))*w12.x+texture(uField,vec2(t3.x,t3.y))*w3.x)*w3.y;
-  ivec2 base=ivec2(cell),limit=ivec2(uFieldSize)-1;
-  vec4 a=texelFetch(uField,clamp(base,ivec2(0),limit),0),b=texelFetch(uField,clamp(base+ivec2(1,0),ivec2(0),limit),0);
-  vec4 c=texelFetch(uField,clamp(base+ivec2(0,1),ivec2(0),limit),0),d=texelFetch(uField,clamp(base+ivec2(1,1),ivec2(0),limit),0);
-  return clamp(r,min(min(a,b),min(c,d)),max(max(a,b),max(c,d)));
+  vec2 cell=floor(p-0.5),f=fract(p-0.5),v=1.0-f;
+  vec2 w0=v*v*v/6.0,w1=(3.0*f*f*f-6.0*f*f+4.0)/6.0;
+  vec2 w2=(-3.0*f*f*f+3.0*f*f+3.0*f+1.0)/6.0,w3=f*f*f/6.0;
+  vec2 g0=w0+w1,g1=w2+w3;
+  vec2 a=(cell-0.5+w1/g0)/uFieldSize,b=(cell+1.5+w3/g1)/uFieldSize;
+  return texture(uField,a)*g0.x*g0.y + texture(uField,vec2(b.x,a.y))*g1.x*g0.y
+    +texture(uField,vec2(a.x,b.y))*g0.x*g1.y + texture(uField,b)*g1.x*g1.y;
 }
 
 void main() {
@@ -807,10 +837,10 @@ void main() {
     float body = clamp(pv * (1.25 - pv) * 3.2, 0.0, 1.0);
     float H = heightOf(pv) + (uRidge * 0.1 * turb + uFeather * 0.035 * rag) * body;
     // How fast the height changes, per sheet unit (the generator's is about 1.8).
-    vec4 neighbours = vec4(texture(uField,(at+vec2(1.0,0.0))/uFieldSize).r,
-      texture(uField,(at-vec2(1.0,0.0))/uFieldSize).r,
-      texture(uField,(at+vec2(0.0,1.0))/uFieldSize).r,
-      texture(uField,(at-vec2(0.0,1.0))/uFieldSize).r);
+    vec4 neighbours = vec4(pigmentField(at+vec2(1.0,0.0)).r,
+      pigmentField(at-vec2(1.0,0.0)).r,
+      pigmentField(at+vec2(0.0,1.0)).r,
+      pigmentField(at-vec2(0.0,1.0)).r);
     vec2 g = vec2(heightOf(neighbours.x)-heightOf(neighbours.y),
                   heightOf(neighbours.z)-heightOf(neighbours.w)) * 0.5 * uUnit;
     float slope = length(g);
@@ -893,7 +923,7 @@ void main() {
       // samples; bounded local contrast cannot add paint outside the field.
       float crisp = uDrySharpness * uDryingDetail * (1.0-smoothstep(0.015,0.28,wet));
       float localDetail = pv-dot(neighbours,vec4(0.25));
-      concentration += crisp*1.3*clamp(localDetail,-0.12*pv,0.30*pv);
+      concentration += crisp*0.28*clamp(localDetail,-0.12*pv,0.30*pv);
       // A narrow broken tide mark, derived from the actual concentration slope.
       float rim = exp(-abs(pv - 0.065) / 0.018) * dry * min(slope * 0.12, 0.85);
       concentration += rim * (0.045 + 0.035 * edgeN) * uEdge;
@@ -911,11 +941,12 @@ void main() {
         alpha.g = mix(alpha.g,smoothstep(0.04,0.45,alpha.g),crisp*0.68);
         // Same pigment, different optical thickness: transparent lakes beside
         // denser islands. These masks never draw on unpainted paper.
-        concentration *= mix(1.0, 0.62 + 1.0 * alpha.r + (0.28+0.30*crisp) * alpha.a, material);
-        concentration *= 1.0 - material * alpha.b * 0.52;
-        concentration += material * alpha.g * (0.025 + (0.20+0.16*crisp) * min(pv, 0.5));
+        concentration *= mix(1.0, 0.88 + 0.24 * alpha.r + 0.12 * alpha.a, material);
+        concentration *= 1.0 - material * alpha.b * 0.16;
+        concentration += material * alpha.g * (0.012 + (0.065+0.055*crisp) * min(pv, 0.5));
         // Full-resolution paper tooth catches the selected mineral deposits.
-        concentration *= 1.0+crisp*uTexture*alpha.a*0.58*clamp(mineral,-0.7,0.9);
+        float sedimentRelief = alpha.a * (0.48 + 0.28 * alpha.r);
+        concentration *= 1.0+crisp*uTexture*sedimentRelief*0.24*clamp(mineral,-0.7,0.9);
         // Coffee-ring deposit follows the REAL outer pigment boundary. A
         // second, interrupted inner rim suggests receding water, not a contour
         // pasted around every procedural mask. Width is in paper units.
@@ -930,7 +961,7 @@ void main() {
         inner *= smoothstep(0.35, 0.75, alpha.r) * smoothstep(1.0, 6.0, slope);
         float paleBand = exp(-abs(inset - innerOffset * 0.65) / max(width,0.0001));
         concentration *= 1.0 - reveal * paleBand * alpha.b * 0.18;
-        concentration += reveal * uEdge * broken * ((0.19+0.11*crisp) * outer + (0.075+0.055*crisp) * inner);
+        concentration += reveal * uEdge * broken * ((0.19+0.11*crisp) * outer + (0.025+0.025*crisp) * inner);
       }
       vec3 reflectance = clamp(pigment(1.15) / max(uPaper, vec3(0.03)), vec3(0.003), vec3(1.0));
       col = uPaper * pow(reflectance, vec3(concentration * 1.55));
@@ -953,7 +984,7 @@ void main() {
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.
   col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * tooth * gran;
-  col *= 1.0 + 0.35 * uTexture * mix(0.06, 0.65, pig) * light;
+  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(0.06,0.65,pig) * light;
   col *= 1.0 + 0.65 * uTexture * grain;
 
   vec3 outc = toSrgb(col) + (hash12(frag) - 0.5) / 255.0;

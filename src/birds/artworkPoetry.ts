@@ -1,4 +1,5 @@
-import {createRng} from '../vendor/pigment-drift/engine/params';
+import {composeBirdPoem} from './ornithopoetry';
+import type {BirdId} from './catalog';
 import type {BirdMark} from './haiku';
 
 export type Tone='blue'|'rose'|'ember'|'moss'|'ochre'|'ink'|'silver';
@@ -64,41 +65,12 @@ export function readArtwork(frame:PaintingFrame,paper='#f7f4ec'):ArtworkReading 
     vertical:painted>0&&(bottom-top)*height>(right-left)*width*1.25};
 }
 
-const openings:Record<Tone,string[]>={
-  blue:['Un ciel dans la main','Le bleu prend son vol'],rose:['Un pétale au vent','Le jour devient rose'],
-  ember:['Un éclat de feu','Un feu dans la main'],moss:['Le vent dans les bois','Un jardin prend l’air'],
-  ochre:['Le jour dans tes mains','L’or au bord du jour'],ink:['Un trait dans la nuit','L’ombre ouvre ses bras'],
-  silver:['Le gris touche l’eau','Un matin sans bruit'],
-};
-const middles:Record<Tone,string[]>={
-  blue:['Le bleu garde un peu de ciel','Un chant se déplie dans l’eau'],rose:['La cendre accueille une fleur','Le rose se pose et respire'],
-  ember:['La braise se confie à l’eau','Un peu de feu devient rivage'],moss:['L’or frissonne au creux des mousses','Le vert se souvient de la pluie'],
-  ochre:['L’eau recueille un peu de soleil','L’ocre veille au bord des ombres'],ink:['L’encre dénoue ses chemins','La nuit laisse passer le jour'],
-  silver:['La brume effleure le papier','L’eau garde la trace d’un chant'],
-};
-const meetings:Partial<Record<string,string>>={
-  'blue+ember':'La braise rencontre le ciel','blue+ochre':'Un peu de soleil dans le bleu',
-  'blue+rose':'Le ciel recueille un pétale','blue+moss':'La forêt se mêle au ciel',
-  'ember+ink':'Un feu sous la cendre demeure','ink+rose':'La nuit s’ouvre sur une fleur',
-  'rose+silver':'La cendre accueille la pivoine','ember+silver':'Un peu de feu dans la brume',
-  'moss+ochre':'L’or frissonne au creux des mousses','blue+silver':'La brume repose sur l’eau',
-};
-const nouns:Record<Tone,string[]>={blue:['d’azur','de ciel'],rose:['de rose','de pétales'],ember:['de braise','de feu'],moss:['de mousse','de sous-bois'],ochre:['d’or','d’ambre'],ink:['d’ombre','de nuit'],silver:['de brume','de silence']};
-
-/** Original local verse grammar. Generate only on finalization; no external AI,
- * diagnosis, image recognition claim, or random poem changing during a stroke.
- */
-export function makeArtworkPoetry(marks:readonly BirdMark[],seed:number,reading:ArtworkReading):ArtworkPoetry|null {
+/** Finalization ties original ecological verses to the chosen trio. The actual
+ * image still gates publication and seeds variation, but colour cannot replace
+ * the lives of the birds the user chose. */
+export function makeArtworkPoetry(marks:readonly BirdMark[],seed:number,reading:ArtworkReading,selected:readonly BirdId[]=[]):ArtworkPoetry|null {
   if(!marks.length||reading.coverage<=0)return null;
   const hash=marks.reduce((h,m)=>Math.imul(h^m.seed,16777619)>>>0,seed>>>0);
-  const rng=createRng(hash^Math.round(reading.coverage*1000)^Math.round(reading.centerY*100));
-  const pick=<T,>(items:readonly T[]):T=>items[Math.floor(rng()*items.length)];
-  const tone=reading.tones[0]??'silver';
-  const place=pick(reading.islands>=3?['Archipel','Constellation','Îlots']:reading.coverage<.08?['Souffle','Une trace','Murmure']:reading.vertical?['L’envol','Une aile','L’élan']:['Lisière','Rivage','Le passage']);
-  const title=`${place} ${pick(nouns[tone])}`;
-  const pair=[...reading.tones.slice(0,2)].sort().join('+');
-  const second=meetings[pair]??pick(middles[tone]);
-  const endings=reading.coverage<.12?['Le blanc nous répond','L’espace est resté']:reading.islands>=3?['Entre deux silences','Des îles sans nom']:reading.centerY<.40?['Un ciel dans la main','Le jour peut venir']:reading.centerY>.65?['Un reflet demeure','L’eau retient le jour']:['Le vent se souvient','Un rivage attend'];
-  const first=pick(openings[tone]);
-  return {title,verses:[first,second,pick(endings.filter(line=>line!==first))],reading:{...reading,tones:[...reading.tones]}};
+  const words=composeBirdPoem(selected.length?selected:marks.map(m=>m.bird),hash^Math.round(reading.coverage*1000)^Math.round(reading.centerY*100));
+  return words?{...words,reading:{...reading,tones:[...reading.tones]}}:null;
 }

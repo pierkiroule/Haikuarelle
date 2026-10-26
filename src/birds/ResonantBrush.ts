@@ -7,7 +7,7 @@ import type {Bird} from './catalog';
 import {companionSlot,plumageSlot} from './plumage';
 import {sonicFilament} from './sonicFilament';
 
-export interface BrushSegment {a:Point;b:Point;radius:number;load:number;slot:number;water:boolean;lift?:boolean;wetOnly?:boolean;strength:number;coupling:number;effect?:'filament'|'splash'}
+export interface BrushSegment {a:Point;b:Point;radius:number;load:number;slot:number;water:boolean;waterAmount?:number;lift?:boolean;wetOnly?:boolean;strength:number;coupling:number;effect?:'filament'|'splash'|'wash'}
 export interface BrushFeedback {speed:number;radius:number;splashes:number;filaments?:number}
 export interface BrushFrame {segments:BrushSegment[];ink:InkStroke[];point:Point|null;feedback:BrushFeedback}
 interface Sample {point:Point;time:number;speed:number;pressure:number}

@@ -39,7 +39,7 @@ export class BirdAudioBank{
     this.context??=new AudioContext();const resume=this.context.resume();
     const [sound]=await Promise.all([this.prepare(id),resume]);
     if(this.disposed||token!==this.token)return;
-    if(this.context.state!=='running')throw new Error('Maintenez à nouveau le pinceau sur la feuille pour autoriser le son.');
+    if(this.context.state!=='running')throw new Error('Touche à nouveau le papier pour autoriser le son.');
     const source=this.context.createBufferSource(),gain=this.context.createGain();
     const context=this.context,original=sound.document.buffer;
     let cycleDuration=sound.document.duration;

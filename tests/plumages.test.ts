@@ -26,7 +26,7 @@ describe('shared optical pigment field',()=>{
   });
 });
 describe('four plumage grammars',()=>{
-  for(const bird of BIRD_BRUSHES.filter(b=>b.signature))it(`${bird.name}: audible, finite, reproducible and multicoloured`,()=>{
+  for(const bird of BIRD_BRUSHES.filter(b=>b.signature))it(`${bird.name}: audible, finite, reproducible with distinct plumage colours`,()=>{
     const run=(ink=.6)=>{
       const water=new WetPaper('portrait');water.add({x:.18,y:.48},{x:.82,y:.52},.20,.45,0);
       const stain=new SoundStain(bird,934,{x:.5,y:.5},{...settings,ink},water,.7);
@@ -40,5 +40,29 @@ describe('four plumage grammars',()=>{
     expect(frames.every(f=>f.segments.length<=12)).toBe(true);
     if(bird.id==='picvert')expect(segments.filter(s=>s.slot===10).length).toBeLessThanOrEqual(3);
     expect(makeHaiku([{bird:bird.id,point:{x:.5,y:.5},seed:934}],'plumages',934)?.every(Boolean)).toBe(true);
+  });
+});
+
+describe('bird colours on wet and dry cotton',()=>{
+  const expected:Record<string,number[]>={corneille:[0],rougegorge:[1,6,0],geai:[2,8,0],mesange:[3,4,6],bouvreuil:[5,6,7],sittelle:[7,8,0],picvert:[9,4,10],pie:[0]};
+  for(const bird of BIRD_BRUSHES)for(const wet of [false,true])it(`${bird.name}: original plumage on ${wet?'wet':'dry'} paper and while dragging`,()=>{
+    const water=new WetPaper('portrait',Infinity);
+    if(wet)water.add({x:.15,y:.5},{x:.85,y:.5},.19,.45,0);
+    const stain=new SoundStain(bird,935,{x:.4,y:.5},settings,water,.7);
+    const frames=Array.from({length:20},(_,i)=>{if(i===3)stain.move({x:.65,y:.5},i/30);return stain.step(note(i),i/30);});
+    const slots=new Set(frames.flatMap(f=>f.segments).map(s=>s.slot));
+    for(const slot of expected[bird.id])expect(slots.has(slot)).toBe(true);
+    expect([...slots].every(slot=>(bird.plumage??[bird.slot]).includes(slot))).toBe(true);
+    expect(frames.every(f=>f.segments.length<=12)).toBe(true);
+    if(!wet)expect(water.at({x:.5,y:.5},10)).toBe(0);
+  });
+  it('places yellow and grey BESIDE the blue, retaining separate colours on a quiet short note',()=>{
+    const bird=BIRD_BRUSHES.find(b=>b.id==='mesange')!,water=new WetPaper('portrait');
+    const stain=new SoundStain(bird,937,{x:.5,y:.5},settings,water,.15);
+    const segments=stain.step({...note(0),energy:.12},0).segments;
+    const blue=segments.find(s=>s.slot===3)!,yellow=segments.find(s=>s.slot===4)!,grey=segments.find(s=>s.slot===6)!;
+    expect(blue).toBeDefined();expect(yellow).toBeDefined();expect(grey).toBeDefined();
+    expect(yellow.a).not.toEqual(blue.a);expect(grey.a).not.toEqual(blue.a);expect(grey.a).not.toEqual(yellow.a);
+    expect(stain.step({...note(1),active:false},.033).segments).toEqual([]);
   });
 });

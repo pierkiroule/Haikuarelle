@@ -32,6 +32,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private readonly requireAudio:boolean;
   private active=false;
   private performance=false;
+  private drying=false;
   private voice:{gestures:Gesture[];ink:InkStroke[];analysis:AudioAnalysis;start:number}|null=null;
   private brushVoice:{brush:ResonantBrush;analysis:AudioAnalysis;start:number;clock?:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
   private stainVoice:{stain:SoundStain;analysis:AudioAnalysis;start:number;clock:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
@@ -76,7 +77,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       pigments:this.performance&&palette.id==='plumages'?PLUMAGE_PIGMENTS:undefined,
       layers:6,bleed:this.settings.wetness,drift:0,texture:this.settings.granulation,
       edges:this.performance?1:.74,hueDrift:.02,mist:this.performance?.015:.12,ridge:.13,feather:this.performance?.22:.82,density:this.performance?.83:.68,detail:this.performance?1:0,
-      dryingTime:this.performance?dryingTime(this.settings.wetness):undefined,dryingDetail:this.performance?.95:0,
+      dryingTime:this.performance?(this.drying?dryingTime(this.settings.wetness):Infinity):undefined,dryingDetail:this.performance?.95:0,
       dryingSharpness:this.performance?(this.settings.sharpness??.72):0,dryingThreshold:this.performance?(this.settings.dryingThreshold??.56):0};
   }
   generate(seed:number):void {
@@ -96,7 +97,8 @@ export class HaikuarelleEngine implements WatercolorEngine {
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
     this.voice=null;this.brushVoice=null;this.stainVoice=null;
     this.waterPending=[];this.waterLast=null;this.waterBlooms=[];this.hasPigment=false;
-    this.wetPaper=new WetPaper(this.settings.format,dryingTime(this.settings.wetness));
+    this.drying=false;
+    this.wetPaper=new WetPaper(this.settings.format,this.performance?Infinity:dryingTime(this.settings.wetness));
     this.tick=0;this.accumulator=0;this.last=0;this.queued=[];this.notifyAt=-1;
     this.composition={title:this.audio?'Le papier écoute le silence':'Le papier attend votre son',gestures:[],ink:[],duration:DURATION,seed:this.seed};
     this.prepareSheet();this.emit();
@@ -121,12 +123,12 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.performance=true;this.audio=null;this.seed=seed>>>0;this.clear();
   }
   /** Explicit clear-water gesture. It never authorizes pigment or starts audio. */
-  wetBrush(point:Point,size=.55,pressure=.5):void{
+  wetBrush(point:Point,size=.55,pressure=.5,amount=1):void{
     if(this.destroyed||!this.performance||![point.x,point.y].every(Number.isFinite))return;
     const p={x:clamp(point.x,.015,.985),y:clamp(point.y,.015,.985)},a=this.waterLast??p;
     const radius=(.025+.11*clamp(size))*(.75+.5*clamp(pressure)),time=this.tick/TICK_RATE;
-    this.wetPaper.add(a,p,radius,.45,time);
-    this.waterPending.push({a,b:p,radius,load:0,slot:0,water:true,strength:.45,coupling:0});
+    this.wetPaper.add(a,p,radius,.45*clamp(amount),time);
+    this.waterPending.push({a,b:p,radius,load:0,slot:0,water:true,waterAmount:clamp(amount),strength:.45,coupling:0});
     if(this.waterPending.length>96)this.waterPending=this.waterPending.filter((_,i)=>i%2===0||i===this.waterPending.length-1);
     this.waterLast=p;if(!this.active||this.paused)this.last=0;this.active=true;this.paused=false;
     this.composition.duration=Math.max(this.composition.duration,time+this.dryingDuration());this.request();
@@ -139,21 +141,30 @@ export class HaikuarelleEngine implements WatercolorEngine {
     while(this.waterPending.length&&this.active)this.stepOnce();
     this.paint.render(0);this.pause();
   }
+  setDrying(enabled:boolean):void{
+    if(!this.performance||this.destroyed)return;
+    this.drying=enabled;
+    this.wetPaper.retime(this.tick/TICK_RATE,enabled?dryingTime(this.settings.wetness):Infinity);
+    this.paint.setLook(this.look());
+    this.composition.duration=this.tick/TICK_RATE+this.dryingDuration();
+  }
   waterAt(point:Point):number{return this.wetPaper.at(point,this.tick/TICK_RATE);}
   private dryingDuration():number{return dryingTime(this.settings.wetness)*5.6;}
-  /** Drop one real sample into explicitly pre-wetted paper. No live pointer path. */
-  startSoundStain(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0,clock?:()=>number,onMark?:(p:Point)=>void):boolean{
-    if(this.destroyed||!this.performance||this.waterAt(point)<.025||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
+  /** Drop one real sample onto dry or prepared wet paper. No live pointer path. */
+  startSoundStain(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0,clock?:()=>number,onMark?:(p:Point)=>void,opacity=1):boolean{
+    if(this.destroyed||!this.performance||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
     this.stopBird();
     const start=this.tick/TICK_RATE;
     const frames=soundImprint(analysis);
-    this.stainVoice={stain:new SoundStain(bird,seed,{...point},{...this.settings},this.wetPaper,size,layer,start,frames.filter(f=>f.active&&f.energy>0).map(f=>f.time)),
+    this.stainVoice={stain:new SoundStain(bird,seed,{...point},{...this.settings},this.wetPaper,size,layer,start,frames.filter(f=>f.active&&f.energy>0).map(f=>f.time),opacity),
       analysis:{...analysis,frames},start,clock:clock??(()=>this.tick/TICK_RATE-start),marked:false,onMark};
-    this.waterBlooms.push({point:this.stainVoice.stain.bloom,start:start+analysis.duration*.65,duration:1.25,radius:.012+.025*size});
-    this.waterBlooms=this.waterBlooms.slice(-4);
     this.audio=analysis;this.composition.title=bird.gesture;
     this.composition.duration=start+analysis.duration+this.dryingDuration();
     this.active=true;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();this.request();return true;
+  }
+  moveSoundStain(point:Point,connect=true):void{
+    if(!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
+    this.stainVoice?.stain.move(point,this.tick/TICK_RATE,connect);
   }
   playBird(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0):boolean {
     if(this.destroyed||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
@@ -181,7 +192,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   setBrushSize(size:number):void{if(this.brushVoice)this.brushVoice.brush.size=clamp(size);}
   setBrushOpacity(opacity:number):void{if(this.brushVoice)this.brushVoice.brush.opacity=clamp(opacity);}
   get brushFeedback():BrushFeedback|null{return this.brushVoice?{...this.brushVoice.brush.feedback}:null;}
-  /** Stop new pigment on interruption/end. Existing water may continue to dry. */
+  /** Stop new pigment on interruption/end. The wet field keeps diffusing; evaporation is explicitly controlled. */
   stopBird():void {
     if(this.stainVoice){
       this.stainVoice=null;this.composition.duration=this.tick/TICK_RATE+this.dryingDuration();this.notifyAt=-1;this.emit();
@@ -233,7 +244,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       for(const s of frame.segments){
         const a={x:s.a.x*sheet.width*this.paint.k,y:(1-s.a.y)*sheet.height*this.paint.k};
         const b={x:s.b.x*sheet.width*this.paint.k,y:(1-s.b.y)*sheet.height*this.paint.k};
-        segs.push({ax:a.x,ay:a.y,bx:b.x,by:b.y,radius:s.radius*unit*this.paint.k,target:s.load,strength:s.strength,wetOnly:s.wetOnly,
+        segs.push({ax:a.x,ay:a.y,bx:b.x,by:b.y,radius:s.radius*unit*this.paint.k,target:s.load,strength:s.strength,wetOnly:s.wetOnly,waterAmount:s.waterAmount,
           kind:s.lift?Kind.Lift:s.water?Kind.Water:Kind.Paint,slot:s.slot,fx:(b.x-a.x)*TICK_RATE*.65,fy:(b.y-a.y)*TICK_RATE*.65,coupling:s.coupling});
       }
       const ink=frame.ink.slice(0,Math.max(0,12000-(this.composition.ink?.length??0)));
@@ -313,7 +324,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       if(this.settings.format!==before.format)this.beginSignature(this.seed);
       else {
         if(this.settings.wetness!==before.wetness){
-          this.wetPaper.retime(this.tick/TICK_RATE,dryingTime(this.settings.wetness));
+          this.wetPaper.retime(this.tick/TICK_RATE,this.drying?dryingTime(this.settings.wetness):Infinity);
           if(this.active)this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+this.dryingDuration());
         }
         this.paint.setLook(this.look());this.paint.render(0);

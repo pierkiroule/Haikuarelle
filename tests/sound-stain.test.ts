@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {SoundStain} from '../src/birds/SoundStain';
 import {WetPaper} from '../src/birds/WetPaper';
-import {BIRD_PADS} from '../src/birds/catalog';
+import {BIRD_PADS,BIRD_BRUSHES} from '../src/birds/catalog';
 import type {EngineSettings} from '../src/engine/types';
 import type {AudioFrame} from '../src/audio/types';
 const settings:EngineSettings={palette:'plumages',format:'portrait',granulation:.8,wetness:.53,complexity:.5,ink:.6,resonance:.96};
@@ -33,17 +33,17 @@ describe('one sample dropped into water creates a finite stain',()=>{
       }
     }
   });
-  it('keeps each bird in its real pigment channel with a grey companion for robin',()=>{
+  it('keeps each brush within its own plumage',()=>{
     for(const bird of BIRD_PADS){
       const s=new SoundStain(bird,8,{x:.5,y:.5},settings,water());
       const slots=new Set(s.step(note(0),0).segments.filter(s=>!s.water).map(s=>s.slot));
       expect(slots.has(bird.slot)).toBe(true);
-      expect([...slots].every(slot=>slot===bird.slot||(bird.id==='rougegorge'&&slot===0))).toBe(true);
+      expect([...slots].every(slot=>(bird.plumage??[bird.slot]).includes(slot))).toBe(true);
     }
   });
   it('opens the wash much more on a strong note than a quiet note',()=>{
     const weak=render(7,.12),strong=render(7,.95);
-    const max=(frames:typeof weak)=>Math.max(...frames.flatMap(f=>f.segments.filter(s=>!s.wetOnly&&Math.hypot(s.b.x-s.a.x,s.b.y-s.a.y)>1e-6).map(s=>s.radius)));
+    const max=(frames:typeof weak)=>Math.max(...frames.flatMap(f=>f.segments.filter(s=>s.effect==='wash'&&Math.hypot(s.b.x-s.a.x,s.b.y-s.a.y)>1e-6).map(s=>s.radius)));
     expect(max(strong)).toBeGreaterThan(max(weak)*1.6);
   });
   it('adjusts fine ink without changing the pigment paths',()=>{
@@ -57,16 +57,56 @@ describe('one sample dropped into water creates a finite stain',()=>{
     expect(noInk.map(f=>f.segments)).toEqual(withInk.map(f=>f.segments));
     expect(withInk.flatMap(f=>f.ink).every(s=>s.points.length>=10)).toBe(true);
   });
-  it('takes a short sample to both ends of a connected pool without entering another pool',()=>{
+  it('scales every deposited pigment without altering wet paths and leaves opacity zero empty',()=>{
+    for(const bird of BIRD_BRUSHES){
+      const run=(opacity:number)=>{
+        const stain=new SoundStain(bird,42,{x:.5,y:.5},settings,water(),.7,0,0,[],opacity);
+        return Array.from({length:30},(_,i)=>stain.step(note(i),i/30));
+      };
+      const full=run(1),faint=run(.25);
+      faint.forEach((f,i)=>f.segments.forEach((s,j)=>{expect(s.a).toEqual(full[i].segments[j].a);expect(s.b).toEqual(full[i].segments[j].b);expect(s.load).toBeCloseTo(full[i].segments[j].load*.25);}));
+      expect(run(0).flatMap(f=>f.segments)).toEqual([]);
+    }
+  });
+  it('keeps the Pie as separate black droplets throughout the wet basin',()=>{
+    const stain=new SoundStain(BIRD_BRUSHES.find(b=>b.id==='pie')!,42,{x:.5,y:.5},settings,water(),.7);
+    const frames=Array.from({length:60},(_,i)=>stain.step(note(i),i/30)),drops=frames.flatMap(f=>f.segments);
+    expect(drops.length).toBeGreaterThan(20);
+    expect(drops.every(s=>s.effect==='splash'&&s.slot===0&&s.wetOnly&&s.a===s.b)).toBe(true);
+    expect(Math.max(...drops.map(s=>s.radius))).toBeGreaterThan(Math.min(...drops.map(s=>s.radius))*2);
+    expect(frames.every(f=>f.segments.length<=12&&f.ink.length===0)).toBe(true);
+  });
+  it('keeps short deposits local rather than filling the entire pool',()=>{
     const w=new WetPaper('portrait');w.add({x:.15,y:.45},{x:.85,y:.45},.075,.45,0);
     w.add({x:.75,y:.8},{x:.85,y:.8},.08,.45,0);
     const times=Array.from({length:18},(_,i)=>i/30);
     const s=new SoundStain(BIRD_PADS[2],19,{x:.5,y:.45},settings,w,.6,0,0,times);
-    const segments=times.flatMap((t,i)=>s.step(note(i),t).segments).filter(s=>s.wetOnly);
+    const segments=times.flatMap((t,i)=>s.step(note(i),t).segments).filter(s=>s.wetOnly&&s.effect!=='splash');
     expect(segments.length).toBeGreaterThan(15);
-    expect(Math.min(...segments.map(s=>s.b.x))).toBeLessThan(.2);
-    expect(Math.max(...segments.map(s=>s.b.x))).toBeGreaterThan(.8);
+    expect(Math.min(...segments.map(s=>s.b.x))).toBeGreaterThan(.25);
+    expect(Math.max(...segments.map(s=>s.b.x))).toBeLessThan(.8);
     expect(segments.every(s=>s.b.y<.6&&w.at(s.b,0)>.025)).toBe(true);
     expect(s.step(undefined,1).segments).toEqual([]);
   });
+});
+
+it('leaves visible pigment on dry paper without secretly wetting it',()=>{
+  const w=new WetPaper('portrait'),stain=new SoundStain(BIRD_PADS[0],7,{x:.5,y:.5},settings,w);
+  const drops=stain.step(note(0),0).segments;
+  expect(drops.length).toBeGreaterThan(0);
+  expect(drops.every(s=>!s.wetOnly&&s.waterAmount===0&&!s.water)).toBe(true);
+  expect(w.at({x:.5,y:.5},0)).toBe(0);
+});
+
+it('connects the gesture on dry and wet cotton but never joins separate taps',()=>{
+  for(const w of [new WetPaper('portrait'),water()]){
+    const s=new SoundStain(BIRD_PADS[0],7,{x:.3,y:.5},settings,w);
+    s.move({x:.6,y:.5},0);const f=s.step(note(0),0);
+    expect(f.segments.some(d=>d.a.x===.3&&d.b.x===.6&&d.effect==='wash')).toBe(true);
+    expect(f.segments.length).toBeLessThanOrEqual(12);
+    s.move({x:.8,y:.8},.1,false);const tap=s.step(note(3),.1);
+    expect(tap.segments.every(d=>!(d.a.x===.6&&d.b.x===.8))).toBe(true);
+    expect(tap.segments.some(d=>d.a.x===.8&&d.b.x===.8)).toBe(true);
+    expect(s.step({...note(4),active:false},.14).segments).toEqual([]);
+  }
 });

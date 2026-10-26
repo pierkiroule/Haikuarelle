@@ -9,7 +9,7 @@ const music=analyzePCM(signal('music',4)),silent=analyzePCM(signal('silence',4))
 describe('bird brush grammar',()=>{
   it('provides eight playable brushes and keeps the ten historical recordings credited',()=>{
     expect(BIRDS).toHaveLength(15);expect(new Set(BIRDS.map(b=>b.id)).size).toBe(15);
-    expect(BIRD_BRUSHES).toHaveLength(8);expect(BIRD_BRUSHES.find(b=>b.id==='pie')?.source).toBe('/birds/credits.html#pie');expect(BIRD_PADS).toHaveLength(3);
+    expect(BIRD_BRUSHES).toHaveLength(8);expect(BIRD_BRUSHES.find(b=>b.id==='pie')?.source).toBe('https://freesound.org/people/naturenotesuk/sounds/555096/');expect(BIRD_PADS).toHaveLength(3);
     expect(BIRDS.filter(b=>b.id!=='pie').every(b=>/^https:\/\/(bigsoundbank.com|commons.wikimedia.org)\//.test(b.source)&&b.author)).toBe(true);
   });
   it('uses the placed brush as its origin, including near the paper edge',()=>{
