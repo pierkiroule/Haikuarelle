@@ -51,10 +51,9 @@ async function water(){
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
   await click(host.querySelector('.bird-pad')!);
 }
-async function encounter(){await click(button('Choisir la plume Geai'));}
+async function encounter(){await click(host.querySelector('.feather-choice[data-bird=geai]')!);}
 async function paint(){
   await encounter();
-  await click(host.querySelector('.trio-start button')!);
   await click(host.querySelector('.enter-atelier')!);
   await water();
   const paper=host.querySelector<HTMLElement>('.bird-paper')!;
@@ -71,24 +70,24 @@ beforeEach(async()=>{
 });
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.useRealTimers();});
 describe('one bird, an opening haiku, a shared palette and a final title',()=>{
-  it('chooses the touched feather immediately and previews exactly its bird, without pigment',async()=>{
-    const start=host.querySelector<HTMLButtonElement>('.trio-start button')!;expect(start.disabled).toBe(true);
-    expect(host.querySelectorAll('.feather-choice')).toHaveLength(8);expect(host.querySelector('.wheel-spin')).toBeNull();
-    await click(button('Choisir la plume Mésange bleue'));expect(h.previews).toEqual(['mesange']);expect(start.disabled).toBe(false);
-    expect(button('Choisir la plume Mésange bleue').getAttribute('aria-pressed')).toBe('true');expect(h.starts).toBe(0);
-    await click(start);expect(host.querySelector('.flow-poem')).not.toBeNull();
+  it('reveals the touched feather’s haiku immediately with its song, without a confirmation',async()=>{
+    expect(host.querySelectorAll('.feather-choice')).toHaveLength(8);
+    expect(host.querySelector('.trio-start')).toBeNull();
+    await click(host.querySelector('.feather-choice[data-bird=mesange]')!);
+    expect(h.previews).toEqual(['mesange']);expect(host.querySelector('.flow-poem')).not.toBeNull();
+    expect(host.querySelectorAll('.poem-invitation .poem-lines>span')).toHaveLength(3);
+    expect(host.querySelector('.feather-circle')).toBeNull();expect(h.starts).toBe(0);
     await click(host.querySelector('.enter-atelier')!);await water();expect(host.querySelectorAll('.bird-pad')).toHaveLength(1);
   });
-  it('can pause the feathers, replace a choice and stop the preview before the poem',async()=>{
+  it('can suspend the gusts before catching a feather with a single choice',async()=>{
     const motion=host.querySelector<HTMLButtonElement>('.feather-motion')!;await click(motion);
     expect(motion.getAttribute('aria-pressed')).toBe('true');expect(host.querySelector('.feather-circle.is-paused')).not.toBeNull();
-    await encounter();await click(button('Choisir la plume Pie'));expect(h.previews).toEqual(['geai','pie']);
-    expect(host.querySelectorAll('.feather-choice[aria-pressed=true]')).toHaveLength(1);
-    await click(host.querySelector('.trio-start button')!);expect(host.querySelector('.flow-poem')).not.toBeNull();expect(h.starts).toBe(0);
+    await click(host.querySelector('.feather-choice[data-bird=pie]')!);expect(h.previews).toEqual(['pie']);
+    expect(host.querySelector('.flow-poem')).not.toBeNull();expect(h.starts).toBe(0);
   });
   it('shows the haiku before painting, then offers water and a plume on the same canvas',async()=>{
     expect(host.querySelectorAll('.ritual-progress li')).toHaveLength(5);
-    await encounter();await click(host.querySelector('.trio-start button')!);
+    await encounter();
     const verses=[...host.querySelectorAll('.poem-invitation .poem-lines>span')].map(el=>el.textContent);
     expect(verses).toHaveLength(3);expect(host.querySelector('.artwork-title')).toBeNull();expect(h.starts).toBe(0);
     await click(host.querySelector('.enter-atelier')!);
@@ -141,7 +140,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     expect(host.querySelector('.canvas-only')).toBeNull();
   });
   it('keeps colour, size and opacity accessible and can collapse the dock without losing the canvas',async()=>{
-    await encounter();await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);await water();
+    await encounter();await click(host.querySelector('.enter-atelier')!);await water();
     const canvas=host.querySelector('canvas');
     expect(host.querySelectorAll('.palette-sliders input[type=range]')).toHaveLength(2);
     expect(host.querySelectorAll('.feather-colours button').length).toBeGreaterThan(6);
@@ -171,7 +170,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   });
   it('paints along the gesture with one complete sample after release and selection changes',async()=>{
     await encounter();
-    await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);await water();
+    await click(host.querySelector('.enter-atelier')!);await water();
     const paper=host.querySelector<HTMLElement>('.bird-paper')!;
     const stopped=h.stops,moves=h.moves;
     await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
@@ -195,7 +194,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
 });
 
 it('can paint dry, then rewet without cancelling the full sample or replacing the canvas',async()=>{
-  await encounter();await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);
+  await encounter();await click(host.querySelector('.enter-atelier')!);
   await click(host.querySelector('.bird-pad')!);expect(h.painter!.wetBrush).not.toHaveBeenCalled();
   const paper=host.querySelector<HTMLElement>('.bird-paper')!,canvas=host.querySelector('canvas');
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
@@ -224,7 +223,7 @@ it('opens the finished work as a separate journey and restores the painting with
 });
 
 it('selects one plumage colour, keeps the same bird song and can restore the multicolour brush',async()=>{
-  await encounter();await click(host.querySelector('.trio-start button')!);await click(host.querySelector('.enter-atelier')!);
+  await encounter();await click(host.querySelector('.enter-atelier')!);
   await click(host.querySelector('.bird-pad')!);
   const swatches=host.querySelectorAll<HTMLButtonElement>('.feather-colours button:not(.whole-plumage)');
   expect(swatches.length).toBeGreaterThanOrEqual(6);await click(swatches[0]);

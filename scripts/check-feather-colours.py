@@ -9,9 +9,9 @@ with sync_playwright() as p:
   page=b.new_page(viewport={'width':width,'height':height},reduced_motion='reduce',is_mobile=width<500,has_touch=width<500);page.set_default_timeout(60000);errors=[];modules=[]
   page.on('pageerror',lambda e:errors.append(str(e)));page.on('request',lambda r:modules.append(r.url) if '/src/engine/WatercolorEngine.ts' in r.url else None)
   page.add_init_script('''crypto.getRandomValues=a=>{a.fill(3);return a};for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(128,get.call(this,p)):get.call(this,p)}}''')
-  page.goto(os.getenv('HAIKUARELLE_URL','http://127.0.0.1:5173/'),wait_until='domcontentloaded');page.get_by_role('button',name='Choisir la plume Mésange bleue',exact=True).click();page.wait_for_function('!!document.querySelector(".encounter-result strong")')
+  page.goto(os.getenv('HAIKUARELLE_URL','http://127.0.0.1:5173/'),wait_until='domcontentloaded');
   page.evaluate('''async url=>{const {HaikuarelleEngine}=await import(url),begin=HaikuarelleEngine.prototype.beginSignature;HaikuarelleEngine.prototype.beginSignature=function(...args){window.__p=this;return begin.apply(this,args)}}''',modules[-1])
-  page.get_by_role('button',name='Découvrir mon haïku').click();page.get_by_role('button',name='Entrer dans l’atelier').click();page.locator('.bird-pad').click()
+  page.locator('.feather-choice[data-bird=mesange]').click();page.get_by_role('button',name='Entrer dans l’atelier').click();page.locator('.bird-pad').click()
   assert page.locator('.feather-colours button:not(.whole-plumage)').count()==8
   assert page.get_by_role('button',name='Plume Vert olive',exact=True).is_visible()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')

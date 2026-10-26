@@ -141,11 +141,11 @@ export function BirdStudio(){
     const token=++previewToken.current,sounds=bank.current;
     sounds?.stop();setPreviewing(null);
     setPadIds([bird.id]);setSelected(bird.id);
+    setWaterPlaced(false);engine.current?.beginSignature(seed);engine.current?.setBirdPalette(bird.id);setColour(null);setInvitation(composeBirdPoem([bird.id],seed));setStage('poem');
     if(!sounds)return;
     void sounds.play(bird.id,()=>{if(token===previewToken.current){setPreviewing(bird.id);setReady(list=>list.includes(bird.id)?list:[...list,bird.id]);}},()=>{if(token===previewToken.current)setPreviewing(null);})
       .catch(()=>{if(token===previewToken.current)setNotice('L’aperçu n’a pas pu démarrer. La plume reste sélectionnée ; tu pourras réécouter son chant lors du dépôt.');});
   };
-  const startRitual=()=>{if(padIds.length!==1)return;previewToken.current++;bank.current?.stop();setPreviewing(null);setSelected(padIds[0]);setWaterPlaced(false);engine.current?.beginSignature(seed);engine.current?.setBirdPalette(padIds[0]);setColour(null);setInvitation(composeBirdPoem(padIds,seed));setStage('poem');};
   const enterAtelier=()=>{stop();setTool('water');setStage('paint');};
   const finalize=()=>{
     if(!canCreate||!marks.length||!engine.current||error||busy||stroke.current?.busy)return;
@@ -244,7 +244,7 @@ export function BirdStudio(){
       <div className="bird-view-controls">{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{if(canWet)stop();setCanvasOnly(v=>!v);}}>Toile seule</button>}{stage==='choose'&&<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="portrait">Portrait</option><option value="landscape">Paysage HD</option></select>}{secondaryActions}</div>
     </header>
     <RitualProgress stage={stage}/>
-    {stage==='choose'&&<section className="bird-selection" aria-labelledby="trio-title"><p className="bird-eyebrow">01 · LA RENCONTRE</p><h1 id="trio-title">Une plume sonore<br/><em>qui t’attire.</em></h1><p>Choisis parmi les plumes virevoltantes. Son plumage devient ta palette, son univers inspire tes mots.</p><FeatherEncounter selected={padIds[0]} onChoose={pickBird}/><span className="sr-only" role="status">{previewing?`Aperçu du chant : ${BIRDS.find(b=>b.id===previewing)?.name}`:''}</span><div className="trio-start"><span>{padIds.length?'Une plume, tout un monde.':'Choisis une plume pour rencontrer ton oiseau.'}</span><button disabled={padIds.length!==1} onClick={startRitual}>Découvrir mon haïku <span aria-hidden="true">↗</span></button></div></section>}
+    {stage==='choose'&&<section className="bird-selection" aria-labelledby="trio-title"><p className="bird-eyebrow">01 · LA RENCONTRE</p><h1 id="trio-title">Une plume sonore<br/><em>qui t’attire.</em></h1><p>Choisis parmi les plumes virevoltantes. Un geste, une rencontre. Son plumage devient ta palette, son univers inspire tes mots.</p><FeatherEncounter onChoose={pickBird}/><span className="sr-only" role="status">{previewing?`Aperçu du chant : ${BIRDS.find(b=>b.id===previewing)?.name}`:''}</span></section>}
     {stage!=='choose'&&<section className="ritual-heading" aria-labelledby="ritual-title"><h1 id="ritual-title">{ritual.title}</h1><details className="ritual-help"><summary aria-label="Comment vivre cette étape ?">?</summary><div>{ritual.hint}</div></details></section>}
     {stage==='poem'&&invitation&&<section className="poem-invitation" aria-label="Le haïku avant la peinture"><FeatherGlyph bird={selectedBird}/><p className="bird-eyebrow">02 · {selectedBird.name}</p><ArtworkPoem poetry={invitation}/><p>Une invitation à ressentir, à laisser venir.</p><button className="enter-atelier" onClick={enterAtelier}>Entrer dans l’atelier <span aria-hidden="true">↗</span></button></section>}
     <main className="bird-workbench" style={stage==='poem'?{display:'none'}:undefined}>

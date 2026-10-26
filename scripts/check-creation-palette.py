@@ -10,9 +10,9 @@ with sync_playwright() as p:
   errors=[];modules=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('request',lambda r:modules.append(r.url) if '/src/engine/WatercolorEngine.ts' in r.url else None)
   page.add_init_script('''crypto.getRandomValues=a=>{a.fill(2);return a};for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(128,get.call(this,p)):get.call(this,p)}}''')
   page.goto(os.getenv('HAIKUARELLE_URL','http://127.0.0.1:5173/'),wait_until='domcontentloaded')
-  page.get_by_role('button',name='Choisir la plume Geai',exact=True).click();page.wait_for_function('!!document.querySelector(".encounter-result strong")')
+
   page.evaluate('''async url=>{const {HaikuarelleEngine}=await import(url),begin=HaikuarelleEngine.prototype.beginSignature;HaikuarelleEngine.prototype.beginSignature=function(...args){window.__p=this;return begin.apply(this,args)}}''',modules[-1])
-  page.get_by_role('button',name='Découvrir mon haïku').click()
+  page.locator('.feather-choice[data-bird=geai]').click()
   verses=page.locator('.poem-invitation .poem-lines>span').all_text_contents();assert len(verses)==3
   assert page.locator('.artwork-title').count()==0
   page.get_by_role('button',name='Entrer dans l’atelier').click();page.wait_for_function('!!document.querySelector(".flow-paint")')
