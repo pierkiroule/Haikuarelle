@@ -43,14 +43,26 @@ with sync_playwright() as p:
     let far=0;for(let x=0;x<w*.75;x++)if(a[(y*w+x)*4]>.12)far=x;
     edge.push(far);tip=Math.max(tip,far);
    }
-   return {centroid:[cx/mass,cy/mass],dryDelta,wetDelta,tip,edge,mass};
+   let branches=0,span=0;
+   for(let x=Math.floor(w*.52);x<Math.floor(w*.74);x++){
+    let count=0,inside=false,first=-1,last=-1;
+    for(let y=Math.floor(h*.35);y<Math.ceil(h*.65);y++){
+     const present=a[(y*w+x)*4]>.10;
+     if(present&&!inside)count++;inside=present;
+     if(present){if(first<0)first=y;last=y;}
+    }
+    branches=Math.max(branches,count);span=Math.max(span,last-first);
+   }
+   return {centroid:[cx/mass,cy/mass],dryDelta,wetDelta,tip,edge,mass,branches,span};
   };
   const quiet=run(false),blowing=run(true),filaments=run(true,true),distance=Math.hypot(blowing.centroid[0]-quiet.centroid[0],blowing.centroid[1]-quiet.centroid[1]);
   const error=g.getError();e.destroy();return {quiet,blowing,filaments,displacement:distance,error};
  }''')
  assert result['displacement']>.15,result
  assert result['blowing']['dryDelta']<1e-5 and result['blowing']['wetDelta']<1e-5,result
- assert result['filaments']['tip']>=result['blowing']['tip']+4,result
+ assert result['filaments']['tip']>=result['blowing']['tip']+8,result
+ assert result['filaments']['branches']>=3,result
+ assert result['filaments']['span']>result['blowing']['span']*1.15,result
  edge=result['filaments']['edge']
  peaks=sum(edge[i]>edge[i-1] and edge[i]>=edge[i+1] for i in range(1,len(edge)-1))
  assert peaks>=3,(peaks,result)

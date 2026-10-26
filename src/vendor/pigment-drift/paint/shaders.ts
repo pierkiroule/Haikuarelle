@@ -396,26 +396,37 @@ void main() {
       vec2 side=vec2(-direction.y,direction.x);
       vec2 rel=src-uBreath.xy;
       float reach=length(rel)/max(uBreathShape.x,1.0);
-      float envelope=1.0-smoothstep(0.35,1.3,reach);
+      float envelope=1.0-smoothstep(0.4,2.1,reach);
       airMask=envelope*min(1.0,uBreathShape.y*2.0);airSide=side;
-      // Long, narrow channels, anchored in paper space rather than the frame
-      // clock: the rim grows tendrils instead of shimmering or combing evenly.
-      float across=dot(src,side)/uUnit;
+      // A widening fan with two levels of forks. The same parent channel
+      // splits progressively downstream, instead of laying parallel teeth.
       float along=dot(src,direction)/uUnit;
-      float bend=0.32*gnoise(vec2(along*13.0,across*9.0)+uSeedOff);
-      float lanes=sin(across*200.0+bend*3.0+uSeedOff.x);
-      float fingers=pow(max(0.0,lanes),3.0)*(0.65+0.35*smoothstep(-0.4,0.4,gnoise(vec2(across*17.0,along*5.0)+uSeedOff)));
-      float behind=fieldAt(src-direction*uUnit*0.025).x;
-      float ahead=fieldAt(src+direction*uUnit*0.012).x;
+      float across=dot(src,side)/uUnit;
+      float forward=dot(rel,direction)/uUnit;
+      float bend=0.7*gnoise(vec2(along*15.0,across*11.0)+uSeedOff);
+      float phase=across*100.0+bend*3.0+uSeedOff.x;
+      float fork=smoothstep(-0.015,0.065,forward);
+      float parent=abs(sin(phase));
+      float primary=1.0-smoothstep(0.10,0.34,abs(parent-fork*0.72));
+      float twig=1.0-smoothstep(0.10,0.28,abs(abs(sin(phase*2.0+bend))-0.55));
+      float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.04,0.11,forward));
+      float irregular=0.6+0.4*smoothstep(-0.4,0.4,gnoise(vec2(across*19.0,along*8.0)+uSeedOff));
+      vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.95);
+      float behind=fieldAt(src-fan*uUnit*0.025).x;
+      float ahead=fieldAt(src+fan*uUnit*0.012).x;
       float rim=smoothstep(0.001,0.025,behind-ahead);
-      float extension=min(speed*uDt*20.0,uUnit*0.03);
-      destination-=direction*extension*envelope*fingers*rim*uBreathShape.y;
+      float extension=min(speed*uDt*30.0,min(uUnit*0.045,10.0));
+      destination-=fan*extension*envelope*branching*irregular*rim*uBreathShape.y;
+      // Bound the entire backtrace so the wet-route probes cannot jump a dry cut.
+      vec2 travel=destination-src;
+      destination=src+travel*min(1.0,12.0/max(length(travel),0.0001));
     }
     if(uMaterial>0.5){
       // Currents carry pigment only through a continuous wet route. Dry paper
       // and dry cuts between pools remain barriers even while the fluid coasts.
       float channel=min(fieldAt(src).y,fieldAt(destination).y);
-      for(int j=1;j<=4;j++)channel=min(channel,fieldAt(mix(src,destination,float(j)/5.0)).y);
+      int routeSamples=uBreathShape.y>0.0?16:4;
+      for(int j=1;j<=16;j++){if(j>routeSamples)break;channel=min(channel,fieldAt(mix(src,destination,float(j)/float(routeSamples+1))).y);}
       src=mix(src,destination,mix(smoothstep(0.008,0.07,channel),smoothstep(0.018,0.16,channel),uFixation));
     }else src=destination;
   }
