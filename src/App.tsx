@@ -23,6 +23,7 @@ import {APP_NAME} from './brand';
 import {FeatherDrift} from './birds/FeatherDrift';
 import './aquarelle.css';
 import {FeatherGlyph} from './birds/FeatherGlyph';
+import VoyageDialog,{type Journey} from './voyage/VoyageDialog';
 const Validation=lazy(()=>import('./Validation'));
 const Legacy=lazy(()=>import('./LegacyStudio'));
 const randomSeed=()=>crypto.getRandomValues(new Uint32Array(1))[0];
@@ -56,6 +57,8 @@ export function BirdStudio(){
   const [status,setStatus]=useState(idle),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const [retry,setRetry]=useState(0),[exporting,setExporting]=useState(false),[name,setName]=useState('');
   const [canvasOnly,setCanvasOnly]=useState(false);
+  const [journey,setJourney]=useState<Journey|null>(null);
+  const journeyOpening=useRef(false);
   const artwork=useRef<HTMLElement>(null);
   const studio=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),paper=useRef<HTMLDivElement>(null);
   const engine=useRef<HaikuarelleEngine|null>(null),bank=useRef<BirdAudioBank|null>(null),stroke=useRef<SoundDeposit|null>(null);
@@ -67,6 +70,7 @@ export function BirdStudio(){
   const palette=getPalette(settings.palette),sheet=sheetFor(settings.format),busy=!!playing||!!loading;
   const selectedBird=BIRDS.find(b=>b.id===selected)!;
   const pads=padIds.map(id=>BIRDS.find(b=>b.id===id)!);
+  useEffect(()=>()=>{if(journey?.context)void journey.context.close().catch(()=>{});},[journey]);
   useEffect(()=>{
     let live=true;const sounds=new BirdAudioBank();bank.current=sounds;setReady([]);
     void sounds.preload(id=>{if(live)setReady(list=>list.includes(id)?list:[...list,id]);});
@@ -199,6 +203,26 @@ export function BirdStudio(){
       if(result==='saved')setNotice(mode==='share'?'Ton haïkuarelle est téléchargée : tu peux maintenant la partager.':'Ton haïkuarelle, son titre et son haïku sont téléchargés.');
     }catch(error){setNotice(error instanceof Error?error.message:'L’export a échoué.');}finally{setExporting(false);}
   };
+  const openJourney=()=>{
+    if(stage!=='finished'||!poetry||!engine.current||exporting||journeyOpening.current)return;
+    journeyOpening.current=true;
+    stop();engine.current.pause();
+    try{
+      const frame=engine.current.capturePreview(),sounds=bank.current;
+      // Unlock inside this actual button gesture, before the lazy 3D module
+      // and geometry worker load. This context belongs only to the voyage.
+      let context:AudioContext|null=null;
+      try{context=new AudioContext();void context.resume().catch(()=>{});}catch{/* Visual exploration remains available. */}
+      const ids=[...new Set(marks.map(mark=>mark.bird))];
+      setJourney({frame,paper:palette.paper,marks:marks.map(m=>({...m,point:{...m.point}})),title:poetry.title,seed,context,
+        loadAudio:async()=>{
+          const buffers=new Map<BirdId,AudioBuffer>(),failed:BirdId[]=[];
+          await Promise.all(ids.map(async id=>{try{if(!sounds)throw new Error('Audio indisponible');buffers.set(id,(await sounds.prepare(id)).document.buffer);}catch{failed.push(id);}}));
+          return {buffers,failed};
+        },
+      });
+    }catch{journeyOpening.current=false;setNotice('La sculpture n’a pas pu être préparée. Ton aquarelle est conservée.');}
+  };
   const dryingEnd=(engine.current?.composition.duration??1)*30;
   const dryingProgress=Math.min(1,Math.max(0,(status.ticks-dryingStart)/Math.max(1,dryingEnd-dryingStart)));
   const liveText=canWet?(waterPlaced?'L’eau attend les oiseaux. Tu peux encore étendre l’eau résonante.':'Glisse sur le papier pour déposer l’eau claire.') :stage==='drying'?'L’eau se retire. Le titre et le haïku vont apparaître…':stage==='finished'?'Ton œuvre a trouvé ses mots.':loading?'La plume prépare son chant…':playing?`${BIRDS.find(b=>b.id===playing)?.name} · le chant anime la matière`:status.paused&&status.hasPigment&&status.phase!=='complete'?'La diffusion est suspendue.':status.phase==='complete'&&marks.length?'L’eau reste disponible pour les prochains chants.':marks.length?'Les pigments se diffusent doucement. L’eau reste présente.':'Dépose un chant sur le papier sec ou dans l’eau.';
@@ -249,7 +273,7 @@ export function BirdStudio(){
           {canWet&&<><details className="water-settings"><summary>Réglages de l’eau</summary><div><label><span>Taille <output>{Math.round(waterSize*100)} %</output></span><input aria-label="Taille du geste d’eau" type="range" min="0" max="100" value={waterSize*100} onChange={e=>setWaterSize(Number(e.target.value)/100)}/></label><label><span>Quantité d’eau <output>{Math.round(waterAmount*100)} %</output></span><input aria-label="Quantité d’eau" type="range" min="10" max="100" value={waterAmount*100} onChange={e=>setWaterAmount(Number(e.target.value)/100)}/></label></div></details><div className="sr-only" role="status" aria-live="polite">{liveText}</div><button className="finalize-art water-ready" onClick={inviteChants} disabled={!!error}>{waterPlaced?'Inviter les chants':'Peindre sur le papier sec'} <span aria-hidden="true">↗</span></button></>}
           {stage==='paint'&&<button className="finalize-art" onClick={finalize} disabled={!marks.length||!!error||exporting||busy}>Laisser sécher <span aria-hidden="true">☼</span></button>}
           {stage==='drying'&&<div className="artwork-drying" role="status"><SilenceSun/><progress aria-label="Séchage de l’œuvre" max="1" value={dryingProgress}/><span>Sous le soleil du silence…</span><button onClick={continuePainting}>Reprendre la plume</button></div>}
-          {stage==='finished'&&<div className="artwork-finished-actions"><span className="poem-mark">•°</span><p>Un titre. Trois vers.<br/>Ton empreinte du vivant.</p><button className="finalize-art share-art" onClick={()=>void exportArt('share')} disabled={exporting||!!error}>{exporting?'Préparation…':'Partager mon haïkuarelle'} <span aria-hidden="true">↗</span></button><button className="continue-art download-art" onClick={()=>void exportArt()} disabled={exporting||!!error}><Glyph name="download"/>Garder l’image · PNG</button><button className="continue-art resume-art" onClick={continuePainting} disabled={exporting}>Reprendre la plume</button></div>}
+          {stage==='finished'&&<div className="artwork-finished-actions"><span className="poem-mark">•°</span><p>Un titre. Trois vers.<br/>Ton empreinte du vivant.</p><button className="finalize-art share-art" onClick={()=>void exportArt('share')} disabled={exporting||!!error}>{exporting?'Préparation…':'Partager mon haïkuarelle'} <span aria-hidden="true">↗</span></button><button className="continue-art download-art" onClick={()=>void exportArt()} disabled={exporting||!!error}><Glyph name="download"/>Garder l’image · PNG</button><button className="continue-art resume-art" onClick={continuePainting} disabled={exporting}>Reprendre la plume</button><button className="journey-start" onClick={openJourney} disabled={exporting||!!error}>Mon voyage sur haïkuarelle virtuelle en 360<span>Les pigments deviennent un monde · les chants habitent l’espace ↗</span></button></div>}
         </div>
         {stage==='finished'&&<label className="poem-dedication final-dedication"><span>Une dédicace</span><input aria-label="Prénom pour la dédicace du haïku" placeholder="Un prénom, si tu le souhaites" maxLength={32} value={name} onChange={e=>setName(e.target.value)}/></label>}
 
@@ -263,6 +287,7 @@ export function BirdStudio(){
     {screen.viewing&&canWet&&waterPlaced&&<button className="bird-finalize-screen" onClick={inviteChants}>Inviter les chants ↗</button>}
     {screen.viewing&&canPaint&&!busy&&marks.length>0&&<button className="bird-finalize-screen" onClick={finalize}>Laisser sécher ☼</button>}
     {notice&&<div className="toast" role="status">{notice}</div>}
+    {journey&&<VoyageDialog journey={journey} onClose={()=>{journeyOpening.current=false;setJourney(null);}}/>}
   </div>;
 }
 export default function App(){const params=new URLSearchParams(location.search);return params.has('validation')?<Suspense fallback={<p>Ouverture…</p>}><Validation/></Suspense>:params.has('mp3')?<Suspense fallback={<p>Ouverture…</p>}><Legacy/></Suspense>:<BirdStudio/>;}

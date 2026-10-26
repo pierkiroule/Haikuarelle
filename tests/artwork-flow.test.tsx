@@ -6,8 +6,12 @@ import type {EngineStatus,Point} from '../src/engine/types';
 import type {Bird} from '../src/birds/catalog';
 import {BIRD_POETICS} from '../src/birds/ornithopoetry';
 import {BirdStudio} from '../src/App';
+import type {Journey} from '../src/voyage/VoyageDialog';
 interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>}
-const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{}}));
+const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{},journey:null as Journey|null}));
+vi.mock('../src/voyage/VoyageDialog',()=>({default:({journey,onClose}:{journey:Journey;onClose:()=>void})=>{
+  h.journey=journey;return <section role="dialog" aria-label="Voyage 360"><button onClick={onClose}>Retour à mon haïkuarelle</button></section>;
+}}));
 vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   status:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:30,ticks:0};composition={duration:20};
   constructor(_canvas:unknown,_settings:unknown,private change:(s:EngineStatus)=>void){h.painter=this;}
@@ -207,4 +211,18 @@ it('can skip water preparation and deposit spontaneously on dry paper',async()=>
   const paper=host.querySelector<HTMLElement>('.bird-paper')!;
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
   expect(h.starts).toBe(1);expect(host.querySelector('.bird-live')!.textContent).not.toContain('zone humide');
+});
+it('opens the finished work as a separate journey and restores the painting with audio cleanup',async()=>{
+  const close=vi.fn(async()=>{}),resume=vi.fn(async()=>{});
+  vi.stubGlobal('AudioContext',class{close=close;resume=resume;});
+  expect(host.querySelector('.journey-start')).toBeNull();await paint();
+  await click(host.querySelector('.finalize-art')!);expect(host.querySelector('.journey-start')).toBeNull();
+  await act(async()=>h.painter!.complete());const canvas=host.querySelector('canvas'),title=host.querySelector('.artwork-title')!.textContent;
+  await click(host.querySelector('.journey-start')!);
+  expect(host.querySelector('[role="dialog"]')).not.toBeNull();expect(h.journey!.marks.length).toBeGreaterThan(0);
+  expect(h.journey!.frame.pixels.length).toBe(20*30*4);expect(resume).toHaveBeenCalledOnce();
+  const context=h.journey!.context;expect(context).not.toBeNull();
+  await click([...host.querySelectorAll('button')].find(b=>b.textContent==='Retour à mon haïkuarelle')!);
+  expect(host.querySelector('[role="dialog"]')).toBeNull();expect(close).toHaveBeenCalledOnce();
+  expect(host.querySelector('canvas')).toBe(canvas);expect(host.querySelector('.artwork-title')!.textContent).toBe(title);
 });
