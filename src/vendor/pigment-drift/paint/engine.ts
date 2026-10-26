@@ -389,7 +389,7 @@ export class PaintEngine {
   /** Advances the sheet by dt seconds. Returns false when nothing needed doing. */
   step(dt: number, now: number, segs: Segment[], drops: Drop[]): boolean {
     const gl = this.gl;
-    const forcing = segs.some((s) => s.coupling > 0);
+    const forcing = segs.some((s) => !s.breath && s.coupling > 0);
     if (forcing) this.flowUntil = now + 2000;
     if (segs.length || drops.length) this.wetUntil = now + Math.max(2500 + 6000 * this.look.bleed, (this.look.dryingTime ?? 0) * 5600);
     const flowing = now < this.flowUntil;
@@ -405,7 +405,8 @@ export class PaintEngine {
       const s = segs[i];
       this.segBuf.set([s.ax, s.ay, s.bx, s.by], i * 4);
       this.segPBuf.set(segmentPayload(s), i * 4);
-      this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.coupling], i * 4);
+      // Breath has its own coupled water/pigment flux, never a second colour-only current.
+      this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.breath?0:s.coupling], i * 4);
     }
     const nd = Math.min(drops.length, MAX_DROPS);
     for (let i = 0; i < nd; i++) {

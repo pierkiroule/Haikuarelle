@@ -380,12 +380,16 @@ vec2 breathDisplacement(vec2 position){
   vec2 rel=position-uBreath.xy;
   float envelope=breathEnvelope(position);
   if(envelope<=0.0)return vec2(0.0);
+  vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.4);
+  float extension=min(speed*uDt*30.0,min(uUnit*0.018,6.0));
+  float forward=dot(rel,direction)/uUnit;
+  float fringe=smoothstep(0.02,0.18,forward);
+  if(fringe<=0.0)return fan*extension*envelope*uBreathShape.y;
 
   // A widening fan with two levels of forks. The same parent channel
   // splits progressively downstream, instead of laying parallel teeth.
   float along=dot(position,direction)/uUnit;
   float across=dot(position,side)/uUnit;
-  float forward=dot(rel,direction)/uUnit;
   float bend=0.7*gnoise(vec2(along*6.0,across*11.0)+uSeedOff);
   float phase=across*100.0+bend*3.0+uSeedOff.x;
   float fork=smoothstep(-0.015,0.065,forward);
@@ -394,12 +398,12 @@ vec2 breathDisplacement(vec2 position){
   float twig=1.0-smoothstep(0.10,0.28,abs(abs(sin(phase*2.0+bend))-0.55));
   float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.10,0.24,forward));
   float irregular=0.6+0.4*smoothstep(-0.4,0.4,gnoise(vec2(across*19.0,along*8.0)+uSeedOff));
-  vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.4);
-  float extension=min(speed*uDt*30.0,min(uUnit*0.018,6.0));
-  return fan*extension*envelope*branching*irregular*uBreathShape.y;
+  // Bulk pressure stays continuous; branching only modulates the leading fringe.
+  float pressure=mix(1.0,0.72+0.28*branching*irregular,fringe);
+  return fan*extension*envelope*pressure*uBreathShape.y;
 }
 vec4 mobileWater(vec4 value){
-  float fraction=smoothstep(0.004,0.04,value.y);
+  float fraction=smoothstep(0.0001,0.001,value.y);
   return vec4(value.x*fraction,value.y,value.zw*fraction);
 }
 
@@ -426,9 +430,7 @@ void main() {
     src = d.xy + rel * sqrt(max(1.0 - (d.w - d.z) / max(ds, d.w), 0.0));
   }
 
-  float airMask=0.0;
-  vec2 airSide=vec2(0.0);
-  if (uFlowing > 0.5) {
+  if (uFlowing > 0.5 && uBreathShape.y<=0.0) {
     vec2 destination=src-texture(uVel,src/uSize).xy*uDt;
     if(uMaterial>0.5){
       // Currents carry pigment only through a continuous wet route. Dry paper
@@ -451,10 +453,14 @@ void main() {
     // Fractional, sheet-scaled steps keep the gesture visible at high density.
     // Short exchanges keep the root connected; longer, fractional exchanges
     // pull its wet tip outward without widening the entire stain.
-    for(int link=0;link<8;link++){
-      int axis=link%4;
-      float stride=max(1.0,uUnit*(link<4?0.0073:0.0292));
-      float share=link<4?0.3:0.7;
+    float longStep=max(1.0,uUnit*0.0292);
+    for(int link=0;link<12;link++){
+      int axis=link%4,group=link/4;
+      // Every exchange has an exact opposite on the donor cell: interpolation
+      // weights belong to the links, not to a resampled pigment/water field.
+      float stride=group==0?1.0:group==1?floor(longStep):ceil(longStep);
+      float share=group==0?0.2:group==1?0.8*(1.0-fract(longStep)):0.8*fract(longStep);
+      if(share<=0.0)continue;
       vec2 direction=axis==0?vec2(1,0):axis==1?vec2(-1,0):axis==2?vec2(0,1):vec2(0,-1);
       vec2 offset=direction*stride;
       vec2 displacement=breathDisplacement(q+offset*0.5);
@@ -466,48 +472,47 @@ void main() {
     }
     if(dot(abs(transport),vec4(1))>0.000001){
       f=original+transport;
-      airMask=breathEnvelope(q);
-      vec2 direction=uBreath.zw/max(length(uBreath.zw),0.0001);
-      airSide=vec2(-direction.y,direction.x);
     }
   }
 
   // Pairwise capillary exchange: mass moves toward the pinned, thinner wet
   // margin. The symmetric conductance preserves pigment instead of painting a
   // decorative outline. Mobility fades as water evaporates, leaving the rim.
-  vec4 center = f;
-  vec3 exchange = vec3(0.0);
-  // Adjacent cells and diagonal exchange keep ONE connected, isotropic film.
-  // Integer long strides used to isolate parity grids and reveal square pixels.
-  float centerAffinity = 1.0 + uMaterial * 2.6 *
-    (1.0-smoothstep(0.025,0.23,center.y)) * smoothstep(0.006,0.035,center.y);
-  for (int axis = 0; axis < 8; axis++) {
-    vec2 offset = axis == 0 ? vec2(1,0) : axis == 1 ? vec2(-1,0) : axis == 2 ? vec2(0,1) : axis == 3 ? vec2(0,-1)
-      : axis == 4 ? vec2(1,1) : axis == 5 ? vec2(-1,1) : axis == 6 ? vec2(1,-1) : vec2(-1,-1);
-    float weight = axis < 4 ? 1.0 : 0.5;
-    vec4 neighbor = fieldAt(src + offset);
-    // Sample the route too: a wider kernel cannot jump a dry slit.
-    float moisture = min(min(center.y, neighbor.y),fieldAt(src + offset * 0.5).y);
-    // A diagonal cannot leak across two pools touching only at a dry corner.
-    if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
-    float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
-    float mobility = smoothstep(0.006,0.22,moisture) * fibre;
-    // Symmetric moisture-dependent fixation, without sharpening or adding grain.
-    mobility *= mix(1.0,smoothstep(0.018,0.18,moisture),uFixation);
-    float neighborAffinity = 1.0 + uMaterial * 2.6 *
-      (1.0-smoothstep(0.025,0.23,neighbor.y)) * smoothstep(0.006,0.035,neighbor.y);
-    // Distinct optical pigments diffuse much less across each other's boundary.
-    // Empty wet cotton remains permeable, so individual colour fields spread.
-    if (uMaterial > 0.5 && min(center.x,neighbor.x) > 0.015) {
-      float difference = length(center.zw/max(center.x,1e-4)-neighbor.zw/max(neighbor.x,1e-4));
-      mobility *= mix(1.0,0.004,smoothstep(0.015,0.08,difference));
+  if(uBreathShape.y<=0.0){
+    vec4 center = f;
+    vec3 exchange = vec3(0.0);
+    // Adjacent cells and diagonal exchange keep ONE connected, isotropic film.
+    // Integer long strides used to isolate parity grids and reveal square pixels.
+    float centerAffinity = 1.0 + uMaterial * 2.6 *
+      (1.0-smoothstep(0.025,0.23,center.y)) * smoothstep(0.006,0.035,center.y);
+    for (int axis = 0; axis < 8; axis++) {
+      vec2 offset = axis == 0 ? vec2(1,0) : axis == 1 ? vec2(-1,0) : axis == 2 ? vec2(0,1) : axis == 3 ? vec2(0,-1)
+        : axis == 4 ? vec2(1,1) : axis == 5 ? vec2(-1,1) : axis == 6 ? vec2(1,-1) : vec2(-1,-1);
+      float weight = axis < 4 ? 1.0 : 0.5;
+      vec4 neighbor = fieldAt(src + offset);
+      // Sample the route too: a wider kernel cannot jump a dry slit.
+      float moisture = min(min(center.y, neighbor.y),fieldAt(src + offset * 0.5).y);
+      // A diagonal cannot leak across two pools touching only at a dry corner.
+      if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
+      float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
+      float mobility = smoothstep(0.006,0.22,moisture) * fibre;
+      // Symmetric moisture-dependent fixation, without sharpening or adding grain.
+      mobility *= mix(1.0,smoothstep(0.018,0.18,moisture),uFixation);
+      float neighborAffinity = 1.0 + uMaterial * 2.6 *
+        (1.0-smoothstep(0.025,0.23,neighbor.y)) * smoothstep(0.006,0.035,neighbor.y);
+      // Distinct optical pigments diffuse much less across each other's boundary.
+      // Empty wet cotton remains permeable, so individual colour fields spread.
+      if (uMaterial > 0.5 && min(center.x,neighbor.x) > 0.015) {
+        float difference = length(center.zw/max(center.x,1e-4)-neighbor.zw/max(neighbor.x,1e-4));
+        mobility *= mix(1.0,0.004,smoothstep(0.015,0.08,difference));
+      }
+      exchange += (neighbor.xzw * centerAffinity - center.xzw * neighborAffinity)
+        * weight * mobility / max(centerAffinity,neighborAffinity);
     }
-    // Air combs the moving rim: limit lateral mixing while the jets act.
-    mobility*=1.0-0.92*airMask*abs(dot(normalize(offset),airSide));
-    exchange += (neighbor.xzw * centerAffinity - center.xzw * neighborAffinity)
-      * weight * mobility / max(centerAffinity,neighborAffinity);
+    // While air acts, one common flux carries water and suspended pigment.
+    // Independent colour diffusion resumes after release, inside the moved water.
+    f.xzw += exchange * min(0.155, uDt * mix(0.8 + 2.4*uBleed,4.0 + 3.0*uBleed,uMaterial));
   }
-  f.xzw += exchange * min(0.155, uDt * mix(0.8 + 2.4*uBleed,4.0 + 3.0*uBleed,uMaterial));
 
   if (inkCov > 0.0) {
     if (inkKind < 0.5) {

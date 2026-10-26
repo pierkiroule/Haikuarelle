@@ -51,6 +51,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private breath=new LivingBreath();
   private breathPending:WaterCurrent|null=null;
   private breathMoved=false;
+  private lastBreathSync=-Infinity;
   private waterBlooms:{point:Point;start:number;duration:number;radius:number}[]=[];
   private hasPigment=false;
   private tick=0;
@@ -110,7 +111,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     if(this.destroyed)return;
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
     this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;
-    this.breath.reset();this.breathPending=null;this.breathMoved=false;
+    this.breath.reset();this.breathPending=null;this.breathMoved=false;this.lastBreathSync=-Infinity;
     this.waterPending=[];this.waterLast=null;this.waterBlooms=[];this.hasPigment=false;
     this.drying=false;this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper=new WetPaper(this.settings.format,this.performance?Infinity:dryingTime(this.settings.wetness));
@@ -180,6 +181,8 @@ export class HaikuarelleEngine implements WatercolorEngine {
   }
   blow(point:Point,time:number,size:number):void{
     if(this.destroyed||!this.performance||this.drying)return;
+    // Keep the gesture on the actual moving water, not on the original mask.
+    if(this.breathMoved&&time-this.lastBreathSync>=180){this.syncBreathWater();this.lastBreathSync=time;}
     const sheet=sheetFor(this.settings.format),unit=Math.min(sheet.width,sheet.height);
     const current=this.breath.move(point,time,size,this.waterAt(point),{x:sheet.width/unit,y:sheet.height/unit});
     if(!current)return;
@@ -188,12 +191,14 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.active=true;this.paused=false;
     this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+this.dryingDuration());this.request();
   }
-  liftBreath():void{
-    this.breath.reset();this.breathPending=null;
+  private syncBreathWater():void{
     if(this.breathMoved&&!this.destroyed){
       const moisture=this.paint.captureMoisture();if(moisture)this.wetPaper.replaceMoisture(moisture,this.tick/TICK_RATE);
     }
     this.breathMoved=false;
+  }
+  liftBreath():void{
+    this.breath.reset();this.breathPending=null;this.syncBreathWater();this.lastBreathSync=-Infinity;
   }
   waterAt(point:Point):number{return this.wetPaper.at(point,this.tick/TICK_RATE);}
   private dryingDuration():number{return this.drying?RITUAL_DRYING_SECONDS:dryingTime(this.settings.wetness)*5.6;}

@@ -260,3 +260,17 @@ it('synchronizes the transported moisture once on breath release and dries the e
  expect(e.waterAt({x:.85,y:.5})).toBeCloseTo(.3);
  e.setDrying(true);await e.finish();expect(e.waterAt({x:.85,y:.5})).toBeLessThan(.3*.005);
 });
+
+it('refreshes the moving moisture during a continuous breath before gating its next position',()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ const width=20,height=32,water=new Float32Array(width*height);
+ for(let y=12;y<20;y++)for(let x=10;x<19;x++)water[y*width+x]=.3;
+ vi.mocked(e.paint.captureMoisture).mockReturnValue({width,height,water});
+ e.blow({x:.5,y:.5},0,.6);e.blow({x:.51,y:.5},30,.6);frame(1);frame(101);
+ e.blow({x:.85,y:.5},180,.6);
+ expect(e.paint.captureMoisture).toHaveBeenCalledTimes(1);
+ expect(e.waterAt({x:.85,y:.5})).toBeCloseTo(.3);
+ vi.mocked(e.paint.step).mockClear();frame(201);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).some(s=>s.breath&&s.ax>1500)).toBe(true);
+ e.liftBreath();expect(e.paint.captureMoisture).toHaveBeenCalledTimes(2);
+});
