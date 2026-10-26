@@ -7,6 +7,7 @@ import type {EngineSettings,EngineStatus,Point} from './engine/types';
 import {BIRD_BRUSHES as BIRDS,type Bird,type BirdId} from './birds/catalog';
 import {paperPoint} from './birds/ResonantBrush';
 import {BirdAudioBank} from './birds/BirdAudioBank';
+import {WaterSong} from './birds/WaterSong';
 import {SoundDeposit} from './birds/SoundDeposit';
 import type {BirdMark} from './birds/haiku';
 import {composeBirdPoem} from './birds/ornithopoetry';
@@ -66,8 +67,9 @@ export function BirdStudio(){
   const artwork=useRef<HTMLElement>(null);
   const studio=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),paper=useRef<HTMLDivElement>(null);
   const engine=useRef<HaikuarelleEngine|null>(null),bank=useRef<BirdAudioBank|null>(null),stroke=useRef<SoundDeposit|null>(null);
+  const waterSong=useRef<WaterSong|null>(null),waterGesture=useRef(false);
   const pointer=useRef<number|null>(null),keyHeld=useRef(false),voiceNumber=useRef(0);
-  const current=useRef({settings,seed,brush,opacity,marks});current.current={settings,seed,brush,opacity,marks};
+  const current=useRef({settings,seed,brush,opacity,marks,selected});current.current={settings,seed,brush,opacity,marks,selected};
   const screen=useLargeScreen(studio);
   const canCreate=stage==='paint',canPaint=canCreate&&tool==='plume',canWet=canCreate&&tool==='water',canDraw=canCreate;
   const ritual=RITUAL.find(step=>step.stage===stage)!;
@@ -81,6 +83,12 @@ export function BirdStudio(){
     try{
       const painter=new HaikuarelleEngine(canvas.current!,current.current.settings,s=>{if(live)setStatus(s);},message=>{if(live)setError(message);},{requireAudio:true});
       engine.current=painter;painter.beginSignature(current.current.seed);if(padIds[0])painter.setBirdPalette(padIds[0]);
+      waterSong.current=new WaterSong(sounds,painter,{
+        preparing:()=>{if(live)setLoading(current.current.selected);},
+        started:()=>{if(live){setLoading(null);setPlaying(current.current.selected);}},
+        stopped:()=>{if(live&&!stroke.current?.busy){setLoading(null);setPlaying(null);if(!waterGesture.current&&!painter.status.hasPigment)painter.holdWater();}},
+        error:message=>{if(live)setNotice(message);},
+      });
       stroke.current=new SoundDeposit(sounds,painter,{
         preparing:bird=>{if(live)setLoading(bird.id);},
         started:bird=>{if(live){setLoading(null);setPlaying(bird.id);}},
@@ -89,14 +97,14 @@ export function BirdStudio(){
         error:message=>{if(live)setNotice(message);},
       });
     }catch(error){setError(error instanceof Error?error.message:'Le moteur ne peut pas démarrer.');}
-    return()=>{live=false;previewToken.current++;stroke.current?.cancel();stroke.current=null;sounds.destroy();engine.current?.destroy();engine.current=null;bank.current=null;};
+    return()=>{live=false;previewToken.current++;waterSong.current?.cancel();waterSong.current=null;stroke.current?.cancel();stroke.current=null;sounds.destroy();engine.current?.destroy();engine.current=null;bank.current=null;};
   },[retry]);
   useEffect(()=>{engine.current?.update(settings);},[settings]);
   useEffect(()=>{engine.current?.setBrushSize(brush);engine.current?.setBrushOpacity?.(opacity);},[brush,opacity]);
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(''),4500);return()=>clearTimeout(timer);},[notice]);
   const stop=()=>{
     const id=pointer.current;pointer.current=null;keyHeld.current=false;
-    previewToken.current++;setPreviewing(null);stroke.current?.cancel();if(canWet)engine.current?.holdWater();setContact(false);
+    waterGesture.current=false;waterSong.current?.cancel();previewToken.current++;setPreviewing(null);stroke.current?.cancel();if(canWet)engine.current?.holdWater();setContact(false);
     if(id!==null&&paper.current?.hasPointerCapture(id))paper.current.releasePointerCapture(id);
   };
   const resetSheet=(next:number)=>{stop();setWaterPlaced(false);setSeed(next);setMarks([]);setPoetry(null);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===1?'paint':'choose');setTool('water');};
@@ -104,6 +112,7 @@ export function BirdStudio(){
   const erase=()=>{resetSheet(current.current.seed);setNotice('Tout est effacé. La feuille est prête.');};
   const wet=(p:Point,pressure=.5)=>{
     if(!canWet||!engine.current||error||exporting)return;
+    if(!waterGesture.current){waterGesture.current=true;if(!stroke.current?.busy)void waterSong.current?.begin(selectedBird);}
     engine.current.wetBrush(p,waterSize,pressure,waterAmount);setWaterPlaced(true);setContact(true);
   };
   const begin=(p:Point,time:number,pressure=.5)=>{
@@ -122,8 +131,8 @@ export function BirdStudio(){
   const finishWater=()=>{
     const id=pointer.current;pointer.current=null;
     if(id!==null&&paper.current?.hasPointerCapture(id))paper.current.releasePointerCapture(id);
-    keyHeld.current=false;setContact(false);
-    engine.current?.holdWater(!engine.current.status.hasPigment&&!stroke.current?.busy);
+    keyHeld.current=false;setContact(false);waterGesture.current=false;waterSong.current?.release();
+    engine.current?.holdWater(!engine.current.status.hasPigment&&!stroke.current?.busy&&!waterSong.current?.busy);
   };
   const selectTool=(next:'water'|'plume')=>{
     if(!canCreate)return;
@@ -210,7 +219,7 @@ export function BirdStudio(){
   };
   const dryingEnd=(engine.current?.composition.duration??1)*30;
   const dryingProgress=Math.min(1,Math.max(0,(status.ticks-dryingStart)/Math.max(1,dryingEnd-dryingStart)));
-  const liveText=canWet?(waterPlaced?(marks.length?'L’eau réveille les pigments. Le chant peut revenir.':'L’eau accueille le chant. Tu peux encore l’étendre.'):'Glisse sur le papier pour déposer l’eau claire.') :stage==='drying'?'L’eau se retire. Les contours se précisent…':stage==='finished'?'Ton œuvre a trouvé ses mots.':loading?'La plume prépare son chant…':playing?`${BIRDS.find(b=>b.id===playing)?.name} · le chant anime la matière`:status.paused&&status.hasPigment&&status.phase!=='complete'?'La diffusion est suspendue.':status.phase==='complete'&&marks.length?'L’eau reste disponible pour les prochains chants.':marks.length?'Les pigments se diffusent doucement. L’eau reste présente.':'Dépose un chant sur le papier sec ou dans l’eau.';
+  const liveText=canWet?(playing?'Le chant plonge dans l’eau…':loading?'L’eau accueille le chant…':waterPlaced?(marks.length?'L’eau réveille les pigments. Le chant peut revenir.':'L’eau accueille le chant. Tu peux encore l’étendre.'):'Glisse sur le papier pour déposer l’eau claire.') :stage==='drying'?'L’eau se retire. Les contours se précisent…':stage==='finished'?'Ton œuvre a trouvé ses mots.':loading?'La plume prépare son chant…':playing?`${BIRDS.find(b=>b.id===playing)?.name} · le chant anime la matière`:status.paused&&status.hasPigment&&status.phase!=='complete'?'La diffusion est suspendue.':status.phase==='complete'&&marks.length?'L’eau reste disponible pour les prochains chants.':marks.length?'Les pigments se diffusent doucement. L’eau reste présente.':'Dépose un chant sur le papier sec ou dans l’eau.';
   const secondaryActions=stage!=='choose'?<details className="atelier-more" onClick={event=>{if(event.target instanceof Element&&event.target.closest('button'))event.currentTarget.open=false;}}><summary aria-label="Autres actions">⋯</summary><div className="bird-actions"><button onClick={screen.toggle} aria-label="Grand écran HD"><Glyph name="screen"/>Grand écran</button><button onClick={fresh} disabled={exporting||busy}><Glyph name="refresh"/>Nouvelle œuvre</button>{stage==='paint'&&!marks.length&&!busy&&<button onClick={()=>{stop();setStage('choose');}}>Retrouver les plumes</button>}<button onClick={erase} disabled={exporting||busy}><Glyph name="erase"/>Effacer tout</button><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="https://github.com/pierkiroule/Haikuarelle" target="_blank" rel="noreferrer">Code & installation ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Licence du moteur ↗</a></div></details>:null;
   return <div ref={studio} className={`bird-studio water-studio direct-studio flow-${stage} ${canvasOnly?'canvas-only':''} ${contact?'is-painting':''} ${screen.viewing?'bird-viewing':''} ${screen.hud?'show-hud':''}`} onPointerMove={screen.viewing?screen.reveal:undefined} onPointerDown={screen.viewing?screen.reveal:undefined} style={{'--paper':palette.paper,'--art-ratio':sheet.width/sheet.height,'--sample-color':paintingBird.color} as React.CSSProperties}>
     <FeatherDrift/>

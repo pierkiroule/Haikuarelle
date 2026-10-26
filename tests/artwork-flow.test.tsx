@@ -12,7 +12,7 @@ vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   status:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:30,ticks:0};composition={duration:20};
   constructor(_canvas:unknown,_settings:unknown,private change:(s:EngineStatus)=>void){h.painter=this;}
   beginSignature(seed:number){this.status={...this.status,seed,phase:'idle',ticks:0,hasPigment:false};this.change({...this.status});}
-  setBirdPalette(){}update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}
+  startWaterSong(){}stopWaterSong(){}setBirdPalette(){}update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}
   holdWater=vi.fn();
   wetBrush=vi.fn();
   setDrying=vi.fn();
@@ -28,6 +28,7 @@ vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
 vi.mock('../src/birds/BirdAudioBank',()=>({BirdAudioBank:class{
   preload(){}async prepare(){}async unlock(){}
   async play(id:string,onStart:(sound:unknown)=>void,onEnd:()=>void){this.stop();h.previews.push(id);h.previewEnd=onEnd;onStart({});}
+  submerge(){this.stop();}
   stop(){h.previewStops++;const done=h.previewEnd;h.previewEnd=()=>{};done();}
   destroy(){this.stop();}
 }}));

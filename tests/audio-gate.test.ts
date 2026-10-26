@@ -209,3 +209,13 @@ it('the live sound clock excites prepared water without depositing pigment or ad
   e.setDrying(true);vi.mocked(e.paint.step).mockClear();audioTime=.4;frame(300);
   expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).filter(s=>s.kind===1&&s.strength===0)).toEqual([]);
 });
+
+it('plays an immersed water clock through the fluid response without creating pigment marks',()=>{
+ const e=open(),p={x:.5,y:.5};e.beginSignature(8);e.wetBrush(p,.7);e.holdWater();
+ const initial=e.waterAt(p),analysis={...music,frames:music.frames.map(f=>({...f,active:true,energy:.8,flux:.1}))};
+ e.startWaterSong(analysis,()=>.3,()=>.6);vi.mocked(e.paint.step).mockClear();frame(1);frame(101);
+ const segs=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]);
+ expect(segs.some(s=>s.coupling>0&&Math.hypot(s.fx,s.fy)>0)).toBe(true);
+ expect(segs.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0)).toBe(true);
+ expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);e.stopWaterSong();
+});

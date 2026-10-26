@@ -2,8 +2,8 @@ import {openAudio,analyzeExcerpt,type AudioDocument} from '../audio/file';
 import type {AudioAnalysis} from '../audio/types';
 import {BIRD_PADS,type BirdId} from './catalog';
 export interface BirdSound {document:AudioDocument;analysis:AudioAnalysis}
-export interface BirdPlayback extends BirdSound {elapsed:()=>number;cycleDuration:number}
-/** Local licensed recordings, decoded once. Audio starts only inside an explicit painting gesture. */
+export interface BirdPlayback extends BirdSound {elapsed:()=>number;cycleDuration:number;audibility?:()=>number}
+/** Local licensed recordings, decoded once. Audio starts only inside an explicit encounter or canvas gesture. */
 export class BirdAudioBank{
   private cache=new Map<BirdId,Promise<BirdSound>>();
   private loops=new Map<string,AudioBuffer>();
@@ -11,6 +11,8 @@ export class BirdAudioBank{
   private context:AudioContext|null=null;
   private source:AudioBufferSourceNode|null=null;
   private gain:GainNode|null=null;
+  private filter:BiquadFilterNode|null=null;
+  private immersion:{level:()=>number;release:()=>void}|null=null;
   private ended:(()=>void)|null=null;
   private token=0;
   private disposed=false;
@@ -36,7 +38,7 @@ export class BirdAudioBank{
     if(this.disposed)return;
     this.context??=new AudioContext();await this.context.resume();
   }
-  async play(id:BirdId,onStart:(sound:BirdPlayback)=>void,onEnd:()=>void,options:{loop?:boolean;breath?:number}={}):Promise<void>{
+  async play(id:BirdId,onStart:(sound:BirdPlayback)=>void,onEnd:()=>void,options:{loop?:boolean;breath?:number;immersed?:boolean}={}):Promise<void>{
     if(this.disposed)return;
     this.stop();const token=this.token;
     // Request resume before awaiting fetch/decode to preserve mobile gesture authorization.
@@ -59,20 +61,44 @@ export class BirdAudioBank{
       }
       source.buffer=padded;source.loop=true;cycleDuration=padded.duration;
     }else source.buffer=original;
-    gain.gain.value=.72;source.connect(gain);gain.connect(context.destination);
+    let audibility:(()=>number)|undefined;
+    if(options.immersed){
+      const filter=context.createBiquadFilter();this.filter=filter;filter.type='lowpass';filter.Q.value=.55;
+      const start=context.currentTime,duration=cycleDuration,attack=Math.min(.28,duration*.3),tail=Math.min(.35,duration*.3);
+      let releaseAt:number|null=null,releaseLevel=1,releaseDuration=.65;
+      audibility=()=>{
+        if(context.state!=='running')return 0;
+        const t=context.currentTime-start,natural=Math.max(0,Math.min(1,t/attack,(duration-t)/tail));
+        return releaseAt===null?natural:Math.max(0,Math.min(natural,releaseLevel*(1-(context.currentTime-releaseAt)/releaseDuration)));
+      };
+      filter.frequency.setValueAtTime(450,start);filter.frequency.exponentialRampToValueAtTime(1700,start+attack);
+      gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.48,start+attack);
+      gain.gain.setValueAtTime(.48,start+Math.max(attack,duration-tail));gain.gain.linearRampToValueAtTime(0,start+duration);
+      const level=audibility;
+      this.immersion={level,release:()=>{
+        if(releaseAt!==null)return;
+        releaseLevel=level();releaseAt=context.currentTime;releaseDuration=Math.max(.01,Math.min(.65,start+duration-releaseAt));
+        gain.gain.cancelScheduledValues(releaseAt);gain.gain.setValueAtTime(.48*releaseLevel,releaseAt);gain.gain.linearRampToValueAtTime(0,releaseAt+releaseDuration);
+        filter.frequency.cancelScheduledValues(releaseAt);filter.frequency.setValueAtTime(Math.max(450,filter.frequency.value),releaseAt);filter.frequency.exponentialRampToValueAtTime(350,Math.min(releaseAt+.6,start+duration));
+        source.stop(Math.min(releaseAt+.67,start+duration+.01));
+      }};
+      source.connect(filter);filter.connect(gain);
+    }else{gain.gain.value=.72;source.connect(gain);}
+    gain.connect(context.destination);
     this.source=source;this.gain=gain;this.ended=onEnd;
-    source.onended=()=>{source.disconnect();gain.disconnect();if(this.source===source){this.source=null;this.gain=null;const done=this.ended;this.ended=null;done?.();}};
+    source.onended=()=>{source.disconnect();gain.disconnect();if(this.source===source){this.filter?.disconnect();this.filter=null;this.immersion=null;this.source=null;this.gain=null;const done=this.ended;this.ended=null;done?.();}};
     const started=context.currentTime;
     try{
-      source.start();onStart({...sound,cycleDuration,elapsed:()=>{if(context.state!=='running')return -1;const elapsed=Math.max(0,context.currentTime-started);return options.loop?elapsed%cycleDuration:elapsed;}});
+      source.start();onStart({...sound,cycleDuration,audibility,elapsed:()=>{if(context.state!=='running')return -1;const elapsed=Math.max(0,context.currentTime-started);return options.loop?elapsed%cycleDuration:elapsed;}});
       if(options.loop&&this.source===source&&token===this.token)this.timer=setTimeout(()=>this.stop(),90000);
     }catch(error){this.stop();throw error;}
   }
+  submerge():void{this.immersion?.release();}
   stop():void{
     this.token++;
     if(this.timer!==null){clearTimeout(this.timer);this.timer=null;}
     if(this.source){this.source.onended=null;try{this.source.stop();}catch{}this.source.disconnect();this.source=null;}
-    this.gain?.disconnect();this.gain=null;
+    this.gain?.disconnect();this.gain=null;this.filter?.disconnect();this.filter=null;this.immersion=null;
     const done=this.ended;this.ended=null;done?.();
   }
   destroy():void{this.disposed=true;this.controller.abort();this.stop();this.loops.clear();this.cache.clear();void this.context?.close();this.context=null;}

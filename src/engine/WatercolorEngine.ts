@@ -39,6 +39,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private pigmentColours:string[]=PLUMAGE_PIGMENTS;
   private voice:{gestures:Gesture[];ink:InkStroke[];analysis:AudioAnalysis;start:number}|null=null;
   private brushVoice:{brush:ResonantBrush;analysis:AudioAnalysis;start:number;clock?:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
+  private waterVoice:{analysis:AudioAnalysis;clock:()=>number;level:()=>number}|null=null;
   private stainVoice:{stain:SoundStain;analysis:AudioAnalysis;start:number;clock:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
   private wetPaper=new WetPaper();
   private waterPending:BrushSegment[]=[];
@@ -99,7 +100,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   clear():void {
     if(this.destroyed)return;
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
-    this.voice=null;this.brushVoice=null;this.stainVoice=null;
+    this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;
     this.waterPending=[];this.waterLast=null;this.waterBlooms=[];this.hasPigment=false;
     this.drying=false;this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper=new WetPaper(this.settings.format,this.performance?Infinity:dryingTime(this.settings.wetness));
@@ -181,6 +182,13 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition.duration=start+analysis.duration+this.dryingDuration();
     this.active=true;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();this.request();return true;
   }
+  startWaterSong(analysis:AudioAnalysis,clock:()=>number,level:()=>number=()=>1):void{
+    if(this.destroyed||!this.performance)return;
+    this.waterVoice={analysis:{...analysis,frames:soundImprint(analysis)},clock,level};
+    this.active=true;this.paused=false;this.last=0;
+    this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+analysis.duration+this.dryingDuration());this.request();
+  }
+  stopWaterSong():void{this.waterVoice=null;}
   moveSoundStain(point:Point,connect=true):void{
     if(!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
     this.stainVoice?.stain.move(point,this.tick/TICK_RATE,connect);
@@ -213,6 +221,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   get brushFeedback():BrushFeedback|null{return this.brushVoice?{...this.brushVoice.brush.feedback}:null;}
   /** Stop new pigment on interruption/end. The wet field keeps diffusing; evaporation is explicitly controlled. */
   stopBird():void {
+    this.stopWaterSong();
     if(this.stainVoice){
       this.stainVoice=null;this.composition.duration=this.tick/TICK_RATE+this.dryingDuration();this.notifyAt=-1;this.emit();
     }
@@ -260,6 +269,12 @@ export class HaikuarelleEngine implements WatercolorEngine {
     const audible=!this.performance||!!(feature?.active&&feature.energy>0);
     let brushPoint:Point|null=null,stainPoint:Point|null=null;
     let waterFeature=feature;
+    if(this.waterVoice){
+      const v=this.waterVoice,elapsed=v.clock(),f=elapsed>=0&&elapsed<v.analysis.duration?v.analysis.frames[Math.floor(elapsed*TICK_RATE)]:undefined;
+      const level=Math.max(0,Math.min(1,v.level()));
+      waterFeature=f?{...f,energy:f.energy*level,flux:f.flux*level,brightness:f.brightness*(.25+.3*level)}:undefined;
+      if(elapsed>=v.analysis.duration)this.waterVoice=null;
+    }
     const appendFrame=(frame:BrushFrame)=>{
       for(const s of frame.segments){
         const a={x:s.a.x*sheet.width*this.paint.k,y:(1-s.a.y)*sheet.height*this.paint.k};
