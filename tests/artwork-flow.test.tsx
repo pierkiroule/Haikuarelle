@@ -69,6 +69,25 @@ describe('choose three birds, paint, finalize',()=>{
     expect(children.findIndex(el=>el.classList.contains('artwork-poem'))).toBeGreaterThan(children.findIndex(el=>el.classList.contains('bird-paper')));
     await click(host.querySelector('.continue-art')!);expect(host.querySelector('.artwork-title')).toBeNull();expect(host.querySelector('.flow-paint')).not.toBeNull();
   });
+  it('keeps the artwork and trio when hiding tools and restores commands with Escape',async()=>{
+    await paint();
+    const sheet=host.querySelector('.bird-paper'),painter=h.painter;
+    const toggle=[...host.querySelectorAll('button')].find(b=>b.textContent==='Toile seule')!;
+    expect(host.querySelector<HTMLDetailsElement>('.atelier-panel')!.open).toBe(false);
+    expect(host.querySelector<HTMLDetailsElement>('.atelier-more')!.open).toBe(false);
+    expect(host.querySelector('.final-dedication')).toBeNull();
+    await click(toggle);
+    expect(host.querySelector('.canvas-only')).not.toBeNull();
+    expect(host.querySelector('.canvas-restore')).not.toBeNull();
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    await act(async()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+    expect(host.querySelector('.canvas-only')).toBeNull();
+    expect(host.querySelector('.bird-paper')).toBe(sheet);expect(h.painter).toBe(painter);
+    expect(host.querySelectorAll('.bird-pads button')).toHaveLength(3);
+    expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(false);
+    await click(toggle);await click(host.querySelector('.canvas-restore')!);
+    expect(host.querySelector('.canvas-only')).toBeNull();
+  });
   it('cancels a pending revelation when the user resumes or clears, keeping the selected trio',async()=>{
     await paint();await click(host.querySelector('.finalize-art')!);await click(host.querySelector('.artwork-drying button')!);
     await act(async()=>h.painter!.complete());expect(host.querySelector('.artwork-title')).toBeNull();
