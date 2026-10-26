@@ -5,7 +5,8 @@ import {clamp} from '../engine/composition';
 export interface WetStroke {a:Point;b:Point;radius:number;amount:number;time:number}
 export interface WetSite {point:Point;from:Point;distance:number}
 export interface WetRegion {sites:WetSite[];radius:number;area:number}
-export const dryingTime=(wetness:number)=>3.4+5.2*clamp(wetness);
+// Shorter evaporation, with the same full settling tail (5.6 time constants).
+export const dryingTime=(wetness:number)=>.82*(3.4+5.2*clamp(wetness));
 // Conservative approximation of FIELD_STEP's clear-water shoulder (0.6..1.25).
 const coverageAt=(d:number)=>{const t=clamp((d-.6)/.6);return 1-t*t*(3-2*t);};
 /** A small CPU guide to the water actually deposited into the GPU's G channel.

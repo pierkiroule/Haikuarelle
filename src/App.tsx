@@ -24,6 +24,8 @@ import {RITUAL,RitualProgress,WaterDrop,SilenceSun,type RitualStage} from './bir
 import './ritual.css';
 import {APP_NAME} from './brand';
 import {FeatherDrift} from './birds/FeatherDrift';
+import {DryingFeathers} from './birds/DryingFeathers';
+import './birds/drying.css';
 import './aquarelle.css';
 import './creation.css';
 import {CreationPalette} from './birds/CreationPalette';
@@ -234,7 +236,8 @@ export function BirdStudio(){
     <main className="bird-workbench" style={stage==='poem'?{display:'none'}:undefined}>
       <section ref={artwork} className="bird-stage" aria-label="Votre œuvre d’aquarelle abstraite">
         <div className="bird-sheet-meta"><span>{stage==='finished'?'VOTRE HAÏKUARELLE':stage==='drying'?'LE PAPIER GARDE LE CHANT':contact?'LE CHANT DEVIENT MATIÈRE':'UNE PLUME · VOTRE GESTE'}</span><span>{String(marks.length).padStart(2,'0')} GESTES</span></div>
-        <div className="artwork-paper" style={{'--paper-ratio':sheet.width/(sheet.height+sheet.width*.44)} as React.CSSProperties}>
+        <div className={`artwork-paper${stage==='drying'?' is-drying':''}`} style={{'--paper-ratio':sheet.width/(sheet.height+sheet.width*.44)} as React.CSSProperties}>
+        {stage==='drying'&&<DryingFeathers bird={selectedBird}/>}
         {(poetry??invitation)&&<ArtworkTitle poetry={(poetry??invitation)!}/>}
         <div ref={paper} className="bird-paper stable-sheet tool-paint" tabIndex={canDraw?0:-1} role="button" aria-disabled={!canDraw} aria-label={canWet?"Toile : maintiens et glisse pour déposer l’eau résonante. Au clavier, maintiens espace ou Entrée et utilise les flèches.":"Papier : touche ou glisse sur le papier sec ou humide pour peindre avec un chant entier. Au clavier, place la plume avec les flèches puis presse espace ou Entrée."} onPointerDown={down} onPointerMove={position} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release} onPointerLeave={()=>{if(pointer.current===null){setPoint(null);cursorPrevious.current=null;setFeatherTilt(0);}}} onKeyDown={keyboardPaper} onKeyUp={event=>{if((event.key===' '||event.key==='Enter')&&keyHeld.current){event.preventDefault();keyHeld.current=false;if(canWet)finishWater();else setContact(false);}}} onBlur={()=>{if(keyHeld.current){keyHeld.current=false;if(canWet)finishWater();else setContact(false);}}} onContextMenu={event=>event.preventDefault()}>
           <canvas ref={canvas} aria-label="Aquarelle et traces de plumes sur papier coton"/>

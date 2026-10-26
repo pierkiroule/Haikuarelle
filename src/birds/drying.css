@@ -1,0 +1,15 @@
+.bird-studio.direct-studio .artwork-paper.is-drying{overflow:visible}
+.drying-feathers{position:absolute;inset:0;pointer-events:none;user-select:none;z-index:2;color:#95856a}
+.drying-feather{position:absolute;width:var(--breeze-size);opacity:0;animation:drying-breeze var(--breeze-duration) ease-in-out var(--breeze-delay) infinite}
+.drying-feather.on-left{right:calc(100% + 3px);--breeze-x:-9px}
+.drying-feather.on-right{left:calc(100% + 3px);--breeze-x:9px}
+.drying-feather>.feather-glyph{display:block;width:100%;height:auto}
+@keyframes drying-breeze{
+  0%{opacity:0;transform:translate(0,20px) rotate(-25deg) scale(.8)}
+  22%{opacity:.65;transform:translate(var(--breeze-x),4px) rotate(var(--breeze-turn)) scale(1)}
+  55%{opacity:.5;transform:translate(0,-18px) rotate(-18deg) scale(.9)}
+  80%{opacity:.35;transform:translate(var(--breeze-x),-32px) rotate(45deg) scale(1)}
+  100%{opacity:0;transform:translate(0,-46px) rotate(70deg) scale(.75)}
+}
+@media(max-width:480px){.drying-feather{width:10px}.drying-feather.on-left{right:100%;--breeze-x:-2px}.drying-feather.on-right{left:100%;--breeze-x:2px}}
+@media(prefers-reduced-motion:reduce){.drying-feathers{display:none}}
