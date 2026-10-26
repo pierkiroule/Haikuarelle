@@ -1,7 +1,7 @@
 import {APP_NAME} from '../brand';
 import type {ArtworkPoetry} from './artworkPoetry';
 
-export function ArtworkTitle({poetry}:{poetry:ArtworkPoetry}){
+export function ArtworkTitle({poetry}:{poetry:Pick<ArtworkPoetry,'title'>}){
   return <header className="artwork-title" aria-live="polite"><span>{APP_NAME}</span><h2>{poetry.title}</h2></header>;
 }
 export function ArtworkPoem({poetry,dedication=''}:{poetry:Pick<ArtworkPoetry,'verses'>;dedication?:string}){

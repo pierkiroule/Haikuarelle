@@ -6,12 +6,8 @@ import type {EngineStatus,Point} from '../src/engine/types';
 import type {Bird} from '../src/birds/catalog';
 import {BIRD_POETICS} from '../src/birds/ornithopoetry';
 import {BirdStudio} from '../src/App';
-import type {Journey} from '../src/voyage/VoyageDialog';
 interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>;holdWater:ReturnType<typeof vi.fn>;setDrying:ReturnType<typeof vi.fn>}
-const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{},placed:[] as Bird[],journey:null as Journey|null}));
-vi.mock('../src/voyage/VoyageDialog',()=>({default:({journey,onClose}:{journey:Journey;onClose:()=>void})=>{
-  h.journey=journey;return <section role="dialog" aria-label="Voyage 360"><button onClick={onClose}>Retour à mon haïkuarelle</button></section>;
-}}));
+const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{},placed:[] as Bird[]}));
 vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   status:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:30,ticks:0};composition={duration:20};
   constructor(_canvas:unknown,_settings:unknown,private change:(s:EngineStatus)=>void){h.painter=this;}
@@ -89,7 +85,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     expect(host.querySelectorAll('.ritual-progress li')).toHaveLength(5);
     await encounter();
     const verses=[...host.querySelectorAll('.poem-invitation .poem-lines>span')].map(el=>el.textContent);
-    expect(verses).toHaveLength(3);expect(host.querySelector('.artwork-title')).toBeNull();expect(h.starts).toBe(0);
+    expect(verses).toHaveLength(3);expect(host.querySelector('.artwork-title')).not.toBeNull();expect(h.starts).toBe(0);
     await click(host.querySelector('.enter-atelier')!);
     expect(button('Choisir l’eau résonante').getAttribute('aria-pressed')).toBe('true');
     const painter=h.painter,canvas=host.querySelector('canvas');await water();
@@ -97,28 +93,28 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     expect(host.querySelector('canvas')).toBe(canvas);expect(h.painter).toBe(painter);
     expect(host.querySelector('.flow-paint')).not.toBeNull();
     expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(true);
-    expect([...host.querySelectorAll('.poem-recall .poem-lines>span')].map(el=>el.textContent)).toEqual(verses);
+    expect([...host.querySelectorAll('.paper-footer .poem-lines>span')].map(el=>el.textContent)).toEqual(verses);
     expect(host.querySelector('.water-ready')).toBeNull();expect(host.querySelector('.share-art')).toBeNull();
   });
-  it('waits for real marks and final drying before revealing words above and below the canvas',async()=>{
-    await paint();expect(host.querySelector('.artwork-title')).toBeNull();
-    const openingVerses=[...host.querySelectorAll('.poem-recall .poem-lines>span')].map(el=>el.textContent);
+  it('keeps title and haiku on protected paper areas throughout painting and drying',async()=>{
+    await paint();expect(host.querySelector('.artwork-title')).not.toBeNull();
+    const openingVerses=[...host.querySelectorAll('.paper-footer .poem-lines>span')].map(el=>el.textContent);
     await click(host.querySelector('.finalize-art')!);
-    expect(host.querySelector('.flow-drying')).not.toBeNull();expect(h.painter!.resume).toHaveBeenCalledOnce();expect(host.querySelector('.artwork-title')).toBeNull();
+    expect(host.querySelector('.flow-drying')).not.toBeNull();expect(h.painter!.resume).toHaveBeenCalledOnce();expect(host.querySelector('.artwork-title')).not.toBeNull();
     const starts=h.starts,paper=host.querySelector<HTMLElement>('.bird-paper')!;
     await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
     expect(h.starts).toBe(starts);
     await act(async()=>h.painter!.complete());
     expect(host.querySelector('.flow-finished')).not.toBeNull();expect(host.querySelector('.share-art')).not.toBeNull();expect(host.querySelector('.download-art')).not.toBeNull();expect(BIRD_POETICS[h.previews.at(-1)! as keyof typeof BIRD_POETICS].titles).toContain(host.querySelector('.artwork-title h2')!.textContent);
-    const lines=[...host.querySelectorAll('.bird-stage>.artwork-poem .poem-lines>span')];
+    const lines=[...host.querySelectorAll('.paper-footer .artwork-poem .poem-lines>span')];
     expect(lines).toHaveLength(3);expect(lines.map(el=>el.textContent)).toEqual(openingVerses);
     const trio=[h.previews.at(-1)!] as (keyof typeof BIRD_POETICS)[];
     const voices=lines.map((line,i)=>trio.find(id=>BIRD_POETICS[id].lines[i].includes(line.textContent!)));
     expect(voices.every(Boolean)).toBe(true);expect(new Set(voices).size).toBe(1);
-    const children=[...host.querySelector('.bird-stage')!.children];
+    const children=[...host.querySelector('.artwork-paper')!.children];
     expect(children.findIndex(el=>el.classList.contains('artwork-title'))).toBeLessThan(children.findIndex(el=>el.classList.contains('bird-paper')));
-    expect(children.findIndex(el=>el.classList.contains('artwork-poem'))).toBeGreaterThan(children.findIndex(el=>el.classList.contains('bird-paper')));
-    await click(host.querySelector('.resume-art')!);expect(host.querySelector('.artwork-title')).toBeNull();expect(host.querySelector('.flow-paint')).not.toBeNull();
+    expect(children.findIndex(el=>el.classList.contains('paper-footer'))).toBeGreaterThan(children.findIndex(el=>el.classList.contains('bird-paper')));
+    await click(host.querySelector('.resume-art')!);expect(host.querySelector('.artwork-title')).not.toBeNull();expect(host.querySelector('.flow-paint')).not.toBeNull();
   });
   it('keeps the artwork and trio when hiding tools and restores commands with Escape',async()=>{
     await paint();
@@ -185,10 +181,10 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   });
   it('cancels a pending revelation when the user resumes or clears, keeping the selected trio',async()=>{
     await paint();await click(host.querySelector('.finalize-art')!);await click(host.querySelector('.artwork-drying button')!);
-    await act(async()=>h.painter!.complete());expect(host.querySelector('.artwork-title')).toBeNull();
+    await act(async()=>h.painter!.complete());expect(host.querySelector('.artwork-title')).not.toBeNull();
     await click(host.querySelector('.finalize-art')!);expect(host.querySelector('.flow-finished')).not.toBeNull();
     const clear=[...host.querySelectorAll('button')].find(b=>b.textContent==='Effacer tout')!;await click(clear);
-    expect(host.querySelector('.flow-paint')).not.toBeNull();expect(host.querySelector('.bird-pads')).not.toBeNull();expect(host.querySelector('.artwork-title')).toBeNull();
+    expect(host.querySelector('.flow-paint')).not.toBeNull();expect(host.querySelector('.bird-pads')).not.toBeNull();expect(host.querySelector('.artwork-title')).not.toBeNull();
     expect(button('Choisir l’eau résonante').getAttribute('aria-pressed')).toBe('true');
   });
 });
@@ -207,21 +203,6 @@ it('can paint dry, then rewet without cancelling the full sample or replacing th
   expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(true);
   await act(async()=>h.finish());expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(false);
 });
-it('opens the finished work as a separate journey and restores the painting with audio cleanup',async()=>{
-  const close=vi.fn(async()=>{}),resume=vi.fn(async()=>{});
-  vi.stubGlobal('AudioContext',class{close=close;resume=resume;});
-  expect(host.querySelector('.journey-start')).toBeNull();await paint();
-  await click(host.querySelector('.finalize-art')!);expect(host.querySelector('.journey-start')).toBeNull();
-  await act(async()=>h.painter!.complete());const canvas=host.querySelector('canvas'),title=host.querySelector('.artwork-title')!.textContent;
-  await click(host.querySelector('.journey-start')!);
-  expect(host.querySelector('[role="dialog"]')).not.toBeNull();expect(h.journey!.marks.length).toBeGreaterThan(0);
-  expect(h.journey!.frame.pixels.length).toBe(20*30*4);expect(resume).toHaveBeenCalledOnce();
-  const context=h.journey!.context;expect(context).not.toBeNull();
-  await click([...host.querySelectorAll('button')].find(b=>b.textContent==='Retour à mon haïkuarelle')!);
-  expect(host.querySelector('[role="dialog"]')).toBeNull();expect(close).toHaveBeenCalledOnce();
-  expect(host.querySelector('canvas')).toBe(canvas);expect(host.querySelector('.artwork-title')!.textContent).toBe(title);
-});
-
 it('selects one plumage colour, keeps the same bird song and can restore the multicolour brush',async()=>{
   await encounter();await click(host.querySelector('.enter-atelier')!);
   await click(host.querySelector('.bird-pad')!);

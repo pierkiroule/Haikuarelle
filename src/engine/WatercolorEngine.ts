@@ -387,7 +387,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     while(this.tick<stop){for(let i=0;i<18&&this.tick<stop;i++){beforeStep?.(this.tick/TICK_RATE);this.stepOnce();}await new Promise<void>(r=>setTimeout(r,0));}
     this.paint.render(0);this.notifyAt=-1;this.emit();
   }
-  capturePreview(longEdge?:number):{width:number;height:number;pixels:Uint8Array} {return this.paint.capture(longEdge?longEdge/Math.max(this.paint.viewW,this.paint.viewH):1,0);}
+  capturePreview():{width:number;height:number;pixels:Uint8Array} {return this.paint.capture(1,0);}
   destroy():void {
     this.destroyed=true;cancelAnimationFrame(this.raf);this.observer.disconnect();
     this.paint.canvas.removeEventListener('webglcontextlost',this.contextLost);
