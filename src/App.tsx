@@ -27,14 +27,19 @@ function Glyph({name}:{name:'screen'|'close'|'download'|'refresh'|'erase'|'stop'
 function BirdGlyph({bird,index}:{bird:Bird;index:number}){
   const owl=bird.id==='chouette'||bird.id==='hibou';
   return <svg className="bird-glyph" viewBox="0 0 48 40" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {owl?<><path d={bird.id==='hibou'?'m17 12-3-8 9 5h4l9-5-3 8':'M16 12q8-13 17 0'}/><path d="M16 12q-7 19 8 21 16-2 10-21M20 32l-2 4m10-4 3 4"/><circle cx="21" cy="15" r="4"/><circle cx="29" cy="15" r="4"/><path d="m23 21 2 3 2-3m-8 4 2 3m9-3-2 3"/></>:bird.id==='hirondelle'?<path d="m5 10 16 9 3-9 3 9 17-9-12 15-6-1-7 11 2-12-5-1z"/>:<><path d={`M${8+index%3} 28q14 2 18-10 3-11 11-6l4 4-7 1q-1 16-17 14l-9 4 4-7M21 24q4 2 8-6M23 31l-1 5m6-7 2 6`}/><circle cx="34" cy="13" r=".65" fill="currentColor"/>{bird.id==='rougegorge'&&<path d="M29 17q-7 8-3 12" opacity=".5"/>}{bird.id==='geai'&&<path d="m28 9 1-5 3 6"/>}<path d="M6 36h33" opacity=".3"/></>}
+    {bird.id==='pie'?<><path d="M5 35 19 22q0-12 9-13 6-1 9 5l5 3-7 1q-2 11-14 10L5 35z"/><path d="m18 24 9-11 3 6-7 8M24 28l-1 7m5-8 3 7"/><path d="m20 22 8-8 1 6-7 5z" fill="currentColor" opacity=".3"/><circle cx="33" cy="13" r=".8" fill="currentColor"/></>:owl?<><path d={bird.id==='hibou'?'m17 12-3-8 9 5h4l9-5-3 8':'M16 12q8-13 17 0'}/><path d="M16 12q-7 19 8 21 16-2 10-21M20 32l-2 4m10-4 3 4"/><circle cx="21" cy="15" r="4"/><circle cx="29" cy="15" r="4"/><path d="m23 21 2 3 2-3m-8 4 2 3m9-3-2 3"/></>:bird.id==='hirondelle'?<path d="m5 10 16 9 3-9 3 9 17-9-12 15-6-1-7 11 2-12-5-1z"/>:<><path d={`M${8+index%3} 28q14 2 18-10 3-11 11-6l4 4-7 1q-1 16-17 14l-9 4 4-7M21 24q4 2 8-6M23 31l-1 5m6-7 2 6`}/><circle cx="34" cy="13" r=".65" fill="currentColor"/>{bird.id==='rougegorge'&&<path d="M29 17q-7 8-3 12" opacity=".5"/>}{bird.id==='geai'&&<path d="m28 9 1-5 3 6"/>}<path d="M6 36h33" opacity=".3"/></>}
   </svg>;
 }
 
 export function BirdStudio(){
   const [settings,setSettings]=useState<EngineSettings>(defaults),[seed,setSeed]=useState(randomSeed);
-  const [point,setPoint]=useState<Point|null>(null),[brush,setBrush]=useState(.62),[contact,setContact]=useState(false);
+  const [point,setPoint]=useState<Point|null>(null),[contact,setContact]=useState(false);
+  const [brushPrefs,setBrushPrefs]=useState<Partial<Record<BirdId,{size:number;opacity:number}>>>({});
+  const [brushMenu,setBrushMenu]=useState<BirdId|null>(null);
   const [selected,setSelected]=useState<BirdId>('rougegorge');
+  const brush=brushPrefs[selected]?.size??.62,opacity=brushPrefs[selected]?.opacity??1;
+  const setBrush=(size:number)=>setBrushPrefs(p=>({...p,[selected]:{size,opacity}}));
+  const setOpacity=(value:number)=>setBrushPrefs(p=>({...p,[selected]:{size:brush,opacity:value}}));
   const [padIds,setPadIds]=useState<BirdId[]>([]);
   const [stage,setStage]=useState<'choose'|'paint'|'drying'|'finished'>('choose');
   const [poetry,setPoetry]=useState<ArtworkPoetry|null>(null),[dryingStart,setDryingStart]=useState(0);
@@ -47,7 +52,7 @@ export function BirdStudio(){
   const studio=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),paper=useRef<HTMLDivElement>(null);
   const engine=useRef<HaikuarelleEngine|null>(null),bank=useRef<BirdAudioBank|null>(null),stroke=useRef<DirectBrush|null>(null);
   const pointer=useRef<number|null>(null),keyHeld=useRef(false),voiceNumber=useRef(0);
-  const current=useRef({settings,seed,brush,marks});current.current={settings,seed,brush,marks};
+  const current=useRef({settings,seed,brush,opacity,marks});current.current={settings,seed,brush,opacity,marks};
   const screen=useLargeScreen(studio);
   const canPaint=stage==='paint';
   const palette=getPalette(settings.palette),sheet=sheetFor(settings.format),busy=!!playing||!!loading;
@@ -70,28 +75,36 @@ export function BirdStudio(){
     return()=>{live=false;stroke.current?.end();stroke.current=null;sounds.destroy();engine.current?.destroy();engine.current=null;bank.current=null;};
   },[retry]);
   useEffect(()=>{engine.current?.update(settings);},[settings]);
-  useEffect(()=>{engine.current?.setBrushSize(brush);},[brush]);
+  useEffect(()=>{engine.current?.setBrushSize(brush);engine.current?.setBrushOpacity?.(opacity);},[brush,opacity]);
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(''),4500);return()=>clearTimeout(timer);},[notice]);
   const stop=()=>{
     const id=pointer.current;pointer.current=null;keyHeld.current=false;
     stroke.current?.end();setContact(false);
     if(id!==null&&paper.current?.hasPointerCapture(id))paper.current.releasePointerCapture(id);
   };
-  const resetSheet=(next:number)=>{stop();setSeed(next);setMarks([]);setPoetry(null);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===3?'paint':'choose');};
+  useEffect(()=>{
+    if(!brushMenu)return;
+    const dismiss=(event:PointerEvent)=>{
+      if(event.target instanceof Element&&!event.target.closest('.brush-context, .bird-pad'))setBrushMenu(null);
+    };
+    document.addEventListener('pointerdown',dismiss);
+    return()=>document.removeEventListener('pointerdown',dismiss);
+  },[brushMenu]);
+  const resetSheet=(next:number)=>{stop();setSeed(next);setMarks([]);setPoetry(null);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===3?'paint':'choose');setBrushMenu(null);};
   const fresh=()=>{resetSheet(randomSeed());setPadIds([]);setStage('choose');if(screen.viewing)screen.exit();};
   const erase=()=>{resetSheet(current.current.seed);setNotice('Tout est effacé. La feuille est prête.');};
   const begin=(p:Point,time:number,pressure=.5)=>{
     if(!canPaint||!stroke.current||error||exporting)return;
     const snapshot=current.current;
     const eventSeed=(snapshot.seed^Math.imul(++voiceNumber.current,0x9e3779b1)^BIRDS.indexOf(selectedBird)*107)>>>0;
-    void stroke.current.begin(selectedBird,p,time,pressure,eventSeed,snapshot.brush,snapshot.marks.length);
+    void stroke.current.begin(selectedBird,p,time,pressure,eventSeed,snapshot.brush,snapshot.marks.length,snapshot.opacity);
     setContact(true);
   };
   const prepare=(bird:Bird)=>{
     const sounds=bank.current;
     void sounds?.prepare(bird.id).then(()=>{if(bank.current===sounds)setReady(list=>list.includes(bird.id)?list:[...list,bird.id]);}).catch(()=>{if(bank.current===sounds)setNotice('Le chant sera rechargé au prochain coup de pinceau.');});
   };
-  const choose=(bird:Bird)=>{if(!canPaint)return;stop();setSelected(bird.id);prepare(bird);};
+  const choose=(bird:Bird)=>{if(!canPaint)return;stop();setSelected(bird.id);setBrushMenu(bird.id);prepare(bird);};
   const pickBird=(bird:Bird)=>{
     if(stage!=='choose')return;
     if(!padIds.includes(bird.id)&&padIds.length>=3)return;
@@ -100,7 +113,7 @@ export function BirdStudio(){
   const startPainting=()=>{if(padIds.length!==3)return;setSelected(padIds[0]);setStage('paint');};
   const finalize=()=>{
     if(!canPaint||!marks.length||!engine.current||error)return;
-    stop();setPoint(null);setDryingStart(engine.current.status.ticks);setStage('drying');engine.current.resume();
+    stop();setBrushMenu(null);setPoint(null);setDryingStart(engine.current.status.ticks);setStage('drying');engine.current.resume();
   };
   const continuePainting=()=>{setPoetry(null);setStage('paint');};
   useEffect(()=>{
@@ -118,7 +131,7 @@ export function BirdStudio(){
   },[stage]);
   useEffect(()=>{
     const keys=(event:KeyboardEvent)=>{
-      if(event.key==='Escape'){setCanvasOnly(false);stop();if(screen.viewing)screen.exit();return;}
+      if(event.key==='Escape'){if(brushMenu)studio.current?.querySelector<HTMLButtonElement>(`[aria-controls="brush-settings-${brushMenu}"]`)?.focus();setBrushMenu(null);setCanvasOnly(false);stop();if(screen.viewing)screen.exit();return;}
       if(event.target instanceof HTMLInputElement||event.target instanceof HTMLSelectElement||event.target instanceof HTMLButtonElement||event.repeat)return;
       if(event.key.toLowerCase()==='f'&&stage!=='choose')screen.toggle();
       if(canPaint&&/^[1-3]$/.test(event.key)){event.preventDefault();choose(pads[Number(event.key)-1]);}
@@ -141,7 +154,7 @@ export function BirdStudio(){
   const down=(event:React.PointerEvent<HTMLDivElement>)=>{
     if(!canPaint||error||exporting||event.button!==0||event.isPrimary===false||pointer.current!==null)return;
     const p=paperPoint(event.clientX,event.clientY,event.currentTarget.getBoundingClientRect());if(!p)return;
-    event.preventDefault();event.currentTarget.focus({preventScroll:true});event.currentTarget.setPointerCapture(event.pointerId);
+    setBrushMenu(null);event.preventDefault();event.currentTarget.focus({preventScroll:true});event.currentTarget.setPointerCapture(event.pointerId);
     pointer.current=event.pointerId;setPoint(p);begin(p,event.timeStamp,event.pointerType==='pen'?event.pressure:.5);
   };
   const release=(event:React.PointerEvent<HTMLDivElement>)=>{if(pointer.current===event.pointerId)stop();};
@@ -168,7 +181,7 @@ export function BirdStudio(){
   return <div ref={studio} className={`bird-studio water-studio direct-studio flow-${stage} ${canvasOnly?'canvas-only':''} ${contact?'is-painting':''} ${screen.viewing?'bird-viewing':''} ${screen.hud?'show-hud':''}`} onPointerMove={screen.viewing?screen.reveal:undefined} onPointerDown={screen.viewing?screen.reveal:undefined} style={{'--paper':palette.paper,'--art-ratio':sheet.width/sheet.height,'--sample-color':selectedBird.color} as React.CSSProperties}>
     <header className="bird-header">
       <a className="bird-wordmark" href="/">HAÏKUARELLE <span>•°</span></a><span className="bird-edition">LE CHANT AU BOUT DU PINCEAU</span>
-      <div className="bird-view-controls">{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{stop();setCanvasOnly(v=>!v);}}>Toile seule</button>}<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="portrait">Portrait</option><option value="landscape">Paysage HD</option></select><button onClick={screen.toggle} disabled={stage==='choose'} aria-label="Grand écran HD"><Glyph name="screen"/><span>Grand écran</span></button></div>
+      <div className="bird-view-controls">{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{stop();setBrushMenu(null);setCanvasOnly(v=>!v);}}>Toile seule</button>}<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="portrait">Portrait</option><option value="landscape">Paysage HD</option></select><button onClick={screen.toggle} disabled={stage==='choose'} aria-label="Grand écran HD"><Glyph name="screen"/><span>Grand écran</span></button></div>
     </header>
     <nav className="bird-flow" aria-label="Les trois temps de votre aquarelle"><span aria-current={stage==='choose'?'step':undefined}>01 · Choisir trois oiseaux</span><span aria-current={stage==='paint'?'step':undefined}>02 · Peindre</span><span aria-current={stage==='drying'||stage==='finished'?'step':undefined}>03 · Révéler</span></nav>
     {stage==='choose'&&<section className="bird-selection" aria-labelledby="trio-title"><p className="bird-eyebrow">TROIS VOIX · VOTRE PALETTE</p><h1 id="trio-title">Quels oiseaux<br/><em>feront votre aquarelle ?</em></h1><p>Choisissez trois plumages. Leurs couleurs et leurs chants accompagneront votre pinceau.</p><div className="bird-selection-grid">{BIRDS.map((bird,index)=>{
@@ -192,11 +205,16 @@ export function BirdStudio(){
         <div className="bird-pad-board">
           {stage!=='finished'&&<>
           <div className="bird-pads" aria-label="Choisir une brosse d’oiseau">{pads.map((bird,index)=><div className="bird-pad-slot" key={index}>
-            <button className={`bird-pad ${selected===bird.id?'is-selected':''} ${playing===bird.id?'is-playing':''} ${loading===bird.id?'is-loading':''}`} disabled={exporting||!canPaint} onClick={()=>choose(bird)} aria-label={`Choisir la brosse ${bird.name} — ${bird.gesture}`} aria-pressed={selected===bird.id} title={`${bird.name} · ${bird.gesture} · touche ${index+1}`} style={{'--bird-color':bird.color} as React.CSSProperties}>
+            <button className={`bird-pad ${selected===bird.id?'is-selected':''} ${playing===bird.id?'is-playing':''} ${loading===bird.id?'is-loading':''}`} disabled={exporting||!canPaint} onClick={()=>choose(bird)} aria-label={`Choisir la brosse ${bird.name} — ${bird.gesture}`} aria-pressed={selected===bird.id} aria-expanded={brushMenu===bird.id} aria-controls={`brush-settings-${bird.id}`} title={`${bird.name} · ${bird.gesture} · touche ${index+1}`} style={{'--bird-color':bird.color} as React.CSSProperties}>
               <span className="pad-number">{index+1}</span><BirdGlyph bird={bird} index={index}/><strong>{bird.name}</strong><small>{loading===bird.id?'Préparation…':playing===bird.id?'Le chant peint…':bird.gesture}</small>
               <span className="pad-pigments" aria-hidden="true">{[...(bird.plumage??[bird.slot,...(bird.id==='rougegorge'?[6]:[])]).map(slot=>PLUMAGE_PIGMENTS[slot]),palette.paper].map((c,i)=><i key={i} style={{background:c}}/>)}</span><span className={`pad-ready ${ready.includes(bird.id)?'ready':''}`}/>
             </button>
-
+            {brushMenu===bird.id&&canPaint&&<section className="brush-context" id={`brush-settings-${bird.id}`} aria-label={`Réglages de la brosse ${bird.name}`}>
+              <div className="brush-context-heading"><strong>{bird.name}</strong><button aria-label="Fermer les réglages de la brosse" onClick={()=>{setBrushMenu(null);studio.current?.querySelector<HTMLButtonElement>(`[aria-controls="brush-settings-${bird.id}"]`)?.focus();}}><Glyph name="close"/></button></div>
+              <label><span>Taille <output>{Math.round(brush*100)} %</output></span><input aria-label={`Taille de la brosse ${bird.name}`} type="range" min="0" max="100" value={brush*100} onChange={e=>setBrush(Number(e.target.value)/100)}/></label>
+              <label><span>Opacité <output>{Math.round(opacity*100)} %</output></span><input aria-label={`Opacité de la brosse ${bird.name}`} type="range" min="0" max="100" value={opacity*100} onChange={e=>setOpacity(Number(e.target.value)/100)}/></label>
+              {bird.id==='pie'&&<small>Gouttelettes noires · rythme synthétique</small>}
+            </section>}
           </div>)}</div>
           <div className="bird-live" role="status" aria-live="polite"><span className={playing?'bird-live-dot active':'bird-live-dot'}/><span>{liveText}</span>{busy&&<button onClick={stop} aria-label="Lever le pinceau et arrêter le chant"><Glyph name="stop"/></button>}{canPaint&&!busy&&status.hasPigment&&status.phase!=='complete'&&<button className="drying-pause" onClick={()=>status.paused?engine.current?.resume():engine.current?.pause()} aria-label={status.paused?'Reprendre le séchage':'Mettre le séchage en pause'}>{status.paused?'Reprendre':'Pause'}</button>}</div>
           </>}
@@ -204,7 +222,7 @@ export function BirdStudio(){
           {stage==='drying'&&<div className="artwork-drying" role="status"><progress aria-label="Séchage de l’œuvre" max="1" value={dryingProgress}/><span>Laisser l’eau déposer ses derniers détails…</span><button onClick={continuePainting}>Reprendre le pinceau</button></div>}
           {stage==='finished'&&<div className="artwork-finished-actions"><span className="poem-mark">•°</span><p>Un titre. Trois lignes.<br/>Votre empreinte du vivant.</p><button className="finalize-art" onClick={()=>void exportArt()} disabled={exporting||!!error}><Glyph name="download"/>{exporting?'Export…':'Emporter mon œuvre · PNG'}</button><button className="continue-art" onClick={continuePainting} disabled={exporting}>Reprendre le pinceau</button></div>}
         </div>
-        {stage==='paint'&&<details className="bird-texture atelier-panel"><summary>Atelier <span>+</span></summary>          <div className="bird-materials direct-brush-size"><label className="bird-brush-size"><span>TAILLE DU PINCEAU</span><input aria-label="Taille du pinceau" type="range" min="0" max="100" value={brush*100} onChange={e=>setBrush(Number(e.target.value)/100)}/></label><small>Fin ↔ ample</small></div><div>{([['resonance','Résonance'],['wetness','Humidité'],['granulation','Grain & relief'],['ink','Encre'],['sharpness','Netteté'],['dryingThreshold','Seuil des détails']] as const).map(([key,label])=><label key={key}><span>{label}</span><input aria-label={label} type="range" min="0" max="100" value={(settings[key]??.62)*100} onChange={e=>setSettings(s=>({...s,[key]:Number(e.target.value)/100}))}/></label>)}</div><p className="drying-hint">Les détails se révèlent en séchant. Un seuil élevé privilégie les dépôts les plus marqués.</p></details>}
+        {stage==='paint'&&<details className="bird-texture atelier-panel"><summary>Atelier <span>+</span></summary><div>{([['resonance','Résonance'],['wetness','Humidité'],['granulation','Grain & relief'],['ink','Encre'],['sharpness','Netteté'],['dryingThreshold','Seuil des détails']] as const).map(([key,label])=><label key={key}><span>{label}</span><input aria-label={label} type="range" min="0" max="100" value={(settings[key]??.62)*100} onChange={e=>setSettings(s=>({...s,[key]:Number(e.target.value)/100}))}/></label>)}</div><p className="drying-hint">Les détails se révèlent en séchant. Un seuil élevé privilégie les dépôts les plus marqués.</p></details>}
         {stage==='finished'&&<label className="poem-dedication final-dedication"><span>Une dédicace</span><input aria-label="Prénom pour la dédicace du haïku" placeholder="Un prénom, si vous le souhaitez" maxLength={32} value={name} onChange={e=>setName(e.target.value)}/></label>}
         <details className="atelier-more"><summary aria-label="Autres actions">⋯</summary><div className="bird-actions"><button onClick={fresh} disabled={exporting}><Glyph name="refresh"/>Nouvelle œuvre</button>{stage==='paint'&&!marks.length&&<button onClick={()=>{stop();setStage('choose');}}>Modifier le trio</button>}{stage!=='choose'&&<button onClick={erase} disabled={exporting}><Glyph name="erase"/>Effacer tout</button>}<a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="https://github.com/pierkiroule/Haikuarelle" target="_blank" rel="noreferrer">Code & installation ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Licence du moteur ↗</a></div></details>
       </aside>

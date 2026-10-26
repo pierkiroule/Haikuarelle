@@ -184,5 +184,16 @@
     "modifications": "Extrait, filtre passe-haut 450 Hz, gain fixe, mono 44,1 kHz, fondus 20/35 ms, MP3 128 kbit/s. Adaptation audio distribuée sous la même licence CC BY-SA que l’original.",
     "sha256": "12448e2bafec0477a1c12ae4c0b8c8b4b1253c6b946aa2a2e73db53aaafe7e4d",
     "pad_active": true
+  },
+  {
+    "id": "pie",
+    "source": "/birds/credits.html#pie",
+    "author": "Haïkuarelle",
+    "license": "CC0-1.0",
+    "duration": 2.4,
+    "bytes": 39331,
+    "sha256": "433bd25e22d3fca28727777d204e1950366e3534adcd23e4ba4ccb4481dee984",
+    "pad_active": true,
+    "modifications": "Création sonore synthétique originale : rythme percussif inspiré de la pie. Aucun enregistrement animal. Génération PCM déterministe, mono 44,1 kHz, MP3 128 kbit/s."
   }
 ]

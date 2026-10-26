@@ -44,7 +44,7 @@ export class ResonantBrush{
   private accents=0;
   size:number;
   feedback:BrushFeedback={speed:0,radius:0,splashes:0};
-  constructor(readonly bird:Bird,readonly seed:number,private settings:EngineSettings,size=.55,private layer=0){
+  constructor(readonly bird:Bird,readonly seed:number,private settings:EngineSettings,size=.55,private layer=0,public opacity=1){
     this.rng=createRng(seed^0xb57a31);this.inkSeed=1+(seed%64999);this.size=size;
     this.jetRng=createRng(seed^0xa71f39);
   }
@@ -74,7 +74,7 @@ export class ResonantBrush{
   step(feature:AudioFrame|undefined,time:number,settings:EngineSettings):BrushFrame{
     this.settings=settings;
     const empty=():BrushFrame=>({segments:[],ink:[],point:null,feedback:{...this.feedback}});
-    if(!feature?.active||feature.energy<=0){this.pending=[];this.painted=null;this.spray=0;if(this.released)this.lift();return empty();}
+    if(!feature?.active||feature.energy<=0||this.opacity<=0){this.pending=[];this.painted=null;this.spray=0;if(this.released)this.lift();return empty();}
     const resonance=clamp(settings.resonance??.92);
     const fresh=feature.time!==this.lastFeatureTime;this.lastFeatureTime=feature.time;
     const pulse=fresh&&feature.flux>.5&&time-this.lastPulse>.10&&resonance>.05;
@@ -88,6 +88,25 @@ export class ResonantBrush{
     const normalized=(p:Point):Point=>({x:clamp(p.x*unit/sheet.width,.015,.985),y:clamp(p.y*unit/sheet.height,.015,.985)});
     const energy=clamp(feature.energy),light=Math.max(.5,1-this.layer*.018);
     let from=this.painted??samples[0].point,travel=0;
+    if(this.bird.id==='pie'){
+      // Isolated droplets follow the sampled gesture, never connecting its points.
+      // Time-gated bursts make density independent of pointer event frequency.
+      if(time-this.lastJet<.085){this.painted=null;return empty();}
+      this.lastJet=time;
+      const end=samples[samples.length-1],center=physical(end.point);
+      const count=3+Math.floor(energy*3+clamp(feature.flux)*2);
+      for(let i=0;i<count;i++){
+        const angle=this.rng()*Math.PI*2;
+        const spread=(.012+.075*this.size)*Math.sqrt(this.rng())*(.55+.65*energy);
+        const p=normalized({x:center.x+Math.cos(angle)*spread,y:center.y+Math.sin(angle)*spread});
+        const radius=(.0009+.006*Math.pow(this.rng(),2))*(.45+1.1*this.size)*(.7+.5*energy);
+        segments.push({a:p,b:p,radius:radius*1.18,load:.2+.12*settings.wetness,slot:0,water:true,strength:.2,coupling:0});
+        segments.push({a:p,b:p,radius,load:(.65+.3*this.rng())*clamp(this.opacity),slot:0,water:false,strength:.6,coupling:0,effect:'splash'});
+      }
+      this.feedback={speed:end.speed,radius:(.012+.075*this.size),splashes:this.feedback.splashes+count,filaments:0};
+      this.painted=null;if(this.released)this.lift();
+      return {segments,ink:[],point:end.point,feedback:{...this.feedback}};
+    }
     for(const sample of samples){
       const distance=this.distance(from,sample.point);
       if(distance<.00015&&segments.length)continue;
@@ -108,14 +127,14 @@ export class ResonantBrush{
         segments.push({a:normalized({x:a.x+offset.x,y:a.y+offset.y}),b:normalized({x:b.x+offset.x,y:b.y+offset.y}),radius:radius*(robin?.62:.72),load:robin?.035+.11*energy:.13+.22*energy,slot:robin?0:mapped===this.bird.slot?companion:mapped,water:false,strength:.23,coupling:.012});
       }
       segments.push({a:from,b:sample.point,radius,load:Math.min(.99,load*(crow?1.25:1)),slot:this.bird.slot,water:false,strength:crow?.52:.37,coupling:.018+.025*quick});
-      if(distance>.0006&&(settings.ink??.62)>0&&this.tick%3===0)ink.push({points:[from,sample.point],start:time,duration:1/30,
-        width:((crow?.85:.5)+.45*feature.brightness)*(1-.5*quick)*(.48+.9*energy),opacity:(crow?.47:style==='velvet'?.10:.22)*(settings.ink??.62)*(.4+.6*energy),seed:this.inkSeed,continuous:true});
+      if(distance>.0006&&(settings.ink??.62)>0&&this.tick%5===0)ink.push({points:[from,sample.point],start:time,duration:1/30,
+        width:((crow?.85:.5)+.45*feature.brightness)*(1-.5*quick)*(.48+.9*energy),opacity:(crow?.24:style==='velvet'?.06:.11)*(settings.ink??.62)*(.4+.6*energy),seed:this.inkSeed,continuous:true});
       travel+=distance;from=sample.point;this.feedback.radius=radius;
     }
     const end=samples[samples.length-1],quick=clamp((end.speed-.48)/1.7);
     const fling=fresh&&quick>.5&&travel>.012&&energy>.2&&resonance>.05;
     let filaments=0;
-    if((pulse||fling)&&time-this.lastJet>.19){
+    if((pulse||fling)&&feature.flux>.82&&time-this.lastJet>.85){
       this.lastJet=time;
       this.lastPulse=time;
       const a=physical(this.painted??samples[0].point),b=physical(end.point),length=Math.hypot(b.x-a.x,b.y-a.y);
@@ -151,6 +170,6 @@ export class ResonantBrush{
     // Reserve the final segment budget for at most three small droplets.
     this.tick++;this.feedback.filaments=(this.feedback.filaments??0)+filaments;
     this.painted=this.released?null:end.point;this.last=this.released?null:this.last;this.released=false;this.feedback.speed=end.speed;
-    return {segments,ink,point:end.point,feedback:{...this.feedback}};
+    return {segments:segments.map(s=>s.water?s:{...s,load:s.load*clamp(this.opacity)}),ink:ink.map(s=>({...s,opacity:s.opacity*clamp(this.opacity)})),point:end.point,feedback:{...this.feedback}};
   }
 }

@@ -1,6 +1,6 @@
 # HAÏKUARELLE •° — V11.1 · Une feuille aux proportions stables
 
-Choisir trois oiseaux parmi sept, peindre avec leurs voix et leurs plumages, puis finaliser l’œuvre. Après le séchage, un titre poétique court apparaît au-dessus de l’aquarelle et un haïku émerge en dessous. Le PNG rassemble ces trois éléments.
+Choisir trois oiseaux parmi huit, peindre avec leurs voix et leurs plumages, puis finaliser l’œuvre. Après le séchage, un titre poétique court apparaît au-dessus de l’aquarelle et un haïku émerge en dessous. Le PNG rassemble ces trois éléments.
 
 React + Vite + TypeScript. Simulation et rendu WebGL2 fondés sur Paint Studio / Pigment Drift (MIT). Sans backend, service payant ni appel à une IA.
 
@@ -25,12 +25,16 @@ npm run preview
 
 ## Peindre
 
-1. **Choisir trois oiseaux distincts** parmi les sept plumages. Le compteur et les numéros indiquent votre trio. Cliquer sur un oiseau choisi le retire. Aucun chant ne joue à cette étape.
+1. **Choisir trois oiseaux distincts** parmi les huit brosses. Le compteur et les numéros indiquent votre trio. Cliquer sur un oiseau choisi le retire. Aucun chant ne joue à cette étape.
 2. **Commencer à peindre**. Les trois oiseaux deviennent vos brosses. Maintenir et glisser sur la feuille au doigt, à la souris ou au stylet : eau et pigments se posent ensemble. Un geste lent ouvre le lavis ; un geste vif affine la trace et lance des filaments.
 3. **Finaliser mon œuvre**. Le chant et les nouveaux dépôts s’arrêtent. Le pinceau est suspendu pendant que l’eau achève son séchage naturel. Une progression accompagne ce temps ; **Reprendre le pinceau** permet de continuer.
 4. Quand le papier est sec, **le titre apparaît en haut et le haïku en bas**. Les mots sont composés localement à partir des couleurs réellement présentes, des blancs, des îlots peints et de leur placement. Ils ne changent pas à chaque geste.
 5. **Emporter mon œuvre · PNG** exporte le titre, la peinture complète, le haïku et la dédicace facultative. Reprendre le pinceau masque les mots ; une nouvelle finalisation les régénère.
 6. **Effacer tout** remet à blanc l’eau, les pigments, l’encre et les textes ; conserve les réglages, les trois oiseaux, la dédicace et la graine. **Nouvelle œuvre** invite à choisir un nouveau trio avec une nouvelle graine.
+
+Un clic sur une des trois brosses ouvre son menu contextuel : taille et opacité sont mémorisées séparément pour chaque oiseau pendant la session. Échap, le bouton de fermeture ou un clic hors du menu le referme. Les réglages modifient les nouveaux dépôts, sans altérer les traces existantes.
+
+Les filaments sont plus courts et réservés aux attaques fortes espacées d’au moins 0,85 s. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Son rythme sonore local est synthétique et ne représente pas un enregistrement animal.
 
 Le trio reste fixe pendant la peinture. Avant le premier geste, **Modifier le trio** permet de revenir au choix. Le parcours complet et sa vérification sont dans [Trois oiseaux, une œuvre](docs/TROIS-OISEAUX-UNE-OEUVRE.md).
 
@@ -45,6 +49,7 @@ Choisir une brosse ne joue rien. Aucun pigment n’est créé avant le démarrag
 | Bouvreuil | Rose pivoine, gris perle et ardoise, lavis de velours. |
 | Sittelle | Gris bleuté, ocre roux, ramures et accents fins. |
 | Pic vert | Vert mousse, jaune lichen, vagues et rares points carmin. |
+| Pie | Projections de petites gouttelettes noires de tailles variées ; rythme synthétique original. |
 
 Chants réels intégrés localement : trois sous CC0, quatre sous CC BY-SA 3.0/4.0 avec leurs attributions et conditions. Sources et adaptations dans `public/birds/credits.html` et `credits.json`. Aucun appel distant pendant la peinture, aucune clé externe. La mésange provient de Xeno-canto XC125793, via son dépôt libre sur Wikimedia Commons.
 

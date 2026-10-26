@@ -88,6 +88,21 @@ describe('choose three birds, paint, finalize',()=>{
     await click(toggle);await click(host.querySelector('.canvas-restore')!);
     expect(host.querySelector('.canvas-only')).toBeNull();
   });
+  it('offers eight choices including Pie and retains exactly three brushes with contextual controls',async()=>{
+    expect(host.querySelectorAll('.trio-bird')).toHaveLength(8);
+    for(const name of ['Pie','Geai','Corneille'])await click(button(`Choisir ${name}`));
+    await click(host.querySelector('.trio-start button')!);
+    const brushes=host.querySelectorAll<HTMLButtonElement>('.bird-pads .bird-pad');
+    expect(brushes).toHaveLength(3);await click(brushes[0]);
+    expect(host.querySelector('.brush-context')!.getAttribute('aria-label')).toBe('Réglages de la brosse Pie');
+    expect(host.querySelector('[aria-label="Taille de la brosse Pie"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Opacité de la brosse Pie"]')).not.toBeNull();
+    expect(h.starts).toBe(0);
+    await click(brushes[1]);expect(host.querySelectorAll('.brush-context')).toHaveLength(1);
+    expect(host.querySelector('.brush-context')!.textContent).toContain('Geai');
+    await click(button('Fermer les réglages de la brosse'));
+    expect(host.querySelector('.brush-context')).toBeNull();expect(document.activeElement).toBe(brushes[1]);
+  });
   it('cancels a pending revelation when the user resumes or clears, keeping the selected trio',async()=>{
     await paint();await click(host.querySelector('.finalize-art')!);await click(host.querySelector('.artwork-drying button')!);
     await act(async()=>h.painter!.complete());expect(host.querySelector('.artwork-title')).toBeNull();

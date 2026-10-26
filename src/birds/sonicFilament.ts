@@ -14,7 +14,7 @@ export function sonicFilament(origin:Point,angle:number,energy:number,attack:num
   // Leave from the shoulder of the wash, so the thin jet is not swallowed
   // immediately by the broad wet core deposited on the same audio tick.
   const p={x:origin.x*sx-dy*side*brushRadius*.82,y:origin.y*sy+dx*side*brushRadius*.82};
-  const reach=(.022+.085*attack+.045*quick)*(.6+size)*(.75+.5*random());
+  const reach=(.010+.032*attack+.016*quick)*(.6+size)*(.75+.5*random());
   const curl=side*(.45+.55*random()),forward=.3+.6*random();
   const end={x:p.x+(dx*forward-dy*curl)*reach,y:p.y+(dy*forward+dx*curl)*reach};
   const control={x:p.x+(dx*.75-dy*curl*.12)*reach,y:p.y+(dy*.75+dx*curl*.12)*reach};

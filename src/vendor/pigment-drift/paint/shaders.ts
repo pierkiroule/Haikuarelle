@@ -427,7 +427,11 @@ void main() {
     if (!shaped) {
       vec2 S = q / uUnit;
       // Ragged like the generator's washes: billows, fringes and fine tatters.
-      rag = fbm(S * 5.0 + uSeedOff, 3) * 0.70 + gnoise(q * 0.045 + uSeedOff.yx) * 0.15 + gnoise(q * 0.16 + 7.0) * 0.055;
+      // Broad lobes, medium scallops and fine paper catches share paper
+      // coordinates: moving the brush never resets the edge pattern.
+      rag = fbm(S * 5.0 + uSeedOff, 3) * 0.52
+          + gnoise(S * 37.0 + uSeedOff.yx) * 0.24
+          + gnoise(S * 113.0 + 7.0) * 0.10;
       // Never quite even inside: the load swells and thins like its turbulence.
       swell = fbm(S * 3.0 + uSeedOff.yx + 4.4, 2) * 0.7 + gnoise(S * 9.0 + uSeedOff + 1.9) * 0.3
             + 0.32 * gnoise(S * 31.0 + uSeedOff) + 0.16 * gnoise(S * 79.0 + uSeedOff.yx);
@@ -462,7 +466,7 @@ void main() {
       // ...and around it the wash thins out the way the generator's do: a firm edge
       // for deep pigment, then a pale skirt that fades into mist, wider where the
       // paper drinks more. It only adds.
-      float skirt = (0.08 + 0.14 * bloom) * (1.0 - 0.5 * smoothstep(0.3, 0.9, sp.y));
+      float skirt = (0.06 + 0.24 * bloom * bloom) * (1.0 - 0.5 * smoothstep(0.3, 0.9, sp.y));
       float shape = 1.1 * (1.0 - smoothstep(0.4, 1.0, dn)) + skirt * (1.0 - smoothstep(0.7, 1.2 + 0.6 * bloom, dn));
       float add = (min(tgt, shape) - f.x) * wetMask;
       if (add > 0.0) {
@@ -916,12 +920,17 @@ void main() {
         // second, interrupted inner rim suggests receding water, not a contour
         // pasted around every procedural mask. Width is in paper units.
         float inset = max(0.0, (heightOf(0.028) - H0) / max(slope, 1.0));
-        float width = (0.0015 + 0.0018 * alpha.a) * (1.0-0.22*crisp);
-        float broken = 0.52 + 0.48 * alpha.r;
+        float width = (0.0009 + 0.0028 * alpha.a + 0.0012 * alpha.b) * (1.0-0.22*crisp);
+        float broken = 0.22 + 0.78 * smoothstep(0.18,0.78,alpha.r);
         float outer = exp(-inset / width) * smoothstep(0.8, 7.0, slope);
-        float inner = exp(-abs(inset - width * 3.1) / (width * 0.65));
+        // Offset and softness vary together with the coherent drying masks:
+        // narrow dark rims, broad backruns and interrupted secondary rings.
+        float innerOffset = width * (2.0 + 3.2 * alpha.b);
+        float inner = exp(-abs(inset - innerOffset) / (width * (0.45 + 0.65 * alpha.a)));
         inner *= smoothstep(0.35, 0.75, alpha.r) * smoothstep(1.0, 6.0, slope);
-        concentration += reveal * uEdge * broken * ((0.19+0.11*crisp) * outer + (0.052+0.035*crisp) * inner);
+        float paleBand = exp(-abs(inset - innerOffset * 0.65) / max(width,0.0001));
+        concentration *= 1.0 - reveal * paleBand * alpha.b * 0.18;
+        concentration += reveal * uEdge * broken * ((0.19+0.11*crisp) * outer + (0.075+0.055*crisp) * inner);
       }
       vec3 reflectance = clamp(pigment(1.15) / max(uPaper, vec3(0.03)), vec3(0.003), vec3(1.0));
       col = uPaper * pow(reflectance, vec3(concentration * 1.55));
