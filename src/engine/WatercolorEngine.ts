@@ -7,7 +7,7 @@ import { createRng } from '../vendor/pigment-drift/engine/params';
 import { compose, sampleGesture, TICK_RATE, DURATION, clamp } from './composition';
 import { getPalette, inkRamp, PLUMAGE_PIGMENTS } from './palettes';
 import { FineInkRenderer } from './FineInkRenderer';
-import {displaySize,frameComposition,sheetFor,PIGMENT_RESOLUTION} from './layout';
+import {displaySize,frameComposition,sheetFor,paintingQuality,type PaintingQuality} from './layout';
 import { composeAudio } from '../audio/composeAudio';
 import type { AudioAnalysis } from '../audio/types';
 import {composeBird} from '../birds/grammar';
@@ -30,6 +30,7 @@ const phases: [number,Phase][]=[[1.1,'wetting'],[7.5,'wash'],[11.7,'meeting'],[1
  */
 export class HaikuarelleEngine implements WatercolorEngine {
   readonly paint:PaintEngine;
+  readonly quality:PaintingQuality;
   settings:EngineSettings;
   composition!:Composition;
   private fineInk:FineInkRenderer;
@@ -70,8 +71,10 @@ export class HaikuarelleEngine implements WatercolorEngine {
   constructor(canvas:HTMLCanvasElement,settings:Partial<EngineSettings>={},onChange?:(s:EngineStatus)=>void,onError?:(s:string)=>void,options:{requireAudio?:boolean}={}) {
     this.settings={...DEFAULTS,...settings};this.onChange=onChange;this.onError=onError;
     this.requireAudio=options.requireAudio??false;
-    // Same simulation budget on every device. Only display resolution adapts.
-    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:PIGMENT_RESOLUTION.pixels,fieldScale:PIGMENT_RESOLUTION.scale,maxDimension:PIGMENT_RESOLUTION.maxDimension});
+    const coarse=matchMedia('(pointer:coarse)').matches;
+    const device=typeof navigator==='undefined'?undefined:navigator as Navigator&{deviceMemory?:number};
+    this.quality=paintingQuality({coarse,memory:device?.deviceMemory,cores:device?.hardwareConcurrency});
+    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:this.quality.pixels,fieldScale:this.quality.scale,maxDimension:this.quality.maxDimension,detailBudget:this.quality.detailPixels});
     this.fineInk=new FineInkRenderer(this.paint.gl);
     this.paint.afterRender=()=>this.fineInk.draw(this.tick/TICK_RATE,[.11,.16,.15]);
     this.observer=new ResizeObserver(()=>this.resize());
@@ -255,7 +258,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   }
   private resize():void {
     const rect=this.paint.canvas.getBoundingClientRect();
-    const size=displaySize(rect.width,rect.height,devicePixelRatio||1,matchMedia('(pointer:coarse)').matches);
+    const size=displaySize(rect.width,rect.height,devicePixelRatio||1,matchMedia('(pointer:coarse)').matches,this.quality.displayPixels);
     const {width:w,height:h}=size,sheet=sheetFor(this.settings.format);
     if(this.lastDisplay[0]===w&&this.lastDisplay[1]===h&&this.paint.ready){
       this.paint.setView(sheet.width,sheet.height,w,h);return;

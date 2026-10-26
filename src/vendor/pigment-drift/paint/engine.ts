@@ -151,6 +151,7 @@ export class PaintEngine {
   private maxTexels: number;
   private maxScale: number;
   private maxDimension: number;
+  private detailBudget:number;
   private paperFrom: number[] = [];
   private paperTo: number[] = [];
   private labFrom: number[] = [];
@@ -164,7 +165,7 @@ export class PaintEngine {
   private dropBuf = new Float32Array(MAX_DROPS * 4);
   private dropInkBuf = new Float32Array(MAX_DROPS * 4);
 
-  constructor(canvas: HTMLCanvasElement, opts: { coarse: boolean; fieldBudget?: number; fieldScale?:number; maxDimension?:number }) {
+  constructor(canvas: HTMLCanvasElement, opts: { coarse: boolean; fieldBudget?: number; fieldScale?:number; maxDimension?:number; detailBudget?:number }) {
     this.canvas = canvas;
     const gl = canvas.getContext('webgl2', {
       antialias: false, alpha: false, depth: false, stencil: false,
@@ -184,6 +185,7 @@ export class PaintEngine {
     this.maxTexels = opts.fieldBudget ?? (opts.coarse ? 0.55e6 : 2.1e6);
     this.maxScale = opts.fieldScale ?? 1;
     this.maxDimension = opts.maxDimension ?? 2048;
+    this.detailBudget=opts.detailBudget??1440*2560;
     this.historyBytes = opts.coarse ? 28e6 : 100e6;
 
     this.vao = gl.createVertexArray()!;
@@ -457,6 +459,7 @@ export class PaintEngine {
       gl.uniform1f(u.uBleed, bleed);
       gl.uniform1f(u.uDryKeep, Math.exp(-dt / (this.look.dryingTime ?? (0.7 + 2.2 * bleed))));
       gl.uniform1f(u.uMaterial, (this.look.detail ?? 0) > 0.5 ? 1 : 0);
+      gl.uniform1f(u.uFixation,(this.look.detail??0)>.5&&Number.isFinite(this.look.dryingTime)?1:0);
       gl.uniform1f(u.uDryFloor, this.look.dryingTime === undefined ? 0.02 : 0);
       gl.uniform2f(u.uSeedOff, this.meta.seed[0], this.meta.seed[1]);
       gl.uniform1f(u.uUnit, this.meta.unit * this.k);
@@ -580,8 +583,8 @@ export class PaintEngine {
     const fh = Math.max(1, Math.ceil(h / 4));
     const flow = this.makeTarget(fw, fh, this.rgba, true);
     // Fine backruns and sediment use full display sampling up to a bounded
-    // QHD atlas (14 MiB RGBA8). Baked once, with no extra fluid-simulation steps.
-    const detailScale=Math.min(1,Math.sqrt((1440*2560)/(w*h)));
+    // atlas selected at startup. Baked once, with no extra fluid-simulation steps.
+    const detailScale=Math.min(1,Math.sqrt(this.detailBudget/(w*h)));
     const drying = this.makeTarget(Math.max(1,Math.ceil(w*detailScale)), Math.max(1,Math.ceil(h*detailScale)), {internal:gl.RGBA8,format:gl.RGBA}, true, gl.UNSIGNED_BYTE);
     const flowTex = [flow.tex];
     gl.bindFramebuffer(gl.FRAMEBUFFER, flow.fbo);

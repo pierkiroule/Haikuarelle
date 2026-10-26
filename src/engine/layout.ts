@@ -8,6 +8,19 @@ export const SHEETS:Record<ArtworkFormat,SheetSize>={
 };
 /** Logical geometry remains stable; the wet pigment field is supersampled. */
 export const PIGMENT_RESOLUTION={scale:4/3,pixels:1440*2560,maxDimension:4096} as const;
+export interface PaintingQuality {tier:'light'|'balanced'|'fine'|'studio';scale:number;pixels:number;maxDimension:number;displayPixels:number;detailPixels:number}
+/** Conservative startup hints, not a GPU benchmark. Keep this fixed for a sheet. */
+export function paintingQuality({coarse=false,memory,cores}:{coarse?:boolean;memory?:number;cores?:number}={}):PaintingQuality{
+  const ram=typeof memory==='number'&&Number.isFinite(memory)&&memory>0?memory:undefined;
+  const cpu=typeof cores==='number'&&Number.isFinite(cores)&&cores>0?cores:undefined;
+  const tier=ram!==undefined&&ram<=2?'light':
+    coarse&&(ram!==undefined&&ram<=4||cpu!==undefined&&cpu<=4)?'balanced':
+    !coarse&&ram!==undefined&&ram>=8&&cpu!==undefined&&cpu>=12?'studio':'fine';
+  const scale=tier==='light'?.8:tier==='balanced'?1:tier==='studio'?5/3:4/3;
+  return {tier,scale,pixels:Math.round(1080*1920*scale*scale),maxDimension:4096,
+    displayPixels:tier==='light'?2.1e6:coarse?4.2e6:8.4e6,
+    detailPixels:tier==='studio'?2304*4096:tier==='light'?1080*1920:1440*2560};
+}
 export function sheetFor(format:ArtworkFormat='landscape'):SheetSize{return SHEETS[format]??SHEETS.landscape;}
 export function exportSize(format:ArtworkFormat='landscape'):SheetSize{
   const sheet=sheetFor(format),scale=4096/Math.max(sheet.width,sheet.height);
@@ -23,10 +36,10 @@ export function frameComposition(score:Composition,format:ArtworkFormat='landsca
   };
 }
 /** A resize never changes the simulation. It only changes the display buffer. */
-export function displaySize(width:number,height:number,dpr:number,coarse=false):SheetSize{
+export function displaySize(width:number,height:number,dpr:number,coarse=false,pixelBudget?:number):SheetSize{
   const pixelRatio=Math.min(Math.max(1,dpr||1),4);
   const w=Math.max(1,width)*pixelRatio,h=Math.max(1,height)*pixelRatio;
-  const budget=coarse?4.2e6:8.4e6;
+  const budget=pixelBudget??(coarse?4.2e6:8.4e6);
   const scale=Math.min(1,Math.sqrt(budget/(w*h)),4096/w,4096/h);
   return {width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale))};
 }

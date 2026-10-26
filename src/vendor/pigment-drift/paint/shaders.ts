@@ -305,6 +305,7 @@ uniform vec4 uBreath;
 uniform vec2 uBreathShape;
 uniform float uBleed;        // 0..1 how far wet pigment spreads
 uniform float uDryKeep;      // wetness multiplier this step
+uniform float uFixation;     // voluntary evaporation pins increasingly dry pigment
 uniform float uMaterial;     // ritual: capillary transport and colour separation
 uniform float uDryFloor;     // upstream linear loss, disabled for the prepared-water guide
 uniform vec2 uSeedOff;
@@ -415,7 +416,7 @@ void main() {
       // and dry cuts between pools remain barriers even while the fluid coasts.
       float channel=min(fieldAt(src).y,fieldAt(destination).y);
       for(int j=1;j<=4;j++)channel=min(channel,fieldAt(mix(src,destination,float(j)/5.0)).y);
-      src=mix(src,destination,smoothstep(0.008,0.07,channel));
+      src=mix(src,destination,mix(smoothstep(0.008,0.07,channel),smoothstep(0.018,0.16,channel),uFixation));
     }else src=destination;
   }
   // Untouched texels are copied exactly (and cheaply); only moved ones are resampled.
@@ -445,6 +446,8 @@ void main() {
     if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
     float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
     float mobility = smoothstep(0.006,0.22,moisture) * fibre;
+    // Symmetric moisture-dependent fixation, without sharpening or adding grain.
+    mobility *= mix(1.0,smoothstep(0.018,0.18,moisture),uFixation);
     float neighborAffinity = 1.0 + uMaterial * 2.6 *
       (1.0-smoothstep(0.025,0.23,neighbor.y)) * smoothstep(0.006,0.035,neighbor.y);
     // Distinct optical pigments diffuse much less across each other's boundary.
