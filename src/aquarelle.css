@@ -1,0 +1,107 @@
+/* Watercolor identity, with the drawing surface as the dominant element. */
+.direct-studio{position:relative;isolation:isolate;background:#f5f2eb}
+.direct-studio>.bird-header,.direct-studio>.ritual-progress,.direct-studio>.ritual-heading,.direct-studio>.bird-selection,.direct-studio>.bird-workbench,.direct-studio>.bird-footer{position:relative;z-index:1}
+.direct-studio .bird-header{border-color:#dfd9cc}
+.watercolor-brand{display:block;object-fit:contain;width:47px;height:47px;flex:none}
+.direct-studio .feather-wordmark{gap:9px}
+.direct-studio .brand-copy>span{font-size:18px;letter-spacing:.07em;line-height:1.15;color:#4d5756}
+.direct-studio .brand-copy>small{font-size:11px;letter-spacing:.09em;color:#8a8f80}
+.direct-studio .bird-edition{color:#929789;letter-spacing:.13em}
+.selection-plume{display:block;object-fit:contain;width:80px;height:80px;margin:-12px auto 12px;transform:rotate(-9deg)}
+.direct-studio .bird-selection{margin-top:28px}
+.direct-studio .bird-selection h1{font-size:clamp(36px,4vw,51px);color:#53605d}
+.direct-studio .bird-selection h1 em{color:#a48e76}
+.direct-studio .trio-bird{background:radial-gradient(ellipse at 50% 25%,color-mix(in srgb,var(--bird-color) 7%,transparent),transparent 72%),#faf8f2;border-color:#e0dcd0;box-shadow:none;border-radius:14px 5px}
+.direct-studio .trio-bird.chosen{background:radial-gradient(ellipse at 50% 25%,color-mix(in srgb,var(--bird-color) 14%,transparent),transparent 80%),#eeeae0;border-color:#aeb7a2}
+.direct-studio .trio-start{background:#f5f2ebf5}
+.direct-studio .trio-start button,.direct-studio .finalize-art{background:#6c807a;border-radius:7px;color:#fffdf6;box-shadow:none}
+.direct-studio .trio-start button:hover:not(:disabled),.direct-studio .finalize-art:hover:not(:disabled){background:#566e67}
+.direct-studio .bird-pad{background:#faf8f2;box-shadow:none;border-color:#e6dfd2}
+.direct-studio .bird-pad.is-selected{background:#eeeae0;border-color:var(--bird-color);box-shadow:0 0 0 3px #9baf9c12}
+.direct-studio .bird-header .atelier-more,.direct-studio .brush-context{background:#fcfaf5;box-shadow:0 7px 24px #53605d0b;border-color:#ddd9cc}
+.direct-studio .bird-paper{box-shadow:0 12px 36px #514b3b09,0 0 0 1px #c0b89e1f}
+/* A slim breadcrumb and one invitation replace the large instructional block. */
+.direct-studio:not(.flow-choose){--sheet-height:max(160px,calc(100svh - 174px))}
+.direct-studio .ritual-progress{margin-top:11px;max-width:760px}
+.direct-studio .ritual-progress ol{gap:26px}
+.direct-studio .ritual-progress li{font-size:9px;gap:6px;color:#a4a496}
+.direct-studio .ritual-step-number{width:20px;height:20px;font-size:8px;border-color:#deded1}
+.direct-studio .ritual-progress [aria-current=step]{color:#617a73}
+.direct-studio .ritual-progress [aria-current=step] .ritual-step-number{background:#6c807a;border-color:#6c807a}
+.direct-studio .ritual-heading{min-height:0;margin:9px auto 0;padding:0 32px;max-width:780px}
+.direct-studio .ritual-heading h1{font-size:24px;line-height:1.2;color:#69756d;margin:0;font-weight:400}
+.ritual-help{position:absolute;right:0;top:3px;z-index:45;color:#919987;font-size:11px;text-align:left}
+.ritual-help>summary{cursor:pointer;list-style:none;display:grid;place-items:center;width:25px;height:25px;border:1px solid #dbddcf;border-radius:50%;font:italic 12px Georgia,serif}
+.ritual-help>summary::-webkit-details-marker{display:none}
+.ritual-help>summary:focus-visible{outline:2px solid #8a9e8b;outline-offset:3px}
+.ritual-help>div{position:absolute;top:34px;right:0;width:min(310px,calc(100vw - 36px));padding:16px 18px;background:#fbf9f3;border:1px solid #dfdfd1;border-radius:8px;box-shadow:0 9px 25px #53605d10;font-size:12px;line-height:1.7;color:#7f8778}
+.direct-studio:not(.flow-choose) .bird-workbench{padding-top:14px}
+.direct-studio:not(.flow-choose) .bird-instrument{top:145px}
+.direct-studio.flow-finished{--sheet-height:max(160px,calc(100svh - 330px))}
+/* Six slow feathers are decorative, clipped to narrow gutters behind the UI. */
+.feather-drift{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:.6;contain:strict}
+.feather-drift img{position:absolute;top:-70px;left:1%;width:26px;height:26px;object-fit:contain;opacity:0;animation:feather-drift var(--drift-duration) var(--drift-delay) linear infinite;will-change:transform}
+.feather-drift img:nth-child(2n){left:auto;right:1%}
+.feather-drift img:nth-child(3n){width:18px;height:18px}
+.feather-drift img:nth-child(5){left:3%}
+.feather-drift img:nth-child(6){right:3%}
+.direct-studio.is-painting .feather-drift img{animation-play-state:paused}
+.direct-studio.canvas-only .feather-drift,.direct-studio.bird-viewing .feather-drift{display:none}
+@keyframes feather-drift{0%{transform:translate3d(0,-20px,0) rotate(-25deg);opacity:0}12%{opacity:.18}48%{transform:translate3d(12px,48vh,0) rotate(var(--drift-turn));opacity:.12}88%{opacity:.14}100%{transform:translate3d(-6px,calc(100vh + 80px),0) rotate(-20deg);opacity:0}}
+.direct-studio.canvas-only,.direct-studio.bird-viewing{--sheet-height:100dvh}
+.direct-studio.canvas-only.flow-finished,.direct-studio.bird-viewing.flow-finished{--sheet-height:max(160px,calc(100dvh - 235px))}
+@media(max-width:760px){
+ .direct-studio .watercolor-brand{width:37px;height:37px}
+ .direct-studio .brand-copy>span{font-size:14px;letter-spacing:.045em}
+ .direct-studio .brand-copy>small{font-size:9px;letter-spacing:.04em}
+ .direct-studio .feather-wordmark{gap:6px}
+ .direct-studio .selection-plume{width:66px;height:66px;margin:0 auto 10px}
+ .direct-studio .bird-selection{margin-top:25px}
+ .direct-studio .bird-selection h1{font-size:35px}
+ .direct-studio .ritual-progress{margin-top:8px}
+ .direct-studio .ritual-progress ol{justify-content:center;gap:15px}
+ .direct-studio .ritual-progress li{flex-direction:row;gap:5px;min-height:22px}
+ .direct-studio .ritual-progress li>span:nth-child(2){display:none}
+ .direct-studio .ritual-progress li[aria-current=step]>span:nth-child(2){display:block;font-size:9px}
+ .direct-studio .ritual-heading{min-height:0;max-width:380px;margin-top:8px;padding:0 30px}
+ .direct-studio .ritual-heading h1{font-size:19px;line-height:1.2;max-width:none}
+ .direct-studio .ritual-help{right:3px;top:0}
+ .direct-studio .ritual-help>summary{width:23px;height:23px}
+ .direct-studio:not(.flow-choose){--sheet-height:max(150px,calc(100svh - 260px))}
+ .direct-studio:not(.flow-choose) .bird-workbench{padding-top:13px}
+ .direct-studio:not(.flow-choose) .bird-instrument{top:auto}
+ .direct-studio.flow-finished{--sheet-height:max(150px,calc(100svh - 360px))}
+ .direct-studio:not(.flow-choose) .bird-instrument{background:#f5f2ebf5}
+ .direct-studio.flow-finished .bird-instrument{background:transparent}
+ .feather-drift{opacity:.35}
+ .feather-drift img{width:16px;height:16px;left:0}
+ .feather-drift img:nth-child(2n){right:0}
+ .feather-drift img:nth-child(5){left:1%}
+ .feather-drift img:nth-child(6){right:1%}
+ .direct-studio.canvas-only,.direct-studio.canvas-only.flow-paint,.direct-studio.bird-viewing{--sheet-height:100dvh}
+ .direct-studio.canvas-only .bird-workbench,.direct-studio.bird-viewing .bird-workbench{padding:0}
+ .direct-studio.canvas-only.flow-finished,.direct-studio.bird-viewing.flow-finished{--sheet-height:max(160px,calc(100dvh - 235px))}
+}
+@media(max-width:360px){.direct-studio .brand-copy>span{font-size:12px}.direct-studio .watercolor-brand{width:32px;height:32px}.direct-studio .ritual-progress ol{gap:12px}.direct-studio .ritual-heading h1{font-size:18px}}
+@media(prefers-reduced-motion:reduce){.feather-drift{display:none}.feather-drift img{animation:none;will-change:auto}}
+.direct-studio>.bird-header{z-index:70}
+.direct-studio>.ritual-heading{z-index:45}
+.direct-studio .trio-bird.is-previewing>.feather-glyph{animation:plume-palette-breathe 1.8s ease-in-out infinite}
+.direct-studio .trio-bird.is-previewing small{color:#6b8b87}
+@media(prefers-reduced-motion:reduce){.direct-studio .trio-bird.is-previewing>.feather-glyph{animation:none}}
+.direct-studio.canvas-only .bird-workbench,.direct-studio.bird-viewing .bird-workbench{padding:0}
+.water-settings{position:relative;margin-bottom:10px;color:#6e8583;font-size:11px}
+.water-settings>summary{cursor:pointer;list-style:none;border:1px solid #cddad5;border-radius:7px;background:#f8faf6;padding:12px 15px;min-height:44px;text-align:center}
+.water-settings>div{position:absolute;right:0;top:calc(100% + 10px);width:240px;padding:16px 18px;background:#fcfaf5;border:1px solid #d7ddd2;border-radius:10px;box-shadow:0 8px 24px #53605d0c;z-index:50}
+.water-settings label{display:block;margin:5px 0 14px}
+.water-settings label:last-child{margin-bottom:0}
+.water-settings label>span{display:flex;justify-content:space-between;gap:12px}
+.water-settings input{width:100%;min-height:36px;accent-color:#7b9991}
+.water-settings :focus-visible{outline:2px solid #7b9991;outline-offset:3px}
+@media(max-width:760px){
+ .direct-studio.flow-water .bird-pad-board{align-items:center;gap:10px}
+ .water-settings{margin:0;flex:none}
+ .water-settings>summary{font-size:10px;padding:10px;max-width:100px;line-height:1.3}
+ .water-settings>div{position:fixed;left:12px;right:12px;top:auto;bottom:100px;width:auto;max-width:320px}
+ .direct-studio.flow-water .water-ready{min-width:0;font-size:11px;padding:10px 12px}
+}

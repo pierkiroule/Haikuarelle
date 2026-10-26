@@ -36,7 +36,7 @@ export class SoundStain {
   private accents=0;
   readonly bloom:Point;
   constructor(readonly bird:Bird,readonly seed:number,readonly origin:Point,private settings:EngineSettings,
-    private water:WetPaper,readonly size=.55,readonly layer=0,placedAt=0,private audibleTimes:number[]=[]){
+    private water:WetPaper,readonly size=.55,readonly layer=0,placedAt=0,private audibleTimes:number[]=[],private opacity=1){
     this.rng=createRng(seed^0x513ac9);
     this.inkRng=createRng(seed^0x14b3c1);
     const sheet=sheetFor(settings.format),unit=Math.min(sheet.width,sheet.height);
@@ -63,14 +63,27 @@ export class SoundStain {
     return {x:clamp(p.x+Math.cos(angle)*distance/this.sx,.025,.975),y:clamp(p.y+Math.sin(angle)*distance/this.sy,.025,.975)};
   }
   private dot(p:Point,radius:number,load:number,slot=this.bird.slot):BrushSegment{
-    return {a:p,b:p,radius,load,slot,water:false,strength:.38,coupling:0};
+    return {a:p,b:p,radius,load,slot,water:false,strength:.38,coupling:0,wetOnly:true};
   }
   step(feature:AudioFrame|undefined,time:number):BrushFrame{
     const segments:BrushSegment[]=[],ink:InkStroke[]=[];
     const empty=()=>({segments,ink,point:null,feedback:{speed:0,radius:0,splashes:0}});
     // No autonomous pigment in silence or after the sound clock has ended.
-    if(!feature?.active||feature.energy<=0)return empty();
+    if(!feature?.active||feature.energy<=0||this.opacity<=0||!this.region.sites.length)return empty();
     const energy=clamp(feature.energy),attack=clamp(feature.flux),resonance=clamp(this.settings.resonance??.96);
+    if(this.bird.id==='pie'){
+      // Black punctuation visits the wet basin without becoming a drawn line.
+      let progress=clamp((feature.time+1/30)/2);
+      if(this.audibleTimes.length){let n=0;while(n<this.audibleTimes.length&&this.audibleTimes[n]<=feature.time+1e-5)n++;progress=n/this.audibleTimes.length;}
+      const target=Math.ceil(this.region.sites.length*clamp(progress/.82));
+      while(this.regionCursor<target&&segments.length<8){
+        const p=this.region.sites[this.regionCursor++].point;
+        if(this.water.at(p,time)<.012)continue;
+        segments.push({...this.dot(p,(.0012+.006*Math.pow(this.rng(),2))*(.5+this.size),(.55+.35*energy)*this.opacity),effect:'splash'});
+      }
+      this.tick++;
+      return {segments,ink,point:segments.length?this.origin:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes:segments.length}};
+    }
     const crow=this.bird.id==='corneille',robin=this.bird.id==='rougegorge';
     const style=this.bird.signature,soft=style==='velvet',lace=style==='lace',twig=style==='twig',ripple=style==='ripple';
     const companion=companionSlot(this.bird);
@@ -126,21 +139,18 @@ export class SoundStain {
         segments.push({...this.dot(grey,radius*.9,.035+.11*energy,0),a:this.offset(f.point,angle+1.57,radius*.75),strength:.2});
       }
       const washLoad=load*(.48+.38*taper)*(crow?.92:1);
-      segments.push({a:f.point,b:next,radius:Math.max(.003,radius),load:Math.min(.95,washLoad),slot:plumageSlot(this.bird,next,this.origin,this.axis,this.sy/this.sx),water:false,strength:.31,coupling:(soft?.08:.12)+.22*energy});
+      segments.push({a:f.point,b:next,radius:Math.max(.003,radius),load:Math.min(.95,washLoad),slot:plumageSlot(this.bird,next,this.origin,this.axis,this.sy/this.sx),water:false,strength:.31,wetOnly:true,effect:'wash',coupling:(soft?.08:.12)+.22*energy});
       // Fine ink appears as sparse interrupted veins, never as a continuous outline.
-      if((this.settings.ink??.62)>0&&this.tick%6===0&&energy>.2){
+      if((this.settings.ink??.62)>0&&this.tick%14===0&&energy>.2){
         const a=this.offset(f.point,angle+1.3,radius*(this.inkRng()-.5));
         const control=this.offset({x:(a.x+next.x)*.5,y:(a.y+next.y)*.5},angle+1.57,radius*.09*Math.sin(f.life*.7));
         ink.push({points:curvedVein(a,control,next),start:time,duration:1/30,width:(crow?.85:.5)+feature.brightness*.3,
           opacity:(crow?.4:soft?.10:.22)*(this.settings.ink??.62)*(.5+.5*energy),seed:this.seed+this.tick*3+j,continuous:true});
       }
       if(freshAttack&&segments.length<9){
-        const tip=this.offset(next,angle+(this.rng()>.5?1:-1)*.8,.015+.035*attack*this.size);
-        segments.push({a:next,b:tip,radius:.0014+.003*energy,load:load*.8,slot:this.bird.slot,water:false,strength:.34,coupling:.16});
-        const satellite=this.offset(tip,angle,.012+this.rng()*.035);
-        segments.push(this.dot(satellite,.0018+this.rng()*.004,Math.min(.95,load+.12)));splashes++;
-        if((this.settings.ink??.62)>0)ink.push({points:curvedVein(next,tip,satellite),start:time,duration:.22,
-          width:.55+.35*feature.brightness,opacity:(.27+.20*feature.brightness)*(this.settings.ink??.62),seed:this.seed+this.tick*7+j});
+        // An attack opens an unequal wet lobe rather than drawing a filament.
+        const pocket=this.offset(next,angle+(this.rng()>.5?1:-1)*.9,radius*(.4+.5*attack));
+        if(this.water.at(pocket,time)>.025)segments.push({...this.dot(pocket,Math.max(.003,radius*(.35+.4*feature.brightness)),load*(.25+.35*attack)),strength:.23,coupling:.12});
       }
       f.point=next;f.angle=angle;f.length+=stride;f.life++;representative=next;
     }
@@ -153,16 +163,18 @@ export class SoundStain {
       while(lo<hi){const mid=(lo+hi)>>1;if(this.audibleTimes[mid]<=feature.time+1e-5)lo=mid+1;else hi=mid;}
       progress=lo/this.audibleTimes.length;
     }
-    const target=Math.ceil(this.region.sites.length*progress),glazes:BrushSegment[]=[];
+    // Complete the broad wet route before the final syllables, leaving room
+    // for sparse audible frames and a detailed tail rather than an unvisited end.
+    const target=Math.ceil(this.region.sites.length*clamp(progress/.82)),glazes:BrushSegment[]=[];
     while(this.regionCursor<target&&glazes.length<6){
       const site=this.region.sites[this.regionCursor++];
       if(this.water.at(site.point,time)<.012)continue;
-      glazes.push({a:site.from,b:site.point,radius:this.region.radius,load:(.065+.16*Math.sqrt(energy))*Math.max(.65,1-this.layer*.025),
-        slot:plumageSlot(this.bird,site.point,this.origin,this.axis,this.sy/this.sx),water:false,wetOnly:true,strength:.24,coupling:.16+.14*energy});
+      glazes.push({a:site.from,b:site.point,radius:this.region.radius,load:(.115+.23*Math.sqrt(energy))*Math.max(.65,1-this.layer*.025),
+        slot:plumageSlot(this.bird,site.point,this.origin,this.axis,this.sy/this.sx),water:false,wetOnly:true,strength:.28,coupling:.16+.14*energy});
     }
     const spray=(freshAttack||this.tick%5===0)&&energy>.2?this.splashes.splice(0,2):[];
     splashes+=spray.length;
     this.tick++;this.delivered+=segments.filter(s=>!s.water).length;
-    return {segments:[...glazes,...segments.slice(0,12-glazes.length-spray.length),...spray],ink,point:this.delivered?representative:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes}};
+    return {segments:[...glazes,...segments.slice(0,12-glazes.length-spray.length),...spray].map(s=>({...s,load:s.load*clamp(this.opacity)})),ink:ink.map(s=>({...s,opacity:s.opacity*clamp(this.opacity)})),point:this.delivered?representative:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes}};
   }
 }

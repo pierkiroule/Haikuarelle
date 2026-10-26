@@ -1,1 +1,1 @@
-export const APP_NAME="Haïkuarelle des trois oiseaux";
+export const APP_NAME="HAÏKUARELLE des trois plumes";

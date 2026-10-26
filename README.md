@@ -1,4 +1,4 @@
-# Haïkuarelle des trois oiseaux
+# HAÏKUARELLE des trois plumes
 
 Un rituel poétique en cinq temps : choisir trois oiseaux, déposer l’eau du silence, peindre leurs chants, laisser sécher sous le soleil du silence, puis partager son haïkuarelle. Les mots naissent des couleurs et des formes réellement déposées sur le papier.
 
@@ -25,21 +25,21 @@ npm run preview
 
 ## Le rituel
 
-1. **Choisis trois oiseaux qui t’inspirent.** Trois choix distincts parmi les huit plumes. Aucun chant ne joue pendant la sélection.
-2. **Dépose l’eau du silence sur ta toile.** Maintenir et glisser dépose de l’eau claire dans la simulation, sans son ni pigment. Au clavier, maintenir espace ou Entrée et utiliser les flèches. L’eau est conservée au repos ; « Inviter les chants » devient disponible après le premier dépôt.
-3. **Dépose les chants des oiseaux.** Choisir une plume puis glisser sur le papier. Le chant guide l’énergie, la diffusion et les contours des nouveaux dépôts. Les trois plumes restent fixes ; taille et opacité sont les seuls réglages accessibles.
-4. **Laisse sécher sous le soleil du silence.** « Laisser sécher » coupe le chant et les dépôts. La progression suit le séchage réel, sans minuterie artificielle. Le titre et le haïku apparaissent quand la peinture est sèche. « Reprendre la plume » permet de continuer.
+1. **Trois plumes sonores qui t’inspirent.** Trois choix distincts parmi les huit plumes. Sélectionner une plume joue un aperçu de son chant, sans pigment ; changer de choix remplace cet aperçu. Le passage à l’eau coupe l’aperçu pour retrouver le silence.
+2. **Dépose l’eau du silence sur ta toile.** Maintenir et glisser dépose de l’eau claire dans la simulation, sans son ni pigment. Au clavier, maintenir espace ou Entrée et utiliser les flèches. Le panneau « Réglages de l’eau » propose une taille de geste et une quantité d’eau, transmise au champ humide réel. L’eau est conservée au repos ; « Inviter les chants » devient disponible après le premier dépôt.
+3. **Dépose les chants des oiseaux.** Toucher une zone humide avec une plume puis lever la main. Chaque dépôt joue le sample entier une seule fois, sans boucle ; le mouvement ne dessine plus de trait. Le chant guide la migration et la dilution du pigment dans toute la nappe d’eau connectée, sans traverser ses séparations sèches. Un nouveau dépôt attend la fin du chant précédent. Les trois plumes restent fixes ; taille et opacité sont les seuls réglages accessibles.
+4. **Laisse sécher sous le soleil du silence.** « Laisser sécher » devient disponible après la fin du chant. La progression suit le séchage réel, sans minuterie artificielle. Le titre et le haïku apparaissent quand la peinture est sèche. « Reprendre la plume » permet de continuer.
 5. **Partager ton haïkuarelle.** Partager le PNG avec le titre, l’œuvre, les trois vers et la dédicace facultative via le menu natif du navigateur. Si le partage de fichiers n’est pas disponible, l’image est téléchargée. « Garder l’image · PNG » permet toujours de télécharger directement. Annuler le partage ne déclenche pas de téléchargement.
 
-« Effacer tout » conserve le trio et revient à l’eau du silence. « Nouvelle œuvre » recommence le rituel avec une nouvelle graine. La plume animée suit le contact au pixel près ; les animations respectent la préférence de réduction des mouvements.
+« Ajouter de l’eau du silence », dans le menu, permet de réhumidifier le papier sans effacer les pigments. « Effacer tout » conserve le trio et revient à l’eau du silence. « Nouvelle œuvre » recommence le rituel avec une nouvelle graine. La plume animée suit le contact au pixel près ; les animations respectent la préférence de réduction des mouvements. Le logo aquarellé est servi en WebP sans perte. Six particules de plumes légères restent derrière l’interface, dans les marges ; elles sont absentes de l’œuvre exportée et désactivées en mode Toile seule ou avec la réduction des mouvements.
 
 Un clic sur une des trois brosses ouvre son menu contextuel : taille et opacité sont mémorisées séparément pour chaque oiseau pendant la session. Échap, le bouton de fermeture ou un clic hors du menu le referme. Seules la taille et l’opacité sont proposées : la matière est accordée en interne au chant. Son énergie ouvre le lavis, ses attaques animent les marges humides et son timbre fait varier la diffusion. Les réglages de la plume modifient les nouveaux dépôts, sans altérer les traces existantes.
 
-Les filaments sont plus courts et réservés aux attaques fortes espacées d’au moins 0,85 s. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Son rythme sonore local est synthétique et ne représente pas un enregistrement animal.
+Les attaques ouvrent des lobes humides irréguliers plutôt que des filaments. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Son rythme sonore local est synthétique et ne représente pas un enregistrement animal.
 
-Le trio reste fixe pendant la peinture. Avant le premier geste, **Modifier le trio** permet de revenir au choix. Le parcours complet et sa vérification sont dans [Trois oiseaux, une œuvre](docs/TROIS-OISEAUX-UNE-OEUVRE.md).
+Le trio reste fixe pendant les dépôts. Avant le premier geste, **Changer mes oiseaux** permet de revenir au choix. Le parcours complet et sa vérification sont dans [Trois oiseaux, une œuvre](docs/TROIS-OISEAUX-UNE-OEUVRE.md).
 
-Choisir une brosse ne joue rien. Aucun pigment n’est créé avant le démarrage réussi de la source audio, dans ses silences, après la levée ou si la lecture est bloquée. Pendant un contact prolongé, la phrase intacte se répète avec 0,28 s de respiration silencieuse ; arrêt de sécurité après 90 s. Un chargement tardif ne rejoue pas un geste déjà relâché.
+Choisir une brosse ne joue rien. Aucun pigment n’est créé avant le démarrage réussi de la source audio, dans ses silences ou si la lecture est bloquée. Lever la main ne coupe plus le dépôt sonore. Le dépôt attend le démarrage réel du sample ; le relâchement ne l’annule pas pendant son décodage. Échap, le bouton d’interruption ou le masquage de l’onglet peuvent arrêter explicitement le chant.
 
 | Sample | Signature |
 | --- | --- |
@@ -77,7 +77,7 @@ Contrôles, exemples et limites : [Pinceau sonore](docs/PINCEAU-SONORE.md).
 
 ## Séchage et détails
 
-Quatre masques alpha procéduraux font émerger des variations de densité dans une même teinte, des délavages, des auréoles internes et des poches minérales. Un dépôt de bord suit le vrai contour du pigment et se renforce quand l’eau se retire. Les zones calmes et les blancs restent présents. Le réglage **Grain & relief** module l’intensité de cette matière. **Netteté** renforce progressivement le contraste local du pigment, les contours et les auréoles à mesure que l’eau se retire. **Seuil des détails** sélectionne les poches minérales : une valeur plus élevée privilégie les dépôts les plus marqués. Ces réglages agissent sur le rendu courant et sur le PNG, sans rejouer les gestes. L’atlas de séchage est désormais échantillonné à la moitié de la résolution linéaire de l’affichage.
+Quatre masques alpha procéduraux font émerger des variations de densité dans une même teinte, des délavages, des auréoles internes et des poches minérales. Un dépôt de bord suit le vrai contour du pigment et se renforce quand l’eau se retire. Les zones calmes et les blancs restent présents. Le réglage **Grain & relief** module l’intensité de cette matière. **Netteté** renforce progressivement le contraste local du pigment, les contours et les auréoles à mesure que l’eau se retire. **Seuil des détails** sélectionne les poches minérales : une valeur plus élevée privilégie les dépôts les plus marqués. Ces réglages agissent sur le rendu courant et sur le PNG, sans rejouer les gestes. L’atlas de séchage est échantillonné à la résolution d’affichage, plafonnée à 1 440 × 2 560 pixels équivalents (environ 14 Mio RGBA8). Il est précalculé une fois par placement de feuille ; aucune étape supplémentaire de simulation fluide n’est ajoutée. Les textures restent procédurales, sans promesse de reproduction physique exacte.
 
 Comparaisons et limites V10 : [Netteté au séchage](docs/NETTETE-ET-EFFACEMENT.md).
 
@@ -88,9 +88,9 @@ Comparaisons sur le même champ de pigment, gros plan 4K et vérifications : [la
 ## Code et vérification
 
 - `src/birds/WetPaper.ts` : guide borné de l’eau et évaporation.
-- `src/birds/DirectBrush.ts` : cycle du contact, audio et annulation des chargements tardifs.
-- `src/birds/ResonantBrush.ts`, `sonicFilament.ts` : geste direct, eau/peinture et jets sonores.
-- `src/birds/SoundStain.ts` : ancien mode de sample sur eau préparée, conservé dans l’API.
+- `src/birds/SoundDeposit.ts` : un contact place un sample entier ; refus du papier sec et des dépôts simultanés.
+- `src/birds/DirectBrush.ts`, `ResonantBrush.ts`, `sonicFilament.ts` : ancien geste continu conservé dans l’API.
+- `src/birds/SoundStain.ts` : tache sonore, propagation géodésique dans le bassin humide, lavis et sédiments.
 - `src/birds/SoundImprint.ts` : enveloppe et attaques extraites du vrai signal.
 - `src/birds/BirdAudioBank.ts` : cache des enregistrements et horloge réelle.
 - `src/engine/WatercolorEngine.ts` : façade du PaintEngine réel et simulation fixe 30 Hz.

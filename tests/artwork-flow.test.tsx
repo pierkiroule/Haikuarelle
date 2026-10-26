@@ -6,7 +6,7 @@ import type {EngineStatus,Point} from '../src/engine/types';
 import type {Bird} from '../src/birds/catalog';
 import {BirdStudio} from '../src/App';
 interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>}
-const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,stops:0}));
+const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{}}));
 vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   status:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:30,ticks:0};composition={duration:20};
   constructor(_canvas:unknown,_settings:unknown,private change:(s:EngineStatus)=>void){h.painter=this;}
@@ -22,11 +22,17 @@ vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
     return {width,height,pixels};
   });
 }}));
-vi.mock('../src/birds/BirdAudioBank',()=>({BirdAudioBank:class{preload(){}async prepare(){}destroy(){}}}));
-vi.mock('../src/birds/DirectBrush',()=>({DirectBrush:class{
-  constructor(_sounds:unknown,_painter:unknown,private callbacks:{started:(b:Bird)=>void;stopped:()=>void;marked:(b:Bird,p:Point,s:number)=>void}){}
-  async begin(bird:Bird,point:Point,_time:number,_pressure:number,seed:number){h.starts++;this.callbacks.started(bird);h.painter!.mark();this.callbacks.marked(bird,point,seed);}
-  move(){}breakPath(){}end(){h.stops++;this.callbacks.stopped();}
+vi.mock('../src/birds/BirdAudioBank',()=>({BirdAudioBank:class{
+  preload(){}async prepare(){}
+  async play(id:string,onStart:(sound:unknown)=>void,onEnd:()=>void){this.stop();h.previews.push(id);h.previewEnd=onEnd;onStart({});}
+  stop(){h.previewStops++;const done=h.previewEnd;h.previewEnd=()=>{};done();}
+  destroy(){this.stop();}
+}}));
+vi.mock('../src/birds/SoundDeposit',()=>({SoundDeposit:class{
+  busy=false;
+  constructor(_sounds:unknown,_painter:unknown,private callbacks:{preparing:(b:Bird)=>void;started:(b:Bird)=>void;stopped:()=>void;marked:(b:Bird,p:Point,s:number)=>void}){}
+  async place(bird:Bird,point:Point,seed:number){this.busy=true;h.starts++;this.callbacks.started(bird);h.painter!.mark();this.callbacks.marked(bird,point,seed);h.finish=()=>{this.busy=false;this.callbacks.stopped();};}
+  cancel(){h.stops++;this.busy=false;this.callbacks.stopped();}
 }}));
 let root:Root,host:HTMLDivElement;
 const button=(label:string)=>host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
@@ -44,16 +50,17 @@ async function paint(){
   const paper=host.querySelector<HTMLElement>('.bird-paper')!;
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+  await act(async()=>h.finish());
 }
 beforeEach(async()=>{
-  h.starts=0;h.stops=0;h.painter=null;vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
+  h.starts=0;h.stops=0;h.painter=null;h.previews=[];h.previewStops=0;h.previewEnd=()=>{};vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
   vi.stubGlobal('matchMedia',()=>({matches:true}));vi.stubGlobal('requestAnimationFrame',()=>1);vi.stubGlobal('cancelAnimationFrame',()=>{});
   host=document.createElement('div');document.body.append(host);root=createRoot(host);
   await act(async()=>root.render(<BirdStudio/>));
 });
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();});
 describe('choose three birds, paint, finalize',()=>{
-  it('requires exactly three distinct choices and never starts a sound from selection',async()=>{
+  it('requires three distinct choices, previews their sounds and never deposits during selection',async()=>{
     const start=host.querySelector<HTMLButtonElement>('.trio-start button')!;expect(start.disabled).toBe(true);
     for(const bird of ['Geai','Bouvreuil','Mésange bleue'])await click(button(`Choisir la plume ${bird}`));
     expect(start.disabled).toBe(false);expect(button('Choisir la plume Corneille').disabled).toBe(true);expect(h.starts).toBe(0);
@@ -62,6 +69,19 @@ describe('choose three birds, paint, finalize',()=>{
     expect(host.querySelector('.flow-water')).not.toBeNull();expect(host.querySelector<HTMLButtonElement>('.water-ready')!.disabled).toBe(true);
     expect(host.querySelector('.artwork-title')).toBeNull();expect(host.querySelector('.artwork-poem')).toBeNull();
     expect(h.starts).toBe(0);
+  });
+  it('previews selected plumes without pigment and stops preview before the water ritual',async()=>{
+    expect(host.querySelector('#trio-title')!.textContent).toContain('Trois plumes sonores');
+    await click(button('Choisir la plume Geai'));
+    expect(h.previews).toEqual(['geai']);expect(host.querySelectorAll('.trio-bird.is-previewing')).toHaveLength(1);
+    expect(h.starts).toBe(0);expect(h.painter!.status.hasPigment).toBe(false);
+    await click(button('Choisir la plume Geai'));
+    expect(host.querySelector('.is-previewing')).toBeNull();expect(h.previews).toHaveLength(1);
+    for(const bird of ['Geai','Bouvreuil','Pie'])await click(button(`Choisir la plume ${bird}`));
+    const previews=h.previews.length;
+    await click(host.querySelector('.trio-start button')!);
+    expect(host.querySelector('.is-previewing')).toBeNull();expect(host.querySelector('.flow-water')).not.toBeNull();
+    await water();expect(h.previews).toHaveLength(previews);expect(h.starts).toBe(0);
   });
   it('requires real silent water before chants and marks before drying',async()=>{
     expect(host.querySelectorAll('.ritual-progress li')).toHaveLength(5);
@@ -131,7 +151,7 @@ describe('choose three birds, paint, finalize',()=>{
     expect(host.querySelector('.brush-context')).toBeNull();expect(document.activeElement).toBe(brushes[1]);
   });
   it('keeps a feather tip at the keyboard drawing position and replaces all bird silhouettes',async()=>{
-    expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Haïkuarelle des trois oiseaux");
+    expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("HAÏKUARELLE des trois plumes");
     expect(host.querySelectorAll('.trio-bird .feather-glyph')).toHaveLength(8);
     expect(host.querySelector('.bird-glyph')).toBeNull();
     await paint();
@@ -146,6 +166,21 @@ describe('choose three birds, paint, finalize',()=>{
     expect(cursor.classList.contains('resonating')).toBe(true);
     await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
     expect(cursor.classList.contains('resonating')).toBe(false);
+  });
+  it('lets a single deposited sample finish after release and selection changes, with no dragged paint',async()=>{
+    for(const bird of ['Geai','Bouvreuil','Pie'])await click(button(`Choisir la plume ${bird}`));
+    await click(host.querySelector('.trio-start button')!);await water();
+    const paper=host.querySelector<HTMLElement>('.bird-paper')!;
+    const stopped=h.stops;
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+    expect(h.starts).toBe(1);expect(h.stops).toBe(stopped);
+    expect(host.querySelector('.finalize-art')!.hasAttribute('disabled')).toBe(true);
+    await click(host.querySelectorAll<HTMLButtonElement>('.bird-pad')[1]);
+    expect(h.stops).toBe(stopped);expect(h.starts).toBe(1);
+    await act(async()=>h.finish());
+    expect(host.querySelector('.finalize-art')!.hasAttribute('disabled')).toBe(false);
   });
   it('cancels a pending revelation when the user resumes or clears, keeping the selected trio',async()=>{
     await paint();await click(host.querySelector('.finalize-art')!);await click(host.querySelector('.artwork-drying button')!);

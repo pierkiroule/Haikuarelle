@@ -441,7 +441,7 @@ void main() {
     }
     float kind = mod(sp.w, 4.0);
     float slot = mod(floor(sp.w / 4.0), 64.0);
-    bool wetOnly = sp.w >= 256.0;
+    bool wetOnly = mod(floor(sp.w / 256.0), 2.0) > 0.5;
     float wetMask = wetOnly ? smoothstep(0.005, 0.030, f.y) : 1.0;
     if (wetOnly && wetMask > 0.0) {
       // A large pale glaze must not jump a dry slit into a neighbouring pool.
@@ -475,7 +475,9 @@ void main() {
       }
       if (!wetOnly) f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
     } else if (kind < 1.5) {
-      f.y = max(f.y, (1.0 - smoothstep(0.6, 1.25, dn)) * 0.45);
+      // Bit 512 denotes an explicit quantity from the silent-water tool.
+      float waterAmount = sp.w >= 512.0 ? clamp(sp.y, 0.0, 1.0) : 1.0;
+      f.y = max(f.y, (1.0 - smoothstep(0.6, 1.25, dn)) * 0.45 * waterAmount);
     } else {
       f.xzw *= 1.0 - cov * sp.z;
       f.y *= 1.0 - cov * 0.5;
@@ -688,7 +690,9 @@ void main() {
   float pale = smoothstep(edge, edge + 0.15, bloom);
   float arcs = exp(-abs(bloom - edge) / 0.022);
   arcs *= 0.3 + 0.7 * smoothstep(-0.22, 0.24, fbm(P * 29.0 + warp + seed, 2));
-  float sediment = fbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3);
+  // Fine mineral islands follow the same warped wash, not independent speckle.
+  float sediment = fbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3)
+                 + 0.16 * gnoise(P * 137.0 + warp * 6.0 + seed.yx);
   float pockets = smoothstep(0.015, 0.28, sediment);
   float activity = smoothstep(-0.06, 0.18, fbm(P * 3.3 + warp * 0.5 + seed + 47.5, 3));
   o = vec4(smoothstep(-0.32, 0.32, wash), clamp(arcs * activity, 0.0, 1.0), pale * activity, pockets * (0.3 + 0.7 * activity));
@@ -915,7 +919,8 @@ void main() {
         concentration *= 1.0 - material * alpha.b * 0.52;
         concentration += material * alpha.g * (0.025 + (0.20+0.16*crisp) * min(pv, 0.5));
         // Full-resolution paper tooth catches the selected mineral deposits.
-        concentration *= 1.0+crisp*uTexture*alpha.a*0.58*clamp(mineral,-0.7,0.9);
+        float sedimentRelief = alpha.a * (0.48 + 0.28 * alpha.r);
+        concentration *= 1.0+crisp*uTexture*sedimentRelief*0.82*clamp(mineral,-0.7,0.9);
         // Coffee-ring deposit follows the REAL outer pigment boundary. A
         // second, interrupted inner rim suggests receding water, not a contour
         // pasted around every procedural mask. Width is in paper units.

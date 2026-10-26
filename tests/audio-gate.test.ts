@@ -134,6 +134,15 @@ describe('musical studio requires an analyzed source',()=>{
     expect(e.status.hasPigment).toBe(false);
     expect(e.waterAt({x:.5,y:.5})).toBeGreaterThan(.025);
   });
+  it('sends water size and quantity to both the wet guide and the GPU without pigment',()=>{
+    const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.8,.5,.2);e.holdWater();
+    const low=e.waterAt({x:.5,y:.5});
+    const segment=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2])[0];
+    expect(segment.waterAmount).toBe(.2);expect(segment.radius).toBeGreaterThan(90);
+    expect(low).toBeLessThan(.1);expect(low).toBeGreaterThan(.025);
+    e.beginSignature(8);e.wetBrush({x:.5,y:.5},.1,.5,1);e.holdWater();
+    expect(e.waterAt({x:.5,y:.5})).toBeGreaterThan(low*4);expect(e.status.hasPigment).toBe(false);
+  });
   it('commits a quick silent water tap before holding preparation without drying it away',()=>{
     const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.6);e.holdWater();
     const calls=vi.mocked(e.paint.step).mock.calls;

@@ -1,8 +1,8 @@
 export const RITUAL=[
-  {stage:'choose',name:'Les oiseaux',title:'Choisis trois oiseaux qui t’inspirent',hint:'Trois présences, trois couleurs. Écoute-les bientôt se rencontrer sur le papier.'},
+  {stage:'choose',name:'Les oiseaux',title:'Trois plumes sonores qui t’inspirent',hint:'Trois présences, trois couleurs. Écoute-les bientôt se rencontrer sur le papier.'},
   {stage:'water',name:'L’eau',title:'Dépose l’eau du silence sur ta toile',hint:'Effleure le papier pour y déposer de l’eau claire. Aucun chant, aucun pigment. Juste une place pour l’inattendu.'},
-  {stage:'paint',name:'Les chants',title:'Dépose les chants des oiseaux',hint:'Choisis une plume et laisse-la glisser. Le chant devient couleur, l’eau lui donne une matière.'},
-  {stage:'drying',name:'Le soleil',title:'Laisse sécher sous le soleil du silence',hint:'Lève la plume. L’eau se retire, les auréoles se révèlent. Les mots viendront quand le papier sera sec.'},
+  {stage:'paint',name:'Les chants',title:'Dépose les chants des oiseaux',hint:'Touche une zone humide avec une plume, puis lève la main. Le chant entier résonne dans l’eau et fait naître sa tache.'},
+  {stage:'drying',name:'Le soleil',title:'Laisse sécher sous le soleil du silence',hint:'Les chants se taisent. L’eau se retire, les contours se précisent et la matière révèle ses détails. Les mots viendront quand le papier sera sec.'},
   {stage:'finished',name:'Le partage',title:'Partager ton haïkuarelle',hint:'Un titre, trois vers et la trace de tes oiseaux. À offrir, à garder, à laisser voyager.'},
 ] as const;
 export type RitualStage=typeof RITUAL[number]['stage'];
