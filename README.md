@@ -130,3 +130,11 @@ Le titre occupe une bande en haut du papier, les trois vers une bande en bas et 
 Le relief du papier utilisait les dérivées GPU de la valeur du bruit : leur calcul par groupes de 2 × 2 pixels imprimait une structure régulière dans l’éclairage. Le relief utilise maintenant le gradient analytique du bruit, sans ces facettes. Le grain et les octaves des masques de séchage sont filtrés selon la résolution réellement affichée pour éviter les fréquences sous-pixel et le moiré, tout en conservant les détails résolus à l’export.
 
 `python scripts/check-paper-grain.py` compile le vrai shader et contrôle l’absence de relief bloqué sur les quads GPU ainsi que le filtrage du grain trop fin. Il nécessite numpy, Pillow, moderngl et EGL ; les gros plans à contraste amplifié sont écrits dans `/tmp`. Le contrôle échoue sur le shader antérieur au correctif. `scripts/check-plumage-render.py` vérifie ensuite le moteur WebGL réel, les couleurs, la diffusion et le séchage.
+
+### L’eau répond au chant
+
+L’enveloppe d’énergie excite les courants de l’eau déjà déposée, même avec un geste immobile. Le timbre module leur direction, leur étendue et la durée des poussées ; les attaques déclenchent de petites impulsions locales. Une eau abondante répond davantage qu’une zone peu humide. L’excitation retombe progressivement dans les silences, puis la vitesse se dissipe dans le solveur existant.
+
+Les forces sont limitées à trois zones humides et n’ajoutent ni eau ni pigment. Les impulsions ne remplissent pas les flaques. Le transport est limité aux trajets humides continus ; les séparations sèches restent des barrières. Le séchage volontaire arrête toute nouvelle excitation. Les emplacements des gestes d’eau sont prioritaires dans le budget de 16 segments GPU.
+
+`python scripts/check-resonant-water.py` vérifie le vrai solveur WebGL sur un pigment préexistant : le chant le déplace, la même scène silencieuse reste différente, la quantité d’eau ne change pas et le pigment situé sur papier sec reste fixe. Python Playwright, Chromium et le serveur Vite sont nécessaires. `ResonantWater` est une transduction artistique du son en courants, pas une simulation acoustique de l’eau.

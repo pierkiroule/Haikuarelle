@@ -382,7 +382,16 @@ void main() {
     src = d.xy + rel * sqrt(max(1.0 - (d.w - d.z) / max(ds, d.w), 0.0));
   }
 
-  if (uFlowing > 0.5) src -= texture(uVel, src / uSize).xy * uDt;
+  if (uFlowing > 0.5) {
+    vec2 destination=src-texture(uVel,src/uSize).xy*uDt;
+    if(uMaterial>0.5){
+      // Currents carry pigment only through a continuous wet route. Dry paper
+      // and dry cuts between pools remain barriers even while the fluid coasts.
+      float channel=min(fieldAt(src).y,fieldAt(destination).y);
+      for(int j=1;j<=4;j++)channel=min(channel,fieldAt(mix(src,destination,float(j)/5.0)).y);
+      src=mix(src,destination,smoothstep(0.008,0.07,channel));
+    }else src=destination;
+  }
   // Untouched texels are copied exactly (and cheaply); only moved ones are resampled.
   vec4 f = length(src - q) < 0.002 ? texelFetch(uField, ivec2(q), 0) : fieldSharp(src);
 
@@ -433,7 +442,9 @@ void main() {
       f.xzw *= exp(-uDt * (0.45 + 0.50 * clamp(f.y, 0.0, 1.0)) * inkCov);
     }
     // Drops float rather than soak in, so their rings stay crisp.
-    f.y = max(f.y, (inkKind < 0.5 ? 0.3 : 0.80) * inkCov);
+    // Ritual water is supplied only by the explicit water segments. A sound
+    // pulse displaces pigment; it must not refill or enlarge a prepared pool.
+    if(inkKind<0.5||uMaterial<0.5)f.y=max(f.y,(inkKind<0.5?0.3:0.80)*inkCov);
   }
 
   // Brush texture, worked out once per texel the first time a brush comes near.

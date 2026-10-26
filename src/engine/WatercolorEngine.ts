@@ -1,3 +1,4 @@
+import {ResonantWater} from '../birds/ResonantWater';
 import {BIRD_COLOURS} from '../birds/colourPalettes';
 import { PaintEngine, Kind, type Segment, type Drop, type Look } from '../vendor/pigment-drift/paint/engine';
 import { createRng } from '../vendor/pigment-drift/engine/params';
@@ -34,6 +35,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private active=false;
   private performance=false;
   private drying=false;
+  private resonantWater=new ResonantWater(0);
   private pigmentColours:string[]=PLUMAGE_PIGMENTS;
   private voice:{gestures:Gesture[];ink:InkStroke[];analysis:AudioAnalysis;start:number}|null=null;
   private brushVoice:{brush:ResonantBrush;analysis:AudioAnalysis;start:number;clock?:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
@@ -99,7 +101,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
     this.voice=null;this.brushVoice=null;this.stainVoice=null;
     this.waterPending=[];this.waterLast=null;this.waterBlooms=[];this.hasPigment=false;
-    this.drying=false;
+    this.drying=false;this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper=new WetPaper(this.settings.format,this.performance?Infinity:dryingTime(this.settings.wetness));
     this.tick=0;this.accumulator=0;this.last=0;this.queued=[];this.notifyAt=-1;
     this.composition={title:this.audio?'Le papier écoute le silence':'Le papier attend votre son',gestures:[],ink:[],duration:DURATION,seed:this.seed};
@@ -160,7 +162,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   }
   setDrying(enabled:boolean):void{
     if(!this.performance||this.destroyed)return;
-    this.drying=enabled;
+    this.drying=enabled;if(enabled)this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper.retime(this.tick/TICK_RATE,enabled?dryingTime(this.settings.wetness):Infinity);
     this.paint.setLook(this.look());
     this.composition.duration=this.tick/TICK_RATE+this.dryingDuration();
@@ -257,6 +259,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     const feature=this.voice?.analysis.frames[Math.max(0,Math.floor((time-this.voice.start)*TICK_RATE))];
     const audible=!this.performance||!!(feature?.active&&feature.energy>0);
     let brushPoint:Point|null=null,stainPoint:Point|null=null;
+    let waterFeature=feature;
     const appendFrame=(frame:BrushFrame)=>{
       for(const s of frame.segments){
         const a={x:s.a.x*sheet.width*this.paint.k,y:(1-s.a.y)*sheet.height*this.paint.k};
@@ -270,16 +273,33 @@ export class HaikuarelleEngine implements WatercolorEngine {
     if(this.stainVoice){
       const live=this.stainVoice,elapsed=live.clock();
       const f=Number.isFinite(elapsed)&&elapsed>=0&&elapsed<live.analysis.duration?live.analysis.frames[Math.floor(elapsed*TICK_RATE)]:undefined;
+      waterFeature=f;
       const frame=live.stain.step(f,time);appendFrame(frame);stainPoint=frame.point;
       if(elapsed>=live.analysis.duration){this.stainVoice=null;}
     }
     if(this.brushVoice){
       const live=this.brushVoice,elapsed=live.clock?.()??(time-live.start);
       const audioFrame=Number.isFinite(elapsed)&&elapsed>=0&&elapsed<live.analysis.duration?live.analysis.frames[Math.floor(elapsed*TICK_RATE)]:undefined;
+      waterFeature=audioFrame;
       const frame=live.brush.step(audioFrame,time,this.settings);
       for(const s of frame.segments)if(s.water)this.wetPaper.add(s.a,s.b,s.radius,.45,time);
       appendFrame(frame);
       brushPoint=frame.point;this.composition.duration=time+this.dryingDuration();
+    }
+    if(this.performance&&!this.drying&&!this.voice){
+      const response=this.resonantWater.step(waterFeature,time,this.wetPaper);
+      // Preserve slots for fresh hand-placed water, including during a phrase.
+      const forceBudget=Math.max(0,16-segs.length-Math.min(4,this.waterPending.length));
+      for(const c of response.currents.slice(0,forceBudget)){
+        const x=c.point.x*sheet.width*this.paint.k,y=(1-c.point.y)*sheet.height*this.paint.k;
+        // Zero-strength, zero-water force: it cannot paint, wet or lift anything.
+        segs.push({ax:x,ay:y,bx:x,by:y,radius:c.radius*unit*this.paint.k,target:0,strength:0,waterAmount:0,
+          kind:Kind.Water,slot:0,fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:c.coupling});
+      }
+      if(response.pulse){
+        this.waterBlooms=this.waterBlooms.filter(b=>time<b.start+b.duration).slice(-3);
+        this.waterBlooms.push({...response.pulse,start:time});
+      }
     }
     const water=this.waterPending.splice(0,Math.max(0,Math.min(4,16-segs.length)));
     if(water.length)appendFrame({segments:water,ink:[],point:null,feedback:{speed:0,radius:0,splashes:0}});
