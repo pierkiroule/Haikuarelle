@@ -59,6 +59,13 @@ export interface Segment {
   fx: number; fy: number; coupling: number;
 }
 
+/** FIELD_STEP payload: water quantity and pigment load share a channel, but
+ * the no-added-water flag on a paint stroke must never replace its pigment. */
+export function segmentPayload(s:Segment):[number,number,number,number]{
+  return [s.radius,s.kind===Kind.Water?(s.waterAmount??s.target):s.target,s.strength,
+    s.kind+4*s.slot+(s.wetOnly?256:0)+(s.waterAmount!==undefined?512:0)];
+}
+
 /** A drop growing from radius r0 to r1 this frame (field texels). */
 export interface Drop {
   x: number; y: number; r0: number; r1: number;
@@ -392,7 +399,7 @@ export class PaintEngine {
     for (let i = 0; i < n; i++) {
       const s = segs[i];
       this.segBuf.set([s.ax, s.ay, s.bx, s.by], i * 4);
-      this.segPBuf.set([s.radius, s.waterAmount ?? s.target, s.strength, s.kind + 4 * s.slot + (s.wetOnly ? 256 : 0) + (s.waterAmount !== undefined ? 512 : 0)], i * 4);
+      this.segPBuf.set(segmentPayload(s), i * 4);
       this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.coupling], i * 4);
     }
     const nd = Math.min(drops.length, MAX_DROPS);
@@ -444,6 +451,7 @@ export class PaintEngine {
       gl.uniform1f(u.uFlowing, flowing ? 1 : 0);
       gl.uniform1f(u.uBleed, bleed);
       gl.uniform1f(u.uDryKeep, Math.exp(-dt / (this.look.dryingTime ?? (0.7 + 2.2 * bleed))));
+      gl.uniform1f(u.uMaterial, (this.look.detail ?? 0) > 0.5 ? 1 : 0);
       gl.uniform1f(u.uDryFloor, this.look.dryingTime === undefined ? 0.02 : 0);
       gl.uniform2f(u.uSeedOff, this.meta.seed[0], this.meta.seed[1]);
       gl.uniform1f(u.uUnit, this.meta.unit * this.k);

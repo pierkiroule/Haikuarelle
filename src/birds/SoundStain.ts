@@ -7,7 +7,7 @@ import type {Bird} from './catalog';
 import type {BrushFrame,BrushSegment} from './ResonantBrush';
 import {WetPaper,type WetRegion} from './WetPaper';
 import {planSplashes} from './splashes';
-import {plumageSlot,companionSlot} from './plumage';
+
 
 interface Front {point:Point;angle:number;length:number;life:number;weight:number}
 const curvedVein=(a:Point,control:Point,b:Point):Point[]=>Array.from({length:10},(_,i)=>{
@@ -34,9 +34,12 @@ export class SoundStain {
   private regionCursor=0;
   private splashes:BrushSegment[]=[];
   private accents=0;
+  private anchor:Point;
+  private gestures:{a:Point;b:Point}[]=[];
   readonly bloom:Point;
   constructor(readonly bird:Bird,readonly seed:number,readonly origin:Point,private settings:EngineSettings,
     private water:WetPaper,readonly size=.55,readonly layer=0,placedAt=0,private audibleTimes:number[]=[],private opacity=1){
+    this.anchor={...origin};
     this.rng=createRng(seed^0x513ac9);
     this.inkRng=createRng(seed^0x14b3c1);
     const sheet=sheetFor(settings.format),unit=Math.min(sheet.width,sheet.height);
@@ -51,14 +54,21 @@ export class SoundStain {
       const score=water.at(q,placedAt)+this.rng()*.13;
       if(score>best){best=score;this.axis=a;}
     }
-    this.reach=.045+.10*size;
+    this.reach=.08+.18*size;
     this.bloom=this.offset(origin,this.axis+1.3,.017+.02*size);
     this.region=water.region(origin,placedAt,Math.max(12,(audibleTimes.length||60)*3.2),createRng(seed^0x753b1));
     this.splashes=planSplashes(seed,bird.slot,water,this.region,placedAt,settings.format).map(s=>({...s,waterAmount:0,effect:'splash'}));
-    // Carmine is a few peripheral droplets, not a red core subsequently
-    // overwritten by the green wash. At most three, and absent on quiet seeds.
-    if(bird.signature==='ripple')this.splashes=this.splashes.map((drop,i)=>i<3?{...drop,slot:10}:drop);
   }
+  /** Gesture changes the material source while the same full phrase plays. */
+  move(point:Point,time:number,connect=true):void{
+    const p={x:clamp(point.x,.025,.975),y:clamp(point.y,.025,.975)};
+    if(Math.hypot((p.x-this.anchor.x)*this.sx,(p.y-this.anchor.y)*this.sy)<.001)return;
+    this.gestures.push({a:connect?{...this.anchor}:p,b:p});
+    if(this.gestures.length>32)this.gestures.splice(0,this.gestures.length-32);
+    this.anchor=p;this.started=false;this.fronts=[];this.splashes=[];
+    if(this.bird.id==='pie'){this.region=this.water.region(p,time,48,this.rng);this.regionCursor=0;}
+  }
+
   private offset(p:Point,angle:number,distance:number):Point{
     return {x:clamp(p.x+Math.cos(angle)*distance/this.sx,.025,.975),y:clamp(p.y+Math.sin(angle)*distance/this.sy,.025,.975)};
   }
@@ -71,15 +81,22 @@ export class SoundStain {
     // No autonomous pigment in silence or after the sound clock has ended.
     if(!feature?.active||feature.energy<=0||this.opacity<=0)return empty();
     const energy=clamp(feature.energy),attack=clamp(feature.flux),resonance=clamp(this.settings.resonance??.96);
+    // Broad connected marks follow the hand; audio still owns their pigment.
+    for(const gesture of this.gestures.splice(0,3)){
+      const wet=this.water.at(gesture.b,time)>.025;
+      const radius=(.012+.045*this.size)*(.35+1.15*Math.pow(energy,.65));
+      if(this.bird.id==='pie')segments.push({...this.dot(gesture.b,.001+.006*this.rng(),(.3+.5*energy)),wetOnly:false,waterAmount:0,effect:'splash'});
+      else segments.push({...this.dot(gesture.b,radius,(.22+.62*energy)),a:gesture.a,wetOnly:false,waterAmount:0,effect:'wash',coupling:wet?.12:0});
+    }
     // Dry cotton catches a compact, broken deposit. It adds pigment, not an
     // invisible water pool. Nearby prepared water alone can mobilise its edges.
-    if(this.water.at(this.origin,time)<.025){
-      const angle=this.rng()*Math.PI*2,r=(.009+.025*this.size)*Math.sqrt(this.rng());
-      const p=this.offset(this.origin,angle,r);
-      const radius=this.bird.id==='pie'?(.001+.005*this.rng()):(.006+.018*this.size)*(.5+.5*energy);
-      segments.push({...this.dot(p,radius,(.18+.40*energy)*this.opacity),wetOnly:false,waterAmount:0,effect:'splash'});
+    if(this.water.at(this.anchor,time)<.025){
+      const angle=this.rng()*Math.PI*2,r=(.008+.020*this.size)*Math.sqrt(this.rng());
+      const p=this.offset(this.anchor,angle,r);
+      const radius=this.bird.id==='pie'?(.001+.005*this.rng()):(.013+.038*this.size)*(.30+1.05*Math.pow(energy,.7));
+      segments.push({...this.dot(p,radius,(.18+.40*energy)),wetOnly:false,waterAmount:0,effect:'splash'});
       this.tick++;
-      return {segments,ink,point:this.origin,feedback:{speed:energy,radius,splashes:1}};
+      return {segments:segments.map(s=>({...s,load:s.load*clamp(this.opacity)})),ink,point:this.anchor,feedback:{speed:energy,radius,splashes:1}};
     }
     if(this.bird.id==='pie'){
       // Black punctuation visits the wet basin without becoming a drawn line.
@@ -89,47 +106,44 @@ export class SoundStain {
       while(this.regionCursor<target&&segments.length<8){
         const p=this.region.sites[this.regionCursor++].point;
         if(this.water.at(p,time)<.012)continue;
-        segments.push({...this.dot(p,(.0012+.006*Math.pow(this.rng(),2))*(.5+this.size),(.55+.35*energy)*this.opacity),effect:'splash'});
+        segments.push({...this.dot(p,(.0012+.006*Math.pow(this.rng(),2))*(.5+this.size),(.55+.35*energy)),effect:'splash'});
       }
       this.tick++;
-      return {segments,ink,point:segments.length?this.origin:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes:segments.length}};
+      return {segments:segments.map(s=>({...s,load:s.load*clamp(this.opacity)})),ink,point:segments.length?this.anchor:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes:segments.length}};
     }
-    const crow=this.bird.id==='corneille',robin=this.bird.id==='rougegorge';
+    const crow=this.bird.id==='corneille';
     const style=this.bird.signature,soft=style==='velvet',lace=style==='lace',twig=style==='twig',ripple=style==='ripple';
-    const companion=companionSlot(this.bird);
+
     const width=soft?1.27:lace?.70:twig?.73:1;
-    const opening=(1-resonance)*.7+resonance*(.16+energy*1.3);
+    const opening=(1-resonance)*.7+resonance*(.14+Math.pow(energy,.72)*1.65);
     const load=(.18+.72*Math.pow(energy,.75))*Math.max(.65,1-this.layer*.025);
     const freshAttack=attack>.48&&time-this.pulse>.12;
     if(!this.started){
       this.started=true;
       const r=(.021+.047*this.size)*(.65+.35*energy);
-      if(robin)segments.push(this.dot(this.offset(this.origin,this.axis+1.7,r*.4),r*1.35,.16,0));
-      if(companion!==undefined)segments.push(this.dot(this.offset(this.origin,this.axis+1.6,r*1.25),r*(soft?1.15:.85),load*.46,companion));
-      segments.push(this.dot(this.origin,r,load*(crow?1.15:1)));
-      for(let i=0;i<3;i++)this.fronts.push({point:{...this.origin},angle:this.axis+(i===0?0:i===1?1.2:-.75)+(this.rng()-.5)*.45,length:0,life:0,weight:i===0?1:i===1?.7:.46});
+      segments.push(this.dot(this.anchor,r,load*(crow?1.15:1)));
+      for(let i=0;i<3;i++)this.fronts.push({point:{...this.anchor},angle:this.axis+(i===0?0:i===1?1.2:-.75)+(this.rng()-.5)*.45,length:0,life:0,weight:i===0?1:i===1?.7:.46});
     }
     if(freshAttack){
       this.pulse=time;
       // New syllables charge the centre and release a new unequal lobe.
       const a=this.axis+(this.rng()-.5)*3.3;
-      const start=this.offset(this.origin,a,.018+this.rng()*.025);
+      const start=this.offset(this.anchor,a,.018+this.rng()*.025);
       if(this.fronts.length>=4)this.fronts.shift();
       this.fronts.push({point:start,angle:a,length:0,life:0,weight:.55+this.rng()*.35});
       segments.push(this.dot(start,(.012+.025*this.size)*opening,Math.min(.98,load+.1)));
     }
-    // Tiny dark/red punctuation stays rare and is triggered only by audible
-    // attacks. It uses its own bounded budget, never an all-over colour noise.
+    // Sparse punctuation uses the same pigment, preserving the colour plane.
     if((freshAttack||this.tick===0)&&(lace||twig)&&this.accents<1){
-      const p=this.offset(this.origin,this.axis+1.9,.04*(.6+this.size));
-      segments.push(this.dot(p,.0028*(.6+this.size),.4,0));this.accents++;
+      const p=this.offset(this.anchor,this.axis+1.9,.04*(.6+this.size));
+      segments.push(this.dot(p,.0028*(.6+this.size),.4));this.accents++;
     }
     // Alternate two lobes per tick: <= 12 sound segments + 4 user-water segments.
-    let representative:Point=this.origin,splashes=0;
+    let representative:Point=this.anchor,splashes=0;
     for(let j=0;j<2;j++){
       const f=this.fronts[(this.tick*2+j)%this.fronts.length];
       const w=this.water.at(f.point,time);
-      const stride=(this.bird.id==='geai'?.011+.032*energy:twig?.007+.022*energy:lace?.006+.020*energy:soft?.0025+.010*energy:.0035+.015*energy)*(.65+.75*this.size)*(f.weight+.2)*.22;
+      const stride=(this.bird.id==='geai'?.011+.032*energy:twig?.007+.022*energy:lace?.006+.020*energy:soft?.0025+.010*energy:.0035+.015*energy)*(.65+.75*this.size)*(f.weight+.2)*.52;
       const taper=clamp(1-f.length/this.reach);
       if(taper<=0||f.life>80)continue;
       const baseAngle=f.angle+(this.rng()-.5)*(.16+.25*feature.brightness)+(ripple?Math.sin(feature.time*7.5+f.weight*3)*.18:0);
@@ -144,18 +158,14 @@ export class SoundStain {
       if(outside&&f.length>.018){f.life=100;continue;}
       const next=this.offset(f.point,angle,stride*(.3+.7*clamp(w*2.5)));
       const radius=(.016+.06*this.size)*opening*(.28+.72*taper)*f.weight*(.5+.5*clamp(w*3))*(.85+this.rng()*.3)*(this.bird.id==='geai'?.67:width);
-      if(robin&&segments.length<8){
-        const grey=this.offset(next,angle+1.57,radius*.75);
-        segments.push({...this.dot(grey,radius*.9,.035+.11*energy,0),a:this.offset(f.point,angle+1.57,radius*.75),strength:.2});
-      }
       const washLoad=load*(.48+.38*taper)*(crow?.92:1);
-      segments.push({a:f.point,b:next,radius:Math.max(.003,radius),load:Math.min(.95,washLoad),slot:plumageSlot(this.bird,next,this.origin,this.axis,this.sy/this.sx),water:false,strength:.31,wetOnly:true,effect:'wash',coupling:(soft?.08:.12)+.22*energy});
+      segments.push({a:f.point,b:next,radius:Math.max(.003,radius),load:Math.min(.95,washLoad),slot:this.bird.slot,water:false,strength:.31,wetOnly:true,effect:'wash',coupling:(soft?.08:.12)+.22*energy});
       // Fine ink appears as sparse interrupted veins, never as a continuous outline.
-      if((this.settings.ink??.62)>0&&this.tick%14===0&&energy>.2){
+      if((this.settings.ink??.62)>0&&this.tick%30===0&&energy>.2){
         const a=this.offset(f.point,angle+1.3,radius*(this.inkRng()-.5));
         const control=this.offset({x:(a.x+next.x)*.5,y:(a.y+next.y)*.5},angle+1.57,radius*.09*Math.sin(f.life*.7));
         ink.push({points:curvedVein(a,control,next),start:time,duration:1/30,width:(crow?.85:.5)+feature.brightness*.3,
-          opacity:(crow?.4:soft?.10:.22)*(this.settings.ink??.62)*(.5+.5*energy),seed:this.seed+this.tick*3+j,continuous:true});
+          opacity:(crow?.18:soft?.05:.09)*(this.settings.ink??.62)*(.5+.5*energy),seed:this.seed+this.tick*3+j,continuous:true});
       }
       if(freshAttack&&segments.length<9){
         // An attack opens an unequal wet lobe rather than drawing a filament.
@@ -166,10 +176,9 @@ export class SoundStain {
     }
     // Pigment enters locally. Diffusion belongs to the GPU field, rather than
     // remotely painting every site of the connected basin during the sample.
-    const glazes:BrushSegment[]=[];
     const spray=(freshAttack||this.tick%5===0)&&energy>.2?this.splashes.splice(0,2):[];
     splashes+=spray.length;
     this.tick++;this.delivered+=segments.filter(s=>!s.water).length;
-    return {segments:[...glazes,...segments.slice(0,12-glazes.length-spray.length),...spray].map(s=>({...s,load:s.load*clamp(this.opacity)})),ink:ink.map(s=>({...s,opacity:s.opacity*clamp(this.opacity)})),point:this.delivered?representative:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes}};
+    return {segments:[...segments.slice(0,12-spray.length),...spray].map(s=>({...s,load:s.load*clamp(this.opacity)})),ink:ink.map(s=>({...s,opacity:s.opacity*clamp(this.opacity)})),point:this.delivered?representative:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes}};
   }
 }

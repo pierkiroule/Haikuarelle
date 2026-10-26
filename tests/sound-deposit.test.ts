@@ -6,7 +6,7 @@ function setup(water=.45){
   let start:(s:BirdPlayback)=>void=()=>{},end=()=>{},resolve=()=>{},reject:(e:Error)=>void=()=>{};
   const sound={analysis:{frames:[{active:true}]},elapsed:()=>.2} as unknown as BirdPlayback;
   const sounds={stop:vi.fn(),play:vi.fn<BirdAudioBank['play']>((_id,onStart,onEnd)=>{start=onStart;end=onEnd;return new Promise<void>((ok,no)=>{resolve=ok;reject=no;});})};
-  const painter={waterAt:vi.fn(()=>water),startSoundStain:vi.fn(()=>true),stopBird:vi.fn()};
+  const painter={waterAt:vi.fn(()=>water),startSoundStain:vi.fn(()=>true),moveSoundStain:vi.fn(),stopBird:vi.fn()};
   const callbacks={preparing:vi.fn(),started:vi.fn(),stopped:vi.fn(),marked:vi.fn(),error:vi.fn()};
   const deposit=new SoundDeposit(sounds,painter,callbacks);
   return {deposit,sounds,painter,callbacks,start:()=>{start(sound);resolve();},end:()=>end(),fail:()=>reject(new Error('Lecture bloquée'))};
@@ -41,4 +41,13 @@ describe('a deposited phrase has its own lifetime',()=>{
     const t=setup(),pending=t.deposit.place(bird,point,7,.6,0);t.fail();await pending;
     expect(t.deposit.busy).toBe(false);expect(t.callbacks.error).toHaveBeenCalledWith('Lecture bloquée');
   });
+});
+
+it('moves the source while loading or sounding without replaying or cutting the sample',async()=>{
+  const t=setup(),pending=t.deposit.place(bird,point,7,.6,0),next={x:.7,y:.4};
+  t.deposit.move(next);expect(t.painter.moveSoundStain).not.toHaveBeenCalled();
+  t.start();await pending;expect(t.painter.moveSoundStain).toHaveBeenCalledWith(next,false);
+  t.deposit.move({x:.8,y:.5});expect(t.painter.moveSoundStain).toHaveBeenLastCalledWith({x:.8,y:.5},true);
+  expect(t.sounds.play).toHaveBeenCalledOnce();expect(t.sounds.stop).not.toHaveBeenCalled();
+  t.end();t.painter.moveSoundStain.mockClear();t.deposit.move(point);expect(t.painter.moveSoundStain).not.toHaveBeenCalled();
 });

@@ -162,6 +162,10 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition.duration=start+analysis.duration+this.dryingDuration();
     this.active=true;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();this.request();return true;
   }
+  moveSoundStain(point:Point,connect=true):void{
+    if(!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
+    this.stainVoice?.stain.move(point,this.tick/TICK_RATE,connect);
+  }
   playBird(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0):boolean {
     if(this.destroyed||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
     if(!this.performance)this.beginSignature(this.seed);

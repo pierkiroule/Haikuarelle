@@ -33,12 +33,12 @@ describe('one sample dropped into water creates a finite stain',()=>{
       }
     }
   });
-  it('keeps each bird in its real pigment channel with a grey companion for robin',()=>{
+  it('keeps a single clear pigment per bird',()=>{
     for(const bird of BIRD_PADS){
       const s=new SoundStain(bird,8,{x:.5,y:.5},settings,water());
       const slots=new Set(s.step(note(0),0).segments.filter(s=>!s.water).map(s=>s.slot));
       expect(slots.has(bird.slot)).toBe(true);
-      expect([...slots].every(slot=>slot===bird.slot||(bird.id==='rougegorge'&&slot===0))).toBe(true);
+      expect([...slots]).toEqual([bird.slot]);
     }
   });
   it('opens the wash much more on a strong note than a quiet note',()=>{
@@ -84,7 +84,7 @@ describe('one sample dropped into water creates a finite stain',()=>{
     const segments=times.flatMap((t,i)=>s.step(note(i),t).segments).filter(s=>s.wetOnly&&s.effect!=='splash');
     expect(segments.length).toBeGreaterThan(15);
     expect(Math.min(...segments.map(s=>s.b.x))).toBeGreaterThan(.25);
-    expect(Math.max(...segments.map(s=>s.b.x))).toBeLessThan(.75);
+    expect(Math.max(...segments.map(s=>s.b.x))).toBeLessThan(.8);
     expect(segments.every(s=>s.b.y<.6&&w.at(s.b,0)>.025)).toBe(true);
     expect(s.step(undefined,1).segments).toEqual([]);
   });
@@ -96,4 +96,17 @@ it('leaves visible pigment on dry paper without secretly wetting it',()=>{
   expect(drops.length).toBeGreaterThan(0);
   expect(drops.every(s=>!s.wetOnly&&s.waterAmount===0&&!s.water)).toBe(true);
   expect(w.at({x:.5,y:.5},0)).toBe(0);
+});
+
+it('connects the gesture on dry and wet cotton but never joins separate taps',()=>{
+  for(const w of [new WetPaper('portrait'),water()]){
+    const s=new SoundStain(BIRD_PADS[0],7,{x:.3,y:.5},settings,w);
+    s.move({x:.6,y:.5},0);const f=s.step(note(0),0);
+    expect(f.segments.some(d=>d.a.x===.3&&d.b.x===.6&&d.effect==='wash')).toBe(true);
+    expect(f.segments.length).toBeLessThanOrEqual(12);
+    s.move({x:.8,y:.8},.1,false);const tap=s.step(note(3),.1);
+    expect(tap.segments.every(d=>!(d.a.x===.6&&d.b.x===.8))).toBe(true);
+    expect(tap.segments.some(d=>d.a.x===.8&&d.b.x===.8)).toBe(true);
+    expect(s.step({...note(4),active:false},.14).segments).toEqual([]);
+  }
 });

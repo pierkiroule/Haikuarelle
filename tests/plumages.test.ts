@@ -26,7 +26,7 @@ describe('shared optical pigment field',()=>{
   });
 });
 describe('four plumage grammars',()=>{
-  for(const bird of BIRD_BRUSHES.filter(b=>b.signature))it(`${bird.name}: audible, finite, reproducible and multicoloured`,()=>{
+  for(const bird of BIRD_BRUSHES.filter(b=>b.signature))it(`${bird.name}: audible, finite, reproducible with a clear dominant colour`,()=>{
     const run=(ink=.6)=>{
       const water=new WetPaper('portrait');water.add({x:.18,y:.48},{x:.82,y:.52},.20,.45,0);
       const stain=new SoundStain(bird,934,{x:.5,y:.5},{...settings,ink},water,.7);
@@ -35,7 +35,7 @@ describe('four plumage grammars',()=>{
     };
     const frames=run(),segments=frames.flatMap(f=>f.segments),slots=new Set(segments.map(s=>s.slot));
     expect(run()).toEqual(frames);expect(run(0).map(f=>f.segments)).toEqual(frames.map(f=>f.segments));
-    expect(slots.has(bird.slot)).toBe(true);expect(slots.size).toBeGreaterThan(1);
+    expect(slots.has(bird.slot)).toBe(true);expect(slots.size).toBe(1);
     expect([...slots].every(slot=>bird.plumage!.includes(slot))).toBe(true);
     expect(frames.every(f=>f.segments.length<=12)).toBe(true);
     if(bird.id==='picvert')expect(segments.filter(s=>s.slot===10).length).toBeLessThanOrEqual(3);
