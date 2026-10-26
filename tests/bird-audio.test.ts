@@ -7,13 +7,16 @@ vi.mock('../src/audio/file',()=>({
   openAudio:vi.fn(async()=>({name:'bird.mp3',buffer:{length:16000,sampleRate:16000,numberOfChannels:1,getChannelData:()=>new Float32Array(16000)},duration:1})),
   analyzeExcerpt:vi.fn(async()=>analysis),
 }));
+const param=()=>({value:0,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),exponentialRampToValueAtTime:vi.fn(),cancelScheduledValues:vi.fn()});
+let filter:{type:string;Q:ReturnType<typeof param>;frequency:ReturnType<typeof param>;connect:ReturnType<typeof vi.fn>;disconnect:ReturnType<typeof vi.fn>};
+let gains:{gain:ReturnType<typeof param>;connect:ReturnType<typeof vi.fn>;disconnect:ReturnType<typeof vi.fn>}[];
 let source:{connect:ReturnType<typeof vi.fn>;disconnect:ReturnType<typeof vi.fn>;start:ReturnType<typeof vi.fn>;stop:ReturnType<typeof vi.fn>;onended:null|(()=>void);loop?:boolean;buffer?:AudioBuffer},order:string[],state:string;
 let bank:BirdAudioBank;let clock=0;
 beforeEach(()=>{
-  order=[];state='running';clock=0;
+  order=[];state='running';clock=0;gains=[];filter={type:'',Q:param(),frequency:param(),connect:vi.fn(),disconnect:vi.fn()};
   source={connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(()=>order.push('sound')),stop:vi.fn(),onended:null};
   vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,blob:async()=>new Blob(['audio'])})));
-  vi.stubGlobal('AudioContext',vi.fn(function(){return {get state(){return state;},get currentTime(){return clock;},resume:vi.fn(async()=>{order.push('resume');}),createBufferSource:()=>source,createBuffer:(_n:number,length:number,rate:number)=>({duration:length/rate,copyToChannel:vi.fn()}),createGain:()=>({gain:{value:0},connect:vi.fn(),disconnect:vi.fn()}),destination:{},close:vi.fn(async()=>{})};}));
+  vi.stubGlobal('AudioContext',vi.fn(function(){return {get state(){return state;},get currentTime(){return clock;},resume:vi.fn(async()=>{order.push('resume');}),createBufferSource:()=>source,createBuffer:(_n:number,length:number,rate:number)=>({duration:length/rate,copyToChannel:vi.fn()}),createBiquadFilter:()=>filter,createGain:()=>{const g={gain:param(),connect:vi.fn(),disconnect:vi.fn()};gains.push(g);return g;},destination:{},close:vi.fn(async()=>{})};}));
   bank=new BirdAudioBank();
 });
 afterEach(()=>{bank.destroy();vi.unstubAllGlobals();});
@@ -75,4 +78,23 @@ describe('audible pads gate pigment',()=>{
     try{await bank.play('mesange',()=>bank.stop(),vi.fn(),{loop:true,breath:.28});expect(vi.getTimerCount()).toBe(0);}
     finally{vi.useRealTimers();}
   });
+});
+
+it('immerses the water song with a lowpass and fades in and out without affecting natural playback',async()=>{
+ const ended=vi.fn();let level=()=>-1;
+ await bank.play('mesange',sound=>{level=sound.audibility!;},ended,{immersed:true});
+ expect(source.connect).toHaveBeenCalledWith(filter);expect(filter.type).toBe('lowpass');expect(filter.connect).toHaveBeenCalledWith(gains[0]);
+ expect(filter.frequency.setValueAtTime).toHaveBeenCalledWith(450,0);expect(gains[0].gain.setValueAtTime).toHaveBeenCalledWith(0,0);
+ expect(level()).toBe(0);clock=.3;expect(level()).toBe(1);bank.submerge();bank.submerge();
+ expect(source.stop).toHaveBeenCalledOnce();expect(source.stop.mock.calls[0][0]).toBeCloseTo(.97);
+ expect(filter.frequency.exponentialRampToValueAtTime).toHaveBeenLastCalledWith(350,expect.closeTo(.9));
+ clock=.6;expect(level()).toBeGreaterThan(0);expect(level()).toBeLessThan(1);clock=.99;expect(level()).toBe(0);
+ source.onended!();expect(ended).toHaveBeenCalledOnce();expect(filter.disconnect).toHaveBeenCalled();
+ await bank.play('mesange',vi.fn(),vi.fn());expect(gains[1].gain.value).toBe(.72);expect(source.connect).toHaveBeenLastCalledWith(gains[1]);
+});
+
+it('finishes an immersed release before the original sample ends, avoiding a late click',async()=>{
+ let level=()=>-1;await bank.play('geai',sound=>{level=sound.audibility!;},vi.fn(),{immersed:true});
+ clock=.9;bank.submerge();expect(gains[0].gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(0,1);
+ clock=1;expect(level()).toBe(0);
 });

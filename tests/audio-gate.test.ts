@@ -107,14 +107,14 @@ describe('musical studio requires an analyzed source',()=>{
     const e=open(),marked=vi.fn();e.beginSignature(7);
     e.startBirdBrush(music,BIRDS[0],7,.6,0,()=>.3,marked);
     frame(1);frame(101);
-    for(const call of vi.mocked(e.paint.step).mock.calls)expect(call[2]).toHaveLength(0);
+    for(const call of vi.mocked(e.paint.step).mock.calls)expect(call[2].filter(s=>s.strength>0||s.kind!==1||s.waterAmount!==0)).toHaveLength(0);
     e.moveBrush({x:.3,y:.6},100);e.moveBrush({x:.4,y:.6},130);vi.mocked(e.paint.step).mockClear();frame(201);
     expect(vi.mocked(e.paint.step).mock.calls.some(call=>call[2].length>0)).toBe(true);expect(marked).toHaveBeenCalledOnce();
     expect(e.status.hasPigment).toBe(true);expect(e.status.wetStrokes).toBeGreaterThan(0);
     e.liftBrush();vi.mocked(e.paint.step).mockClear();frame(301);
-    for(const call of vi.mocked(e.paint.step).mock.calls)expect(call[2]).toHaveLength(0);
+    for(const call of vi.mocked(e.paint.step).mock.calls)expect(call[2].filter(s=>s.strength>0||s.kind!==1||s.waterAmount!==0)).toHaveLength(0);
     e.stopBird();e.moveBrush({x:.8,y:.2},400);vi.mocked(e.paint.step).mockClear();frame(401);
-    for(const call of vi.mocked(e.paint.step).mock.calls)expect(call[2]).toHaveLength(0);
+    for(const call of vi.mocked(e.paint.step).mock.calls)expect(call[2].filter(s=>s.strength>0||s.kind!==1||s.waterAmount!==0)).toHaveLength(0);
     expect(e.status.phase).toBe('drying');
     expect(e.composition.duration).toBeGreaterThan(20);
   });
@@ -196,4 +196,26 @@ it('rewetting living paint triggers bounded expanding water backruns, while clea
   expect(backruns.length).toBeGreaterThan(0);expect(backruns.every(d=>d.kind===1&&d.r1>=d.r0)).toBe(true);
   expect(calls.every(c=>c[3].length<=4)).toBe(true);
   expect(backruns.some(d=>d.r1>d.r0)).toBe(true);expect(e.waterAt(p)).toBeGreaterThan(0);
+});
+
+it('the live sound clock excites prepared water without depositing pigment or adding water',()=>{
+  const e=open(),p={x:.5,y:.5};e.beginSignature(7);e.wetBrush(p,.8);e.holdWater();
+  const before=e.waterAt(p),analysis={...music,frames:music.frames.map(f=>({...f,active:true,energy:.8,flux:.1}))};
+  let audioTime=.3;expect(e.startSoundStain(analysis,BIRDS[0],p,7,.6,0,()=>audioTime,undefined,0)).toBe(true);
+  vi.mocked(e.paint.step).mockClear();frame(100);frame(200);
+  const forces=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).filter(s=>s.kind===1&&s.strength===0&&s.waterAmount===0);
+  expect(forces.length).toBeGreaterThan(0);expect(forces.some(s=>Math.hypot(s.fx,s.fy)>0)).toBe(true);
+  expect(e.waterAt(p)).toBe(before);expect(e.status.hasPigment).toBe(false);
+  e.setDrying(true);vi.mocked(e.paint.step).mockClear();audioTime=.4;frame(300);
+  expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).filter(s=>s.kind===1&&s.strength===0)).toEqual([]);
+});
+
+it('plays an immersed water clock through the fluid response without creating pigment marks',()=>{
+ const e=open(),p={x:.5,y:.5};e.beginSignature(8);e.wetBrush(p,.7);e.holdWater();
+ const initial=e.waterAt(p),analysis={...music,frames:music.frames.map(f=>({...f,active:true,energy:.8,flux:.1}))};
+ e.startWaterSong(analysis,()=>.3,()=>.6);vi.mocked(e.paint.step).mockClear();frame(1);frame(101);
+ const segs=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]);
+ expect(segs.some(s=>s.coupling>0&&Math.hypot(s.fx,s.fy)>0)).toBe(true);
+ expect(segs.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0)).toBe(true);
+ expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);e.stopWaterSong();
 });

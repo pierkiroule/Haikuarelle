@@ -43,6 +43,18 @@ export class WetPaper {
     }
     return water;
   }
+  /** Bounded force sites over the water already placed, including separate pools. */
+  resonantSites(time:number):{point:Point;radius:number;amount:number}[]{
+    const sites:{point:Point;radius:number;amount:number}[]=[];
+    for(let i=this.strokes.length-1;i>=0&&sites.length<3;i--){
+      const s=this.strokes[i],amount=s.amount*Math.exp(-Math.max(0,time-s.time)/this.tau);
+      if(amount<.025)continue;
+      const point={x:(s.a.x+s.b.x)/2,y:(s.a.y+s.b.y)/2};
+      if(sites.some(p=>Math.hypot((p.point.x-point.x)*this.sx,(p.point.y-point.y)*this.sy)<Math.min(p.radius,s.radius)*.85))continue;
+      sites.push({point,radius:s.radius,amount});
+    }
+    return sites;
+  }
   /** Snapshot the connected basin, ordered by travel distance from the sample.
    * Rasterization is bounded (about 6k cells), independent of screen resolution.
    * Disconnected pools and dry cuts are excluded before any pigment is scheduled.

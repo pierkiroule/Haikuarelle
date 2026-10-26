@@ -124,3 +124,25 @@ L’eau déposée sur un pigment encore vivant déclenche désormais de petites 
 ### Une feuille composée dès le premier geste
 
 Le titre occupe une bande en haut du papier, les trois vers une bande en bas et « •°○ » signe discrètement le coin inférieur droit. Le canvas et les interactions sont limités au rectangle central : ni l’eau ni les pigments ne peuvent recouvrir les textes. Les lettres restent du texte HTML net et l’export PNG réserve les mêmes zones. La zone centrale conserve ses proportions ; les marges de texte ne déforment pas la peinture.
+
+### Correctif de la trame au séchage
+
+Le relief du papier utilisait les dérivées GPU de la valeur du bruit : leur calcul par groupes de 2 × 2 pixels imprimait une structure régulière dans l’éclairage. Le relief utilise maintenant le gradient analytique du bruit, sans ces facettes. Le grain et les octaves des masques de séchage sont filtrés selon la résolution réellement affichée pour éviter les fréquences sous-pixel et le moiré, tout en conservant les détails résolus à l’export.
+
+`python scripts/check-paper-grain.py` compile le vrai shader et contrôle l’absence de relief bloqué sur les quads GPU ainsi que le filtrage du grain trop fin. Il nécessite numpy, Pillow, moderngl et EGL ; les gros plans à contraste amplifié sont écrits dans `/tmp`. Le contrôle échoue sur le shader antérieur au correctif. `scripts/check-plumage-render.py` vérifie ensuite le moteur WebGL réel, les couleurs, la diffusion et le séchage.
+
+### L’eau répond au chant
+
+L’enveloppe d’énergie excite les courants de l’eau déjà déposée, même avec un geste immobile. Le timbre module leur direction, leur étendue et la durée des poussées ; les attaques déclenchent de petites impulsions locales. Une eau abondante répond davantage qu’une zone peu humide. L’excitation retombe progressivement dans les silences, puis la vitesse se dissipe dans le solveur existant.
+
+Les forces sont limitées à trois zones humides et n’ajoutent ni eau ni pigment. Les impulsions ne remplissent pas les flaques. Le transport est limité aux trajets humides continus ; les séparations sèches restent des barrières. Le séchage volontaire arrête toute nouvelle excitation. Les emplacements des gestes d’eau sont prioritaires dans le budget de 16 segments GPU.
+
+`python scripts/check-resonant-water.py` vérifie le vrai solveur WebGL sur un pigment préexistant : le chant le déplace, la même scène silencieuse reste différente, la quantité d’eau ne change pas et le pigment situé sur papier sec reste fixe. Python Playwright, Chromium et le serveur Vite sont nécessaires. `ResonantWater` est une transduction artistique du son en courants, pas une simulation acoustique de l’eau.
+
+### Le chant immergé de la goutte
+
+Le premier contact d’un geste d’eau joue le chant de l’oiseau à travers un filtre passe-bas : entrée en fondu, aigus étouffés, puis légère émergence pendant le contact. Au relâchement, le volume descend et le filtre se referme sur 650 ms au maximum, en respectant la fin naturelle du sample. Les déplacements du geste ne relancent pas la lecture. Un contact relâché avant le décodage est annulé, sans son retardataire.
+
+La goutte utilise un canal d’analyse dédié au mouvement de l’eau et n’autorise jamais de pigment. Son enveloppe sonore pilote les courants. La plume conserve le chant clair, entier et sans boucle. Une seule source est partagée : si le chant de peinture joue déjà, l’eau le rejoint sans le relancer ; passer à la plume remplace le chant immergé sans superposer les samples. Les interruptions explicites, la fermeture et le masquage de l’onglet libèrent aussi le filtre.
+
+`python scripts/check-immersed-water.py` vérifie le vrai graphe audio dans Chromium aux formats ordinateur et mobile : filtre sur la goutte, diminution du volume et des aigus au relâchement, absence de pigment et chant naturel sur la plume.
