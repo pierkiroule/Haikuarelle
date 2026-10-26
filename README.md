@@ -1,6 +1,6 @@
-# Les 3 plumes de l'Haikuarelle
+# Haïkuarelle des trois oiseaux
 
-Choisir trois plumes parmi huit, peindre avec leurs voix et leurs plumages, puis finaliser l’œuvre. Après le séchage, un titre poétique court apparaît au-dessus de l’aquarelle et un haïku émerge en dessous. Le PNG rassemble ces trois éléments.
+Un rituel poétique en cinq temps : choisir trois oiseaux, déposer l’eau du silence, peindre leurs chants, laisser sécher sous le soleil du silence, puis partager son haïkuarelle. Les mots naissent des couleurs et des formes réellement déposées sur le papier.
 
 React + Vite + TypeScript. Simulation et rendu WebGL2 fondés sur Paint Studio / Pigment Drift (MIT). Sans backend, service payant ni appel à une IA.
 
@@ -23,14 +23,15 @@ npm run build
 npm run preview
 ```
 
-## Peindre
+## Le rituel
 
-1. **Choisir trois oiseaux distincts** parmi les huit brosses. Le compteur et les numéros indiquent votre trio. Cliquer sur un oiseau choisi le retire. Aucun chant ne joue à cette étape.
-2. **Commencer à peindre**. Les trois oiseaux deviennent vos brosses. Maintenir et glisser sur la feuille au doigt, à la souris ou au stylet : eau et pigments se posent ensemble. Un geste lent ouvre le lavis ; un geste vif affine la trace et lance des filaments.
-3. **Finaliser mon œuvre**. Le chant et les nouveaux dépôts s’arrêtent. Le pinceau est suspendu pendant que l’eau achève son séchage naturel. Une progression accompagne ce temps ; **Reprendre le pinceau** permet de continuer.
-4. Quand le papier est sec, **le titre apparaît en haut et le haïku en bas**. Les mots sont composés localement à partir des couleurs réellement présentes, des blancs, des îlots peints et de leur placement. Ils ne changent pas à chaque geste.
-5. **Emporter mon œuvre · PNG** exporte le titre, la peinture complète, le haïku et la dédicace facultative. Reprendre le pinceau masque les mots ; une nouvelle finalisation les régénère.
-6. **Effacer tout** remet à blanc l’eau, les pigments, l’encre et les textes ; conserve les réglages, les trois oiseaux, la dédicace et la graine. **Nouvelle œuvre** invite à choisir un nouveau trio avec une nouvelle graine.
+1. **Choisis trois oiseaux qui t’inspirent.** Trois choix distincts parmi les huit plumes. Aucun chant ne joue pendant la sélection.
+2. **Dépose l’eau du silence sur ta toile.** Maintenir et glisser dépose de l’eau claire dans la simulation, sans son ni pigment. Au clavier, maintenir espace ou Entrée et utiliser les flèches. L’eau est conservée au repos ; « Inviter les chants » devient disponible après le premier dépôt.
+3. **Dépose les chants des oiseaux.** Choisir une plume puis glisser sur le papier. Le chant guide l’énergie, la diffusion et les contours des nouveaux dépôts. Les trois plumes restent fixes ; taille et opacité sont les seuls réglages accessibles.
+4. **Laisse sécher sous le soleil du silence.** « Laisser sécher » coupe le chant et les dépôts. La progression suit le séchage réel, sans minuterie artificielle. Le titre et le haïku apparaissent quand la peinture est sèche. « Reprendre la plume » permet de continuer.
+5. **Partager ton haïkuarelle.** Partager le PNG avec le titre, l’œuvre, les trois vers et la dédicace facultative via le menu natif du navigateur. Si le partage de fichiers n’est pas disponible, l’image est téléchargée. « Garder l’image · PNG » permet toujours de télécharger directement. Annuler le partage ne déclenche pas de téléchargement.
+
+« Effacer tout » conserve le trio et revient à l’eau du silence. « Nouvelle œuvre » recommence le rituel avec une nouvelle graine. La plume animée suit le contact au pixel près ; les animations respectent la préférence de réduction des mouvements.
 
 Un clic sur une des trois brosses ouvre son menu contextuel : taille et opacité sont mémorisées séparément pour chaque oiseau pendant la session. Échap, le bouton de fermeture ou un clic hors du menu le referme. Seules la taille et l’opacité sont proposées : la matière est accordée en interne au chant. Son énergie ouvre le lavis, ses attaques animent les marges humides et son timbre fait varier la diffusion. Les réglages de la plume modifient les nouveaux dépôts, sans altérer les traces existantes.
 

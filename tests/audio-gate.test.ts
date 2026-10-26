@@ -134,6 +134,14 @@ describe('musical studio requires an analyzed source',()=>{
     expect(e.status.hasPigment).toBe(false);
     expect(e.waterAt({x:.5,y:.5})).toBeGreaterThan(.025);
   });
+  it('commits a quick silent water tap before holding preparation without drying it away',()=>{
+    const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.6);e.holdWater();
+    const calls=vi.mocked(e.paint.step).mock.calls;
+    expect(calls.flatMap(c=>c[2]).some(s=>s.kind===1)).toBe(true);
+    expect(calls.flatMap(c=>c[2]).every(s=>s.kind===1)).toBe(true);
+    expect(e.status.hasPigment).toBe(false);expect(e.status.paused).toBe(true);
+    expect(callbacks.size).toBe(0);expect(e.waterAt({x:.5,y:.5})).toBeGreaterThan(.025);
+  });
   it('deposits automatically from a wet spot only during audible sample time and then only dries',()=>{
     const e=open(),marked=vi.fn();let audioTime=.3;e.beginSignature(9);
     e.wetBrush({x:.5,y:.5},.9);e.liftWaterBrush();
