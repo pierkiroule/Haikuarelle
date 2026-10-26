@@ -123,9 +123,8 @@ describe('musical studio requires an analyzed source',()=>{
     e.moveBrush({x:.4,y:.5},0);e.moveBrush({x:.5,y:.5},30);frame(1);frame(101);
     for(const call of vi.mocked(e.paint.step).mock.calls)expect(call[2]).toHaveLength(0);
   });
-  it('allows explicit clear water without sound, but a sample cannot pigment dry paper',()=>{
+  it('allows explicit clear water without sound',()=>{
     const e=open();e.beginSignature(8);
-    expect(e.startSoundStain(music,BIRDS[0],{x:.5,y:.5},8)).toBe(false);
     e.wetBrush({x:.4,y:.5},.7);e.wetBrush({x:.6,y:.5},.7);e.liftWaterBrush();
     frame(1);frame(101);
     const calls=vi.mocked(e.paint.step).mock.calls;
@@ -165,4 +164,16 @@ describe('musical studio requires an analyzed source',()=>{
     expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).some(s=>s.kind===0)).toBe(false);
     expect(e.status.phase).toBe('drying');expect(e.composition.duration).toBeGreaterThan(20);
   });
+});
+
+it('preserves water through successive sound clocks and dries only in the ritual drying stage',async()=>{
+  const e=open(),p={x:.5,y:.5};e.beginSignature(8);e.wetBrush(p,.7);e.holdWater();
+  const initial=e.waterAt(p);
+  expect(e.startSoundStain(music,BIRDS[0],p,8)).toBe(true);await e.finish();e.stopBird();
+  expect(e.waterAt(p)).toBeCloseTo(initial);
+  expect(e.startSoundStain(music,BIRDS[1],{x:.1,y:.1},9)).toBe(true);await e.finish();e.stopBird();
+  expect(e.waterAt(p)).toBeCloseTo(initial);
+  e.setDrying(true);await e.finish();expect(e.waterAt(p)).toBeLessThan(initial*.005);
+  const remaining=e.waterAt(p);e.setDrying(false);e.resume();await e.finish();
+  expect(e.waterAt(p)).toBeCloseTo(remaining);
 });

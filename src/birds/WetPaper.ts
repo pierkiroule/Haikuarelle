@@ -19,6 +19,7 @@ export class WetPaper {
     const sheet=sheetFor(format),unit=Math.min(sheet.width,sheet.height);
     this.sx=sheet.width/unit;this.sy=sheet.height/unit;
   }
+  hold(time:number):void{this.retime(time,Infinity);}
   retime(time:number,tau:number):void{
     this.strokes=this.strokes.map(s=>({...s,amount:s.amount*Math.exp(-Math.max(0,time-s.time)/this.tau),time}));
     this.tau=tau;

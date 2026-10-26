@@ -16,8 +16,8 @@ const curvedVein=(a:Point,control:Point,b:Point):Point[]=>Array.from({length:10}
 /** A finite sound-powered splash from a fixed origin. No user path is required.
  * RMS opens the body; attacks split the wet fronts and throw satellite drops;
  * spectral brightness controls the fine ink and the capillary branching. The
- * pre-wetted paper attracts fronts; dry margins arrest the wash. The GPU then
- * transports, mixes and dries the actual pigment after the sample has ended.
+ * pre-wetted paper attracts fronts; dry cotton holds compact deposits. The GPU
+ * exchanges pigment locally; evaporation starts only in the ritual drying stage.
  */
 export class SoundStain {
   private rng:()=>number;
@@ -51,10 +51,10 @@ export class SoundStain {
       const score=water.at(q,placedAt)+this.rng()*.13;
       if(score>best){best=score;this.axis=a;}
     }
-    this.reach=.14+.40*size;
+    this.reach=.045+.10*size;
     this.bloom=this.offset(origin,this.axis+1.3,.017+.02*size);
     this.region=water.region(origin,placedAt,Math.max(12,(audibleTimes.length||60)*3.2),createRng(seed^0x753b1));
-    this.splashes=planSplashes(seed,bird.slot,water,this.region,placedAt,settings.format);
+    this.splashes=planSplashes(seed,bird.slot,water,this.region,placedAt,settings.format).map(s=>({...s,waterAmount:0,effect:'splash'}));
     // Carmine is a few peripheral droplets, not a red core subsequently
     // overwritten by the green wash. At most three, and absent on quiet seeds.
     if(bird.signature==='ripple')this.splashes=this.splashes.map((drop,i)=>i<3?{...drop,slot:10}:drop);
@@ -69,8 +69,18 @@ export class SoundStain {
     const segments:BrushSegment[]=[],ink:InkStroke[]=[];
     const empty=()=>({segments,ink,point:null,feedback:{speed:0,radius:0,splashes:0}});
     // No autonomous pigment in silence or after the sound clock has ended.
-    if(!feature?.active||feature.energy<=0||this.opacity<=0||!this.region.sites.length)return empty();
+    if(!feature?.active||feature.energy<=0||this.opacity<=0)return empty();
     const energy=clamp(feature.energy),attack=clamp(feature.flux),resonance=clamp(this.settings.resonance??.96);
+    // Dry cotton catches a compact, broken deposit. It adds pigment, not an
+    // invisible water pool. Nearby prepared water alone can mobilise its edges.
+    if(this.water.at(this.origin,time)<.025){
+      const angle=this.rng()*Math.PI*2,r=(.009+.025*this.size)*Math.sqrt(this.rng());
+      const p=this.offset(this.origin,angle,r);
+      const radius=this.bird.id==='pie'?(.001+.005*this.rng()):(.006+.018*this.size)*(.5+.5*energy);
+      segments.push({...this.dot(p,radius,(.18+.40*energy)*this.opacity),wetOnly:false,waterAmount:0,effect:'splash'});
+      this.tick++;
+      return {segments,ink,point:this.origin,feedback:{speed:energy,radius,splashes:1}};
+    }
     if(this.bird.id==='pie'){
       // Black punctuation visits the wet basin without becoming a drawn line.
       let progress=clamp((feature.time+1/30)/2);
@@ -119,7 +129,7 @@ export class SoundStain {
     for(let j=0;j<2;j++){
       const f=this.fronts[(this.tick*2+j)%this.fronts.length];
       const w=this.water.at(f.point,time);
-      const stride=(this.bird.id==='geai'?.011+.032*energy:twig?.007+.022*energy:lace?.006+.020*energy:soft?.0025+.010*energy:.0035+.015*energy)*(.65+.75*this.size)*(f.weight+.2);
+      const stride=(this.bird.id==='geai'?.011+.032*energy:twig?.007+.022*energy:lace?.006+.020*energy:soft?.0025+.010*energy:.0035+.015*energy)*(.65+.75*this.size)*(f.weight+.2)*.22;
       const taper=clamp(1-f.length/this.reach);
       if(taper<=0||f.life>80)continue;
       const baseAngle=f.angle+(this.rng()-.5)*(.16+.25*feature.brightness)+(ripple?Math.sin(feature.time*7.5+f.weight*3)*.18:0);
@@ -154,24 +164,9 @@ export class SoundStain {
       }
       f.point=next;f.angle=angle;f.length+=stride;f.life++;representative=next;
     }
-    // An advancing pale wash visits the ENTIRE connected water basin. Travel
-    // order follows wet geodesics, not distance through the dry paper. These are
-    // real, audio-gated pigment segments; GPU advection continues after the voice.
-    let progress=clamp((feature.time+1/30)/2);
-    if(this.audibleTimes.length){
-      let lo=0,hi=this.audibleTimes.length;
-      while(lo<hi){const mid=(lo+hi)>>1;if(this.audibleTimes[mid]<=feature.time+1e-5)lo=mid+1;else hi=mid;}
-      progress=lo/this.audibleTimes.length;
-    }
-    // Complete the broad wet route before the final syllables, leaving room
-    // for sparse audible frames and a detailed tail rather than an unvisited end.
-    const target=Math.ceil(this.region.sites.length*clamp(progress/.82)),glazes:BrushSegment[]=[];
-    while(this.regionCursor<target&&glazes.length<6){
-      const site=this.region.sites[this.regionCursor++];
-      if(this.water.at(site.point,time)<.012)continue;
-      glazes.push({a:site.from,b:site.point,radius:this.region.radius,load:(.115+.23*Math.sqrt(energy))*Math.max(.65,1-this.layer*.025),
-        slot:plumageSlot(this.bird,site.point,this.origin,this.axis,this.sy/this.sx),water:false,wetOnly:true,strength:.28,coupling:.16+.14*energy});
-    }
+    // Pigment enters locally. Diffusion belongs to the GPU field, rather than
+    // remotely painting every site of the connected basin during the sample.
+    const glazes:BrushSegment[]=[];
     const spray=(freshAttack||this.tick%5===0)&&energy>.2?this.splashes.splice(0,2):[];
     splashes+=spray.length;
     this.tick++;this.delivered+=segments.filter(s=>!s.water).length;

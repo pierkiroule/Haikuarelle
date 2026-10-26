@@ -26,8 +26,8 @@ npm run preview
 ## Le rituel
 
 1. **Trois plumes sonores qui t’inspirent.** Trois choix distincts parmi les huit plumes. Sélectionner une plume joue un aperçu de son chant, sans pigment ; changer de choix remplace cet aperçu. Le passage à l’eau coupe l’aperçu pour retrouver le silence.
-2. **Dépose l’eau du silence sur ta toile.** Maintenir et glisser dépose de l’eau claire dans la simulation, sans son ni pigment. Au clavier, maintenir espace ou Entrée et utiliser les flèches. Le panneau « Réglages de l’eau » propose une taille de geste et une quantité d’eau, transmise au champ humide réel. L’eau est conservée au repos ; « Inviter les chants » devient disponible après le premier dépôt.
-3. **Dépose les chants des oiseaux.** Toucher une zone humide avec une plume puis lever la main. Chaque dépôt joue le sample entier une seule fois, sans boucle ; le mouvement ne dessine plus de trait. Le chant guide la migration et la dilution du pigment dans toute la nappe d’eau connectée, sans traverser ses séparations sèches. Un nouveau dépôt attend la fin du chant précédent. Les trois plumes restent fixes ; taille et opacité sont les seuls réglages accessibles.
+2. **Dépose l’eau du silence sur ta toile.** Maintenir et glisser dépose de l’eau claire dans la simulation, sans son ni pigment. Au clavier, maintenir espace ou Entrée et utiliser les flèches. Le panneau « Réglages de l’eau » propose une taille de geste et une quantité d’eau, transmise au champ humide réel. L’eau reste présente pendant la préparation et tous les chants, jusqu’à l’étape explicite de séchage ; « Inviter les chants » devient disponible après le premier dépôt.
+3. **Dépose les chants des oiseaux.** Toucher le papier sec ou humide avec une plume puis lever la main. Chaque dépôt joue le sample entier une seule fois, sans boucle ; le mouvement ne dessine plus de trait. Le chant dépose le pigment localement : une empreinte compacte sur le sec, un lavis aux bords mobiles dans l’eau. Le champ GPU échange localement le pigment entre cellules humides, sans remplissage automatique de toute la nappe ni ajout de pigment par diffusion. Les réserves sèches arrêtent ces échanges. Un nouveau dépôt attend la fin du chant précédent. Les trois plumes restent fixes ; taille et opacité sont les seuls réglages accessibles.
 4. **Laisse sécher sous le soleil du silence.** « Laisser sécher » devient disponible après la fin du chant. La progression suit le séchage réel, sans minuterie artificielle. Le titre et le haïku apparaissent quand la peinture est sèche. « Reprendre la plume » permet de continuer.
 5. **Partager ton haïkuarelle.** Partager le PNG avec le titre, l’œuvre, les trois vers et la dédicace facultative via le menu natif du navigateur. Si le partage de fichiers n’est pas disponible, l’image est téléchargée. « Garder l’image · PNG » permet toujours de télécharger directement. Annuler le partage ne déclenche pas de téléchargement.
 
@@ -90,7 +90,7 @@ Comparaisons sur le même champ de pigment, gros plan 4K et vérifications : [la
 - `src/birds/WetPaper.ts` : guide borné de l’eau et évaporation.
 - `src/birds/SoundDeposit.ts` : un contact place un sample entier ; refus du papier sec et des dépôts simultanés.
 - `src/birds/DirectBrush.ts`, `ResonantBrush.ts`, `sonicFilament.ts` : ancien geste continu conservé dans l’API.
-- `src/birds/SoundStain.ts` : tache sonore, propagation géodésique dans le bassin humide, lavis et sédiments.
+- `src/birds/SoundStain.ts` : tache sonore locale, dépôts secs ou humides, lavis et sédiments.
 - `src/birds/SoundImprint.ts` : enveloppe et attaques extraites du vrai signal.
 - `src/birds/BirdAudioBank.ts` : cache des enregistrements et horloge réelle.
 - `src/engine/WatercolorEngine.ts` : façade du PaintEngine réel et simulation fixe 30 Hz.

@@ -76,16 +76,24 @@ describe('one sample dropped into water creates a finite stain',()=>{
     expect(Math.max(...drops.map(s=>s.radius))).toBeGreaterThan(Math.min(...drops.map(s=>s.radius))*2);
     expect(frames.every(f=>f.segments.length<=12&&f.ink.length===0)).toBe(true);
   });
-  it('takes a short sample to both ends of a connected pool without entering another pool',()=>{
+  it('keeps short deposits local rather than filling the entire pool',()=>{
     const w=new WetPaper('portrait');w.add({x:.15,y:.45},{x:.85,y:.45},.075,.45,0);
     w.add({x:.75,y:.8},{x:.85,y:.8},.08,.45,0);
     const times=Array.from({length:18},(_,i)=>i/30);
     const s=new SoundStain(BIRD_PADS[2],19,{x:.5,y:.45},settings,w,.6,0,0,times);
-    const segments=times.flatMap((t,i)=>s.step(note(i),t).segments).filter(s=>s.wetOnly);
+    const segments=times.flatMap((t,i)=>s.step(note(i),t).segments).filter(s=>s.wetOnly&&s.effect!=='splash');
     expect(segments.length).toBeGreaterThan(15);
-    expect(Math.min(...segments.map(s=>s.b.x))).toBeLessThan(.2);
-    expect(Math.max(...segments.map(s=>s.b.x))).toBeGreaterThan(.8);
+    expect(Math.min(...segments.map(s=>s.b.x))).toBeGreaterThan(.25);
+    expect(Math.max(...segments.map(s=>s.b.x))).toBeLessThan(.75);
     expect(segments.every(s=>s.b.y<.6&&w.at(s.b,0)>.025)).toBe(true);
     expect(s.step(undefined,1).segments).toEqual([]);
   });
+});
+
+it('leaves visible pigment on dry paper without secretly wetting it',()=>{
+  const w=new WetPaper('portrait'),stain=new SoundStain(BIRD_PADS[0],7,{x:.5,y:.5},settings,w);
+  const drops=stain.step(note(0),0).segments;
+  expect(drops.length).toBeGreaterThan(0);
+  expect(drops.every(s=>!s.wetOnly&&s.waterAmount===0&&!s.water)).toBe(true);
+  expect(w.at({x:.5,y:.5},0)).toBe(0);
 });

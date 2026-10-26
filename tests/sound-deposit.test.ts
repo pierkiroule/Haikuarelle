@@ -29,9 +29,9 @@ describe('a deposited phrase has its own lifetime',()=>{
     expect(t.callbacks.error).toHaveBeenCalled();t.end();
     const next=t.deposit.place(bird,point,8,.6,1);t.start();await next;expect(t.sounds.play).toHaveBeenCalledTimes(2);
   });
-  it('rejects dry paper before playing any sound',async()=>{
-    const t=setup(0);await t.deposit.place(bird,point,7,.6,0);
-    expect(t.sounds.play).not.toHaveBeenCalled();expect(t.deposit.busy).toBe(false);expect(t.callbacks.error).toHaveBeenCalled();
+  it('accepts dry paper and plays the complete sample',async()=>{
+    const t=setup(0),pending=t.deposit.place(bird,point,7,.6,0);t.start();await pending;
+    expect(t.sounds.play).toHaveBeenCalledOnce();expect(t.deposit.busy).toBe(true);expect(t.callbacks.error).not.toHaveBeenCalled();
   });
   it('does not resurrect a deposit cancelled while its sample decodes',async()=>{
     const t=setup(),pending=t.deposit.place(bird,point,7,.6,0);t.deposit.cancel();t.start();await pending;

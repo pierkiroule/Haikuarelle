@@ -385,22 +385,23 @@ void main() {
   // Untouched texels are copied exactly (and cheaply); only moved ones are resampled.
   vec4 f = length(src - q) < 0.002 ? texelFetch(uField, ivec2(q), 0) : fieldSharp(src);
 
-  // Wet paper: pigment creeps outward into the wet, unevenly along the paper fibers.
-  // The creep only ever adds, so a stroke's core keeps its color while its edge
-  // softens into nested washes; a little true diffusion smooths the result. Creeping
-  // pigment takes on the mix of inks it came from.
-  if (f.y > 0.002) {
-    float r = 1.0 + 1.6 * uBleed;
-    vec4 n = (fieldAt(src + vec2(r, 0.0)) + fieldAt(src - vec2(r, 0.0))
-            + fieldAt(src + vec2(0.0, r)) + fieldAt(src - vec2(0.0, r))) * 0.25;
-    vec4 lap = n - f;
-    float fiber = 0.35 + 1.0 * smoothstep(-0.5, 0.6, gnoise(q * 0.07 + uSeedOff) + 0.45 * gnoise(q * 0.23 + 5.0));
-    float wet = clamp(f.y * 1.4, 0.0, 1.0) * fiber;
-    float creep = wet * uBleed * 0.3 * max(lap.x, 0.0);
-    f.x += wet * 0.05 * lap.x + creep;
-    f.zw += wet * 0.05 * lap.zw + creep * n.zw / max(n.x, 1e-4);
-    f.y += lap.y * 0.22;
+  // Prepared water is held on the cotton until explicit evaporation. Moving
+  // pigment must not resample (inflate or erode) this stationary moisture mask.
+  if (uDryKeep >= 1.0) f.y = texelFetch(uField, ivec2(q), 0).y;
+
+  // Symmetric wet-edge flux: exchange pigment, never manufacture it at fronts.
+  // Permeability vanishes across dry reserves; rough fibres slow the flow.
+  vec4 center = f;
+  vec3 exchange = vec3(0.0);
+  for (int axis = 0; axis < 4; axis++) {
+    vec2 offset = axis == 0 ? vec2(1,0) : axis == 1 ? vec2(-1,0) : axis == 2 ? vec2(0,1) : vec2(0,-1);
+    vec4 neighbor = fieldAt(src + offset);
+    float moisture = min(center.y, neighbor.y);
+    float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
+    float mobility = smoothstep(0.008,0.35,moisture) * fibre;
+    exchange += (neighbor.xzw - center.xzw) * mobility;
   }
+  f.xzw += exchange * min(0.20, uDt * (0.8 + 2.4 * uBleed));
 
   if (inkCov > 0.0) {
     if (inkKind < 0.5) {
@@ -473,7 +474,7 @@ void main() {
         f.x += add;
         f.zw += inkOf(slot, add);
       }
-      if (!wetOnly) f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
+      if (!wetOnly && sp.w < 512.0) f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
     } else if (kind < 1.5) {
       // Bit 512 denotes an explicit quantity from the silent-water tool.
       float waterAmount = sp.w >= 512.0 ? clamp(sp.y, 0.0, 1.0) : 1.0;

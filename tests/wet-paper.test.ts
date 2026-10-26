@@ -36,3 +36,11 @@ describe('explicit water preparation',()=>{
     expect(w.region({x:.15,y:.3},40).sites).toEqual([]);
   });
 });
+
+it('holds prepared water for multiple songs and evaporates only on request',()=>{
+  const w=new WetPaper('portrait',Infinity),p={x:.5,y:.5};w.add(p,p,.07,.45,0);
+  expect(w.at(p,600)).toBeCloseTo(.45);
+  expect(w.region(p,600).sites.length).toBeGreaterThan(0);
+  w.retime(600,6);expect(w.at(p,606)).toBeCloseTo(.45/Math.E);
+  const remaining=w.at(p,606);w.hold(606);expect(w.at(p,1200)).toBeCloseTo(remaining);
+});

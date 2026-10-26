@@ -13,6 +13,7 @@ vi.mock('../src/engine/WatercolorEngine',()=>({HaikuarelleEngine:class{
   beginSignature(seed:number){this.status={...this.status,seed,phase:'idle',ticks:0,hasPigment:false};this.change({...this.status});}
   update(){}setBrushSize(){}destroy(){}pause(){}liftWaterBrush(){}holdWater(){}
   wetBrush=vi.fn();
+  setDrying=vi.fn();
   resume=vi.fn(()=>{this.status.paused=false;this.change({...this.status});});
   mark=()=>{this.status={...this.status,hasPigment:true,phase:'wash',ticks:50};this.change({...this.status});};
   complete=()=>{this.status={...this.status,hasPigment:true,phase:'complete',progress:1,ticks:600};this.change({...this.status});};
