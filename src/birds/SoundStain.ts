@@ -34,6 +34,7 @@ export class SoundStain {
   private regionCursor=0;
   private splashes:BrushSegment[]=[];
   private accents=0;
+  private plumageAccents=0;
   private anchor:Point;
   private gestures:{a:Point;b:Point}[]=[];
   readonly bloom:Point;
@@ -75,6 +76,29 @@ export class SoundStain {
   private dot(p:Point,radius:number,load:number,slot=this.bird.slot):BrushSegment{
     return {a:p,b:p,radius,load,slot,water:false,strength:.38,coupling:0,wetOnly:true};
   }
+  /** Adjacent plumage zones follow the SAME geometry and fixed brush axis.
+   * Secondary colours are not randomly layered into the primary wash. */
+  private colours(segments:BrushSegment[]):BrushSegment[]{
+    const palette=this.bird.plumage??[this.bird.slot],out:BrushSegment[]=[];
+    for(const s of segments){
+      if(out.length>=12)break;
+      // Dry deposits use the same plumage as wet washes; Pie stays black.
+      const colourBody=palette.length>1&&s.slot===this.bird.slot&&s.effect!=='splash';
+      out.push({...s,radius:colourBody?s.radius*.78:s.radius,load:s.load*clamp(this.opacity)});
+      if(!colourBody)continue;
+      for(let i=1;i<Math.min(3,palette.length)&&out.length<12;i++){
+        const dark=palette[i]===0||palette[i]===10;
+        if(dark&&this.plumageAccents>=3)continue;
+        const direction=i===1?1:-1,distance=s.radius*(i===1?.82:.78);
+        const a=this.offset(s.a,this.axis+direction*Math.PI/2,distance);
+        const b=s.a===s.b?a:this.offset(s.b,this.axis+direction*Math.PI/2,distance);
+        out.push({...s,a,b,slot:palette[i],radius:s.radius*(dark?.23:i===1?.61:.46),
+          load:s.load*(dark?.24:i===1?.82:.60)*clamp(this.opacity)});
+        if(dark)this.plumageAccents++;
+      }
+    }
+    return out;
+  }
   step(feature:AudioFrame|undefined,time:number):BrushFrame{
     const segments:BrushSegment[]=[],ink:InkStroke[]=[];
     const empty=()=>({segments,ink,point:null,feedback:{speed:0,radius:0,splashes:0}});
@@ -94,9 +118,9 @@ export class SoundStain {
       const angle=this.rng()*Math.PI*2,r=(.008+.020*this.size)*Math.sqrt(this.rng());
       const p=this.offset(this.anchor,angle,r);
       const radius=this.bird.id==='pie'?(.001+.005*this.rng()):(.013+.038*this.size)*(.30+1.05*Math.pow(energy,.7));
-      segments.push({...this.dot(p,radius,(.18+.40*energy)),wetOnly:false,waterAmount:0,effect:'splash'});
+      segments.push({...this.dot(p,radius,(.18+.40*energy)),wetOnly:false,waterAmount:0,effect:this.bird.id==='pie'?'splash':'wash'});
       this.tick++;
-      return {segments:segments.map(s=>({...s,load:s.load*clamp(this.opacity)})),ink,point:this.anchor,feedback:{speed:energy,radius,splashes:1}};
+      return {segments:this.colours(segments),ink,point:this.anchor,feedback:{speed:energy,radius,splashes:1}};
     }
     if(this.bird.id==='pie'){
       // Black punctuation visits the wet basin without becoming a drawn line.
@@ -109,7 +133,7 @@ export class SoundStain {
         segments.push({...this.dot(p,(.0012+.006*Math.pow(this.rng(),2))*(.5+this.size),(.55+.35*energy)),effect:'splash'});
       }
       this.tick++;
-      return {segments:segments.map(s=>({...s,load:s.load*clamp(this.opacity)})),ink,point:segments.length?this.anchor:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes:segments.length}};
+      return {segments:this.colours(segments),ink,point:segments.length?this.anchor:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes:segments.length}};
     }
     const crow=this.bird.id==='corneille';
     const style=this.bird.signature,soft=style==='velvet',lace=style==='lace',twig=style==='twig',ripple=style==='ripple';
@@ -179,6 +203,6 @@ export class SoundStain {
     const spray=(freshAttack||this.tick%5===0)&&energy>.2?this.splashes.splice(0,2):[];
     splashes+=spray.length;
     this.tick++;this.delivered+=segments.filter(s=>!s.water).length;
-    return {segments:[...segments.slice(0,12-spray.length),...spray].map(s=>({...s,load:s.load*clamp(this.opacity)})),ink:ink.map(s=>({...s,opacity:s.opacity*clamp(this.opacity)})),point:this.delivered?representative:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes}};
+    return {segments:this.colours([...segments.slice(0,12-spray.length),...spray]),ink:ink.map(s=>({...s,opacity:s.opacity*clamp(this.opacity)})),point:this.delivered?representative:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes}};
   }
 }

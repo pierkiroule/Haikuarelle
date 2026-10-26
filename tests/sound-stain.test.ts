@@ -33,12 +33,12 @@ describe('one sample dropped into water creates a finite stain',()=>{
       }
     }
   });
-  it('keeps a single clear pigment per bird',()=>{
+  it('keeps each brush within its own plumage',()=>{
     for(const bird of BIRD_PADS){
       const s=new SoundStain(bird,8,{x:.5,y:.5},settings,water());
       const slots=new Set(s.step(note(0),0).segments.filter(s=>!s.water).map(s=>s.slot));
       expect(slots.has(bird.slot)).toBe(true);
-      expect([...slots]).toEqual([bird.slot]);
+      expect([...slots].every(slot=>(bird.plumage??[bird.slot]).includes(slot))).toBe(true);
     }
   });
   it('opens the wash much more on a strong note than a quiet note',()=>{

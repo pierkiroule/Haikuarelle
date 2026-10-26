@@ -395,14 +395,19 @@ void main() {
   // decorative outline. Mobility fades as water evaporates, leaving the rim.
   vec4 center = f;
   vec3 exchange = vec3(0.0);
-  float radius = uMaterial > 0.5 ? 1.0 + floor(3.0 * uBleed) : 1.0;
+  // Adjacent cells and diagonal exchange keep ONE connected, isotropic film.
+  // Integer long strides used to isolate parity grids and reveal square pixels.
   float centerAffinity = 1.0 + uMaterial * 2.6 *
     (1.0-smoothstep(0.025,0.23,center.y)) * smoothstep(0.006,0.035,center.y);
-  for (int axis = 0; axis < 4; axis++) {
-    vec2 offset = radius * (axis == 0 ? vec2(1,0) : axis == 1 ? vec2(-1,0) : axis == 2 ? vec2(0,1) : vec2(0,-1));
+  for (int axis = 0; axis < 8; axis++) {
+    vec2 offset = axis == 0 ? vec2(1,0) : axis == 1 ? vec2(-1,0) : axis == 2 ? vec2(0,1) : axis == 3 ? vec2(0,-1)
+      : axis == 4 ? vec2(1,1) : axis == 5 ? vec2(-1,1) : axis == 6 ? vec2(1,-1) : vec2(-1,-1);
+    float weight = axis < 4 ? 1.0 : 0.5;
     vec4 neighbor = fieldAt(src + offset);
     // Sample the route too: a wider kernel cannot jump a dry slit.
     float moisture = min(min(center.y, neighbor.y),fieldAt(src + offset * 0.5).y);
+    // A diagonal cannot leak across two pools touching only at a dry corner.
+    if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
     float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
     float mobility = smoothstep(0.006,0.22,moisture) * fibre;
     float neighborAffinity = 1.0 + uMaterial * 2.6 *
@@ -414,9 +419,9 @@ void main() {
       mobility *= mix(1.0,0.004,smoothstep(0.015,0.08,difference));
     }
     exchange += (neighbor.xzw * centerAffinity - center.xzw * neighborAffinity)
-      * mobility / max(centerAffinity,neighborAffinity);
+      * weight * mobility / max(centerAffinity,neighborAffinity);
   }
-  f.xzw += exchange * min(0.21, uDt * mix(0.8 + 2.4*uBleed,4.0 + 3.0*uBleed,uMaterial));
+  f.xzw += exchange * min(0.155, uDt * mix(0.8 + 2.4*uBleed,4.0 + 3.0*uBleed,uMaterial));
 
   if (inkCov > 0.0) {
     if (inkKind < 0.5) {
@@ -781,24 +786,17 @@ float hash12(vec2 p) {
 
 float hAt(vec2 t) { return heightOf(texture(uField, t / uFieldSize).x); }
 
-// Reconstruct the wet field sharply when exporting above its native resolution.
-// Clamping to the four adjacent texels prevents ringing and invented pigment.
+// Positive cubic reconstruction when magnified: continuous rounded support,
+// no nearest-cell clamp terraces, negative ringing or invented pigment peaks.
 vec4 pigmentField(vec2 p) {
   if (uDetail < 0.5 || min(uMap.x, uMap.y) >= 0.95) return texture(uField, p / uFieldSize);
-  vec2 pos = p - 0.5, cell = floor(pos), f = pos - cell;
-  vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f));
-  vec2 w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
-  vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f));
-  vec2 w3 = f * f * (-0.5 + 0.5 * f), w12 = w1 + w2;
-  vec2 t0 = (cell - 0.5) / uFieldSize, t3 = (cell + 2.5) / uFieldSize;
-  vec2 t12 = (cell + 0.5 + w2 / w12) / uFieldSize;
-  vec4 r = (texture(uField,vec2(t0.x,t0.y))*w0.x+texture(uField,vec2(t12.x,t0.y))*w12.x+texture(uField,vec2(t3.x,t0.y))*w3.x)*w0.y
-    +(texture(uField,vec2(t0.x,t12.y))*w0.x+texture(uField,vec2(t12.x,t12.y))*w12.x+texture(uField,vec2(t3.x,t12.y))*w3.x)*w12.y
-    +(texture(uField,vec2(t0.x,t3.y))*w0.x+texture(uField,vec2(t12.x,t3.y))*w12.x+texture(uField,vec2(t3.x,t3.y))*w3.x)*w3.y;
-  ivec2 base=ivec2(cell),limit=ivec2(uFieldSize)-1;
-  vec4 a=texelFetch(uField,clamp(base,ivec2(0),limit),0),b=texelFetch(uField,clamp(base+ivec2(1,0),ivec2(0),limit),0);
-  vec4 c=texelFetch(uField,clamp(base+ivec2(0,1),ivec2(0),limit),0),d=texelFetch(uField,clamp(base+ivec2(1,1),ivec2(0),limit),0);
-  return clamp(r,min(min(a,b),min(c,d)),max(max(a,b),max(c,d)));
+  vec2 cell=floor(p-0.5),f=fract(p-0.5),v=1.0-f;
+  vec2 w0=v*v*v/6.0,w1=(3.0*f*f*f-6.0*f*f+4.0)/6.0;
+  vec2 w2=(-3.0*f*f*f+3.0*f*f+3.0*f+1.0)/6.0,w3=f*f*f/6.0;
+  vec2 g0=w0+w1,g1=w2+w3;
+  vec2 a=(cell-0.5+w1/g0)/uFieldSize,b=(cell+1.5+w3/g1)/uFieldSize;
+  return texture(uField,a)*g0.x*g0.y + texture(uField,vec2(b.x,a.y))*g1.x*g0.y
+    +texture(uField,vec2(a.x,b.y))*g0.x*g1.y + texture(uField,b)*g1.x*g1.y;
 }
 
 void main() {
