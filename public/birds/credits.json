@@ -187,13 +187,22 @@
   },
   {
     "id": "pie",
-    "source": "/birds/credits.html#pie",
-    "author": "Haïkuarelle",
+    "species": "Pica pica",
+    "recording_type": "field-recording",
+    "source": "https://freesound.org/people/naturenotesuk/sounds/555096/",
+    "author": "naturenotesuk",
     "license": "CC0-1.0",
-    "duration": 2.4,
-    "bytes": 39331,
-    "sha256": "433bd25e22d3fca28727777d204e1950366e3534adcd23e4ba4ccb4481dee984",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "license_copy": "/birds/licenses/pie-CC0-1.0.txt",
+    "source_copy_url": "https://raw.githubusercontent.com/Wh1teDuke/WilhelmSFX/ec4875a35d265b5431e3ba81fef6cc0ca0281bfc/Samples/555096__naturenotesuk__eurasian-magpie-calling.wav",
+    "source_copy_license_url": "https://raw.githubusercontent.com/Wh1teDuke/WilhelmSFX/ec4875a35d265b5431e3ba81fef6cc0ca0281bfc/SampleLicenses/CC0%201.0%20Universal.txt",
+    "source_copy_sha256": "55690f88bcec4670f37d62bcae6c3c6505215e2821eefe3f64e8a16620032c5c",
+    "source_copy_duration": 0.853063,
+    "excerpt_start": 0,
+    "duration": 0.853063,
+    "bytes": 14897,
+    "sha256": "d4f997983fe454bef0b8c7edceb106077e384bcd739a7ac47d21d6133ac6f6db",
     "pad_active": true,
-    "modifications": "Création sonore synthétique originale : rythme percussif inspiré de la pie. Aucun enregistrement animal. Génération PCM déterministe, mono 44,1 kHz, MP3 128 kbit/s."
+    "modifications": "Copie publique d’un extrait du cri réel « Eurasian magpie calling » de naturenotesuk (Freesound 555096), distribuée par WilhelmSFX sous CC0. Extrait conservé entier, sans boucle, répétition ni changement de hauteur/vitesse. Conversion stéréo 48 kHz vers mono 44,1 kHz, gain fixe +5 dB, fondus 5/15 ms, MP3 128 kbit/s. Aucun son synthétique."
   }
 ]

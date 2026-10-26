@@ -241,7 +241,7 @@ export function BirdStudio(){
               <div className="brush-context-heading"><strong>{bird.name}</strong><button aria-label="Fermer les réglages de la plume" onClick={()=>{setBrushMenu(null);studio.current?.querySelector<HTMLButtonElement>(`[aria-controls="brush-settings-${bird.id}"]`)?.focus();}}><Glyph name="close"/></button></div>
               <label><span>Taille <output>{Math.round(brush*100)} %</output></span><input aria-label={`Taille de la plume ${bird.name}`} type="range" min="0" max="100" value={brush*100} onChange={e=>setBrush(Number(e.target.value)/100)}/></label>
               <label><span>Opacité <output>{Math.round(opacity*100)} %</output></span><input aria-label={`Opacité de la plume ${bird.name}`} type="range" min="0" max="100" value={opacity*100} onChange={e=>setOpacity(Number(e.target.value)/100)}/></label>
-              {bird.id==='pie'&&<small>Gouttelettes noires · rythme synthétique</small>}
+              {bird.id==='pie'&&<small>Gouttelettes noires · cri réel de pie</small>}
             </section>}
           </div>)}</div>
           <div className="bird-live" role="status" aria-live="polite"><span className={playing?'bird-live-dot active':'bird-live-dot'}/><span>{liveText}</span>{busy&&<button onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/></button>}{canPaint&&!busy&&status.hasPigment&&status.phase!=='complete'&&<button className="drying-pause" onClick={()=>status.paused?engine.current?.resume():engine.current?.pause()} aria-label={status.paused?'Reprendre la diffusion':'Mettre la diffusion en pause'}>{status.paused?'Reprendre':'Pause'}</button>}</div>

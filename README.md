@@ -35,7 +35,7 @@ npm run preview
 
 Un clic sur une des trois brosses ouvre son menu contextuel : taille et opacité sont mémorisées séparément pour chaque oiseau pendant la session. Échap, le bouton de fermeture ou un clic hors du menu le referme. Seules la taille et l’opacité sont proposées : la matière est accordée en interne au chant. Son énergie ouvre le lavis, ses attaques animent les marges humides et son timbre fait varier la diffusion. Les réglages de la plume modifient les nouveaux dépôts, sans altérer les traces existantes.
 
-Les attaques ouvrent des lobes humides irréguliers plutôt que des filaments. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Son rythme sonore local est synthétique et ne représente pas un enregistrement animal.
+Les attaques ouvrent des lobes humides irréguliers plutôt que des filaments. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Elle utilise un cri réel de Pie bavarde (*Pica pica*) enregistré par naturenotesuk (Freesound 555096, copie publique CC0 conservée localement). Cet extrait bref de 0,853 s est joué entier, sans répétition artificielle.
 
 Le trio reste fixe pendant les dépôts. Avant le premier geste, **Changer mes oiseaux** permet de revenir au choix. Le parcours complet et sa vérification sont dans [Trois oiseaux, une œuvre](docs/TROIS-OISEAUX-UNE-OEUVRE.md).
 
@@ -50,7 +50,7 @@ Choisir une brosse ne joue rien. Aucun pigment n’est créé avant le démarrag
 | Bouvreuil | Rose pivoine, gris perle et ardoise, lavis de velours. |
 | Sittelle | Gris bleuté, ocre roux, ramures et accents fins. |
 | Pic vert | Vert mousse, jaune lichen, vagues et rares points carmin. |
-| Pie | Projections de petites gouttelettes noires de tailles variées ; rythme synthétique original. |
+| Pie | Projections de petites gouttelettes noires de tailles variées ; cri réel de Pie bavarde, naturenotesuk, CC0. |
 
 Chants réels intégrés localement : trois sous CC0, quatre sous CC BY-SA 3.0/4.0 avec leurs attributions et conditions. Sources et adaptations dans `public/birds/credits.html` et `credits.json`. Aucun appel distant pendant la peinture, aucune clé externe. La mésange provient de Xeno-canto XC125793, via son dépôt libre sur Wikimedia Commons.
 
