@@ -234,3 +234,16 @@ it('breath drives wet pigment without depositing or refilling and stops acceptin
  e.setDrying(true);e.blow(p,220,.6);e.blow({x:.51,y:.5},250,.6);frame(301);
  expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2])).toEqual([]);
 });
+
+ it.each([.1,.57,.9])('finishes voluntary drying in 12 simulation seconds at wetness %s, with fully settled moisture',async wetness=>{
+  const e=open();e.update({wetness});e.beginSignature(8);
+  const point={x:.5,y:.5};e.wetBrush(point,.7);e.holdWater();
+  const initial=e.waterAt(point),start=e.status.ticks/30;
+  e.setDrying(true);
+  expect(e.composition.duration-start).toBeCloseTo(12);
+  const look=vi.mocked(e.paint.setLook).mock.calls.at(-1)![0];
+  expect(look.dryingTime).toBeCloseTo(12/5.6);
+  await e.finish();
+  expect(e.status.phase).toBe('complete');expect(e.status.ticks/30-start).toBeCloseTo(12);
+  expect(e.waterAt(point)).toBeLessThan(initial*.005);
+ });

@@ -154,3 +154,5 @@ L’atelier propose Eau, Plume et Souffle. En mode Souffle, glisser sur une zone
 Cette version conserve les flaques préparées sur le coton : le souffle déplace la matière dans les chemins humides, sans déplacer leur masque d’humidité ni augmenter leur quantité d’eau. Le papier sec reste une barrière. Le séchage, l’effacement et les interruptions retirent les forces en attente. Le repère de direction est décoratif et absent de l’export.
 
 Contrôle GPU optionnel : `PYTHONPATH=/chemin/vers/playwright python3 scripts/check-living-breath.py`, après `npm run dev`. Il compare une tache avec et sans souffle et vérifie le déplacement de pigment, la stabilité des zones sèches et l’absence d’ajout d’eau.
+
+Le séchage volontaire dure désormais 12 secondes de simulation, avec une constante d’évaporation de `12 / 5.6` partagée entre le guide d’eau et le GPU. Cela conserve une humidité résiduelle inférieure à 0,5 % à la fin ; l’eau reste disponible tant que cette étape n’est pas lancée. Les appareils qui ne soutiennent pas la cadence de simulation peuvent prendre davantage de temps réel.
