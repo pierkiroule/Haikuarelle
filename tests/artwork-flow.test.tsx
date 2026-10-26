@@ -4,6 +4,7 @@ import {createRoot,type Root} from 'react-dom/client';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {EngineStatus,Point} from '../src/engine/types';
 import type {Bird} from '../src/birds/catalog';
+import {BIRD_POETICS} from '../src/birds/ornithopoetry';
 import {BirdStudio} from '../src/App';
 interface TestPainter {status:EngineStatus;complete:()=>void;mark:()=>void;wetBrush:ReturnType<typeof vi.fn>;resume:ReturnType<typeof vi.fn>;capturePreview:ReturnType<typeof vi.fn>}
 const h=vi.hoisted(()=>({painter:null as TestPainter|null,starts:0,moves:0,stops:0,finish:()=>{},previews:[] as string[],previewStops:0,previewEnd:()=>{}}));
@@ -89,7 +90,7 @@ describe('choose three birds, paint, finalize',()=>{
     expect(host.querySelectorAll('.ritual-progress li')).toHaveLength(5);
     for(const bird of ['Pie','Geai','Corneille'])await click(button(`Choisir la plume ${bird}`));
     await click(host.querySelector('.trio-start button')!);
-    expect(host.querySelector('#ritual-title')!.textContent).toBe('Dépose l’eau du silence sur ta toile');
+    expect(host.querySelector('#ritual-title')!.textContent).toBe('Dépose l’eau résonante sur ta toile');
     expect(host.querySelector('.water-ready')!.hasAttribute('disabled')).toBe(false);
     expect(host.querySelector('.bird-pads')).toBeNull();
     const painter=h.painter;
@@ -109,8 +110,12 @@ describe('choose three birds, paint, finalize',()=>{
     await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
     expect(h.starts).toBe(starts);
     await act(async()=>h.painter!.complete());
-    expect(host.querySelector('.flow-finished')).not.toBeNull();expect(host.querySelector('.share-art')).not.toBeNull();expect(host.querySelector('.download-art')).not.toBeNull();expect(host.querySelector('.artwork-title h2')!.textContent).toMatch(/azur|ciel/);
-    expect(host.querySelectorAll('.artwork-poem .poem-lines>span')).toHaveLength(3);
+    expect(host.querySelector('.flow-finished')).not.toBeNull();expect(host.querySelector('.share-art')).not.toBeNull();expect(host.querySelector('.download-art')).not.toBeNull();expect(['geai','bouvreuil','mesange'].flatMap(id=>BIRD_POETICS[id as keyof typeof BIRD_POETICS].titles)).toContain(host.querySelector('.artwork-title h2')!.textContent);
+    const lines=[...host.querySelectorAll('.artwork-poem .poem-lines>span')];
+    expect(lines).toHaveLength(3);
+    const trio=['geai','bouvreuil','mesange'] as const;
+    const voices=lines.map((line,i)=>trio.find(id=>BIRD_POETICS[id].lines[i].includes(line.textContent!)));
+    expect(voices.every(Boolean)).toBe(true);expect(new Set(voices).size).toBe(3);
     const children=[...host.querySelector('.bird-stage')!.children];
     expect(children.findIndex(el=>el.classList.contains('artwork-title'))).toBeLessThan(children.findIndex(el=>el.classList.contains('bird-paper')));
     expect(children.findIndex(el=>el.classList.contains('artwork-poem'))).toBeGreaterThan(children.findIndex(el=>el.classList.contains('bird-paper')));

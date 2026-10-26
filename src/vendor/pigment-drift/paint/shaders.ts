@@ -607,10 +607,7 @@ uniform vec2 uSeedOff;
  * Paper: everything that never moves, baked once per canvas size.
  *   r: edge grit   g: granulation   b: brush relief light   a: grain & cockling
  */
-export const PAPER = HEAD + NOISE + MAPPING + /* glsl */ `
-uniform float uPx;
-out vec4 o;
-
+const COTTON_NOISE = /* glsl */ `
 // V3: triangular simplex support, rather than a visible square fiber lattice.
 float paperCorner(vec2 lattice, vec2 delta) {
   float falloff = max(0.5 - dot(delta, delta), 0.0);
@@ -628,6 +625,17 @@ float paperNoise(vec2 p) {
   vec2 c = a - 1.0 + 2.0 * G2;
   return 70.0 * (paperCorner(cell, a) + paperCorner(cell + corner, b) + paperCorner(cell + 1.0, c));
 }
+float cottonFbm(vec2 p,int octaves) {
+  float sum=0.0,weight=0.5;
+  for(int i=0;i<6;i++){if(i>=octaves)break;sum+=weight*paperNoise(p);p=ROT*p*2.03+vec2(13.7,8.1);weight*=0.5;}
+  return sum;
+}
+`;
+
+export const PAPER = HEAD + NOISE + MAPPING + COTTON_NOISE + /* glsl */ `
+uniform float uPx;
+out vec4 o;
+
 void main() {
   vec2 S = (gl_FragCoord.xy * uMap.xy + uMap.zw) / uUnit;
   vec2 P = S * 900.0;
@@ -702,23 +710,23 @@ void main() {
  * marks have a common structure rather than being unrelated uniform noise.
  * Grain/fibres still come from the full-resolution paper texture.
  */
-export const DRYING_MASKS = HEAD + NOISE + MAPPING + /* glsl */ `
+export const DRYING_MASKS = HEAD + NOISE + MAPPING + COTTON_NOISE + /* glsl */ `
 out vec4 o;
 void main() {
   vec2 P = (gl_FragCoord.xy * uMap.xy + uMap.zw) / uUnit;
   vec2 seed = uSeedOff * 0.73;
-  vec2 warp = vec2(fbm(P * 3.4 + seed, 3), fbm(ROT * P * 4.1 + seed.yx + 13.2, 3));
-  float wash = fbm(P * 4.8 + warp * 1.9 + seed, 4);
-  float bloom = fbm(P * 15.0 + warp * 3.2 + seed.yx + 9.7, 4);
-  float edge = 0.065 + 0.035 * gnoise(P * 5.3 + seed + 19.0);
+  vec2 warp = vec2(cottonFbm(P * 3.4 + seed, 3), cottonFbm(ROT * P * 4.1 + seed.yx + 13.2, 3));
+  float wash = cottonFbm(P * 4.8 + warp * 1.9 + seed, 4);
+  float bloom = cottonFbm(P * 15.0 + warp * 3.2 + seed.yx + 9.7, 4);
+  float edge = 0.065 + 0.035 * paperNoise(P * 5.3 + seed + 19.0);
   float pale = smoothstep(edge, edge + 0.15, bloom);
   float arcs = exp(-abs(bloom - edge) / 0.022);
-  arcs *= 0.3 + 0.7 * smoothstep(-0.22, 0.24, fbm(P * 29.0 + warp + seed, 2));
+  arcs *= 0.3 + 0.7 * smoothstep(-0.22, 0.24, cottonFbm(P * 29.0 + warp + seed, 2));
   // Fine mineral islands follow the same warped wash, not independent speckle.
-  float sediment = fbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3)
-                 + 0.16 * gnoise(P * 137.0 + warp * 6.0 + seed.yx);
+  float sediment = cottonFbm(P * 43.0 + warp * 4.7 + seed + 37.1, 3)
+                 + 0.16 * paperNoise(P * 137.0 + warp * 6.0 + seed.yx);
   float pockets = smoothstep(0.015, 0.28, sediment);
-  float activity = smoothstep(-0.06, 0.18, fbm(P * 3.3 + warp * 0.5 + seed + 47.5, 3));
+  float activity = smoothstep(-0.06, 0.18, cottonFbm(P * 3.3 + warp * 0.5 + seed + 47.5, 3));
   o = vec4(smoothstep(-0.32, 0.32, wash), clamp(arcs * activity, 0.0, 1.0), pale * activity, pockets * (0.3 + 0.7 * activity));
 }
 `;
@@ -784,7 +792,8 @@ float hash12(vec2 p) {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-float hAt(vec2 t) { return heightOf(texture(uField, t / uFieldSize).x); }
+vec4 pigmentField(vec2 p);
+float hAt(vec2 t) { return heightOf(pigmentField(t).x); }
 
 // Positive cubic reconstruction when magnified: continuous rounded support,
 // no nearest-cell clamp terraces, negative ringing or invented pigment peaks.
@@ -828,10 +837,10 @@ void main() {
     float body = clamp(pv * (1.25 - pv) * 3.2, 0.0, 1.0);
     float H = heightOf(pv) + (uRidge * 0.1 * turb + uFeather * 0.035 * rag) * body;
     // How fast the height changes, per sheet unit (the generator's is about 1.8).
-    vec4 neighbours = vec4(texture(uField,(at+vec2(1.0,0.0))/uFieldSize).r,
-      texture(uField,(at-vec2(1.0,0.0))/uFieldSize).r,
-      texture(uField,(at+vec2(0.0,1.0))/uFieldSize).r,
-      texture(uField,(at-vec2(0.0,1.0))/uFieldSize).r);
+    vec4 neighbours = vec4(pigmentField(at+vec2(1.0,0.0)).r,
+      pigmentField(at-vec2(1.0,0.0)).r,
+      pigmentField(at+vec2(0.0,1.0)).r,
+      pigmentField(at-vec2(0.0,1.0)).r);
     vec2 g = vec2(heightOf(neighbours.x)-heightOf(neighbours.y),
                   heightOf(neighbours.z)-heightOf(neighbours.w)) * 0.5 * uUnit;
     float slope = length(g);
@@ -914,7 +923,7 @@ void main() {
       // samples; bounded local contrast cannot add paint outside the field.
       float crisp = uDrySharpness * uDryingDetail * (1.0-smoothstep(0.015,0.28,wet));
       float localDetail = pv-dot(neighbours,vec4(0.25));
-      concentration += crisp*1.3*clamp(localDetail,-0.12*pv,0.30*pv);
+      concentration += crisp*0.28*clamp(localDetail,-0.12*pv,0.30*pv);
       // A narrow broken tide mark, derived from the actual concentration slope.
       float rim = exp(-abs(pv - 0.065) / 0.018) * dry * min(slope * 0.12, 0.85);
       concentration += rim * (0.045 + 0.035 * edgeN) * uEdge;
@@ -937,7 +946,7 @@ void main() {
         concentration += material * alpha.g * (0.012 + (0.065+0.055*crisp) * min(pv, 0.5));
         // Full-resolution paper tooth catches the selected mineral deposits.
         float sedimentRelief = alpha.a * (0.48 + 0.28 * alpha.r);
-        concentration *= 1.0+crisp*uTexture*sedimentRelief*0.82*clamp(mineral,-0.7,0.9);
+        concentration *= 1.0+crisp*uTexture*sedimentRelief*0.24*clamp(mineral,-0.7,0.9);
         // Coffee-ring deposit follows the REAL outer pigment boundary. A
         // second, interrupted inner rim suggests receding water, not a contour
         // pasted around every procedural mask. Width is in paper units.
@@ -975,7 +984,7 @@ void main() {
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.
   col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * tooth * gran;
-  col *= 1.0 + 0.35 * uTexture * mix(0.06, 0.65, pig) * light;
+  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(0.06,0.65,pig) * light;
   col *= 1.0 + 0.65 * uTexture * grain;
 
   vec3 outc = toSrgb(col) + (hash12(frag) - 0.5) / 255.0;
