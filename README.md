@@ -1,6 +1,6 @@
-# HAÏKUARELLE •° — V11.1 · Une feuille aux proportions stables
+# Les 3 plumes de l'Haikuarelle
 
-Choisir trois oiseaux parmi huit, peindre avec leurs voix et leurs plumages, puis finaliser l’œuvre. Après le séchage, un titre poétique court apparaît au-dessus de l’aquarelle et un haïku émerge en dessous. Le PNG rassemble ces trois éléments.
+Choisir trois plumes parmi huit, peindre avec leurs voix et leurs plumages, puis finaliser l’œuvre. Après le séchage, un titre poétique court apparaît au-dessus de l’aquarelle et un haïku émerge en dessous. Le PNG rassemble ces trois éléments.
 
 React + Vite + TypeScript. Simulation et rendu WebGL2 fondés sur Paint Studio / Pigment Drift (MIT). Sans backend, service payant ni appel à une IA.
 
@@ -32,7 +32,7 @@ npm run preview
 5. **Emporter mon œuvre · PNG** exporte le titre, la peinture complète, le haïku et la dédicace facultative. Reprendre le pinceau masque les mots ; une nouvelle finalisation les régénère.
 6. **Effacer tout** remet à blanc l’eau, les pigments, l’encre et les textes ; conserve les réglages, les trois oiseaux, la dédicace et la graine. **Nouvelle œuvre** invite à choisir un nouveau trio avec une nouvelle graine.
 
-Un clic sur une des trois brosses ouvre son menu contextuel : taille et opacité sont mémorisées séparément pour chaque oiseau pendant la session. Échap, le bouton de fermeture ou un clic hors du menu le referme. Les réglages modifient les nouveaux dépôts, sans altérer les traces existantes.
+Un clic sur une des trois brosses ouvre son menu contextuel : taille et opacité sont mémorisées séparément pour chaque oiseau pendant la session. Échap, le bouton de fermeture ou un clic hors du menu le referme. Seules la taille et l’opacité sont proposées : la matière est accordée en interne au chant. Son énergie ouvre le lavis, ses attaques animent les marges humides et son timbre fait varier la diffusion. Les réglages de la plume modifient les nouveaux dépôts, sans altérer les traces existantes.
 
 Les filaments sont plus courts et réservés aux attaques fortes espacées d’au moins 0,85 s. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Son rythme sonore local est synthétique et ne représente pas un enregistrement animal.
 

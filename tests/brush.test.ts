@@ -130,6 +130,18 @@ describe('gesture and live audio create the brush together',()=>{
     const b=new ResonantBrush(BIRD_PADS[2],72,settings,.7);b.move({x:.4,y:.5},0);
     expect(b.step({...sound,flux:.7},1,settings).segments.some(s=>s.effect==='filament')).toBe(false);
   });
+  it('transduces the audible timbre and attacks into wet margins without adding independent animation',()=>{
+    const draw=(brightness:number,flux=.1,resonance=1)=>{
+      const b=new ResonantBrush(BIRD_PADS[2],42,settings,.6);
+      b.move({x:.4,y:.5},0);b.move({x:.42,y:.5},70);
+      return b.step({...sound,brightness,flux},0,{...settings,resonance}).segments.find(s=>s.water)!;
+    };
+    const dark=draw(.1),bright=draw(.9),attack=draw(.9,.75);
+    expect(dark.radius).toBeGreaterThan(bright.radius);
+    expect(dark.load).toBeGreaterThan(bright.load);
+    expect(attack.radius).toBeGreaterThan(bright.radius);
+    expect(draw(.1,.1,0)).toEqual(draw(.9,.1,0));
+  });
   it('maps the pointer accurately and rejects excursions outside the paper',()=>{
     const rect={left:20,top:40,width:300,height:600};
     expect(paperPoint(170,340,rect)).toEqual({x:.5,y:.5});

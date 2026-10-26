@@ -13,7 +13,7 @@ describe('finished artwork PNG',()=>{
     expect(ctx.drawImage).toHaveBeenCalledWith(image,0,369);
     const calls=ctx.fillText.mock.calls;expect(calls[0][0]).toBe('Souffle d’azur');expect(calls[0][2]).toBeLessThan(369);
     expect(calls.slice(1,4).map(c=>c[0])).toEqual(verses);expect(calls.slice(1).every(c=>c[2]>4096+369)).toBe(true);
-    expect(calls[4][0]).toContain('Pour Pier');expect(image.close).toHaveBeenCalledOnce();
+    expect(calls[4][0]).toContain('Pour Pier');expect(calls[4][0]).toContain("Les 3 plumes de l'Haikuarelle");expect(image.close).toHaveBeenCalledOnce();
   });
   it('releases the bitmap if encoding fails',async()=>{
     const image={width:100,height:160,close:vi.fn()};

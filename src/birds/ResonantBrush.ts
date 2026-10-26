@@ -116,7 +116,13 @@ export class ResonantBrush{
       const style=this.bird.signature,wide=style==='velvet'?1.25:style==='lace'?.78:style==='twig'?.83:1;
       const radius=brushRadius(sample.speed,this.size,energy,sample.pressure)*opening*(.87+this.rng()*.26)*(crow?.82:wide);
       const load=((1-resonance)*(.27+.44*energy)+resonance*(.10+.76*Math.pow(energy,.72)+.12*feature.flux))*light;
-      segments.push({a:from,b:sample.point,radius:radius*(1.22-.12*quick),load:(crow?.22:.32)+.12*settings.wetness,slot:0,water:true,strength:.19,coupling:.014});
+      // The voice controls the wet margin as well as the pigment core.
+      // Darker timbres open broad, soft washes; brighter notes hold a finer
+      // edge. Audible attacks briefly spread fresh water into backruns.
+      const timbre=clamp(feature.brightness);
+      const wetVoice=clamp(.18+.42*energy+.24*(1-timbre)+.16*clamp(feature.flux));
+      const wetResponse=(1-resonance)*.5+resonance*wetVoice;
+      segments.push({a:from,b:sample.point,radius:radius*(1.08+.34*wetResponse-.10*quick),load:(crow?.20:.28)+.12*settings.wetness+.08*wetResponse,slot:0,water:true,strength:.19,coupling:.010+.012*wetResponse});
       const companion=robin?0:companionSlot(this.bird);
       if(companion!==undefined){
         const a=physical(from),b=physical(sample.point),length=Math.hypot(b.x-a.x,b.y-a.y);

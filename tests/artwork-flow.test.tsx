@@ -31,7 +31,7 @@ let root:Root,host:HTMLDivElement;
 const button=(label:string)=>host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
 const click=async(element:HTMLElement)=>{await act(async()=>element.click());};
 async function paint(){
-  for(const bird of ['Geai','Bouvreuil','Mésange bleue'])await click(button(`Choisir ${bird}`));
+  for(const bird of ['Geai','Bouvreuil','Mésange bleue'])await click(button(`Choisir la plume ${bird}`));
   await click(host.querySelector('.trio-start button')!);
   const paper=host.querySelector<HTMLElement>('.bird-paper')!;
   await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
@@ -47,10 +47,10 @@ afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAl
 describe('choose three birds, paint, finalize',()=>{
   it('requires exactly three distinct choices and never starts a sound from selection',async()=>{
     const start=host.querySelector<HTMLButtonElement>('.trio-start button')!;expect(start.disabled).toBe(true);
-    for(const bird of ['Geai','Bouvreuil','Mésange bleue'])await click(button(`Choisir ${bird}`));
-    expect(start.disabled).toBe(false);expect(button('Choisir Corneille').disabled).toBe(true);expect(h.starts).toBe(0);
-    await click(button('Choisir Geai'));expect(start.disabled).toBe(true);
-    await click(button('Choisir Sittelle'));await click(start);
+    for(const bird of ['Geai','Bouvreuil','Mésange bleue'])await click(button(`Choisir la plume ${bird}`));
+    expect(start.disabled).toBe(false);expect(button('Choisir la plume Corneille').disabled).toBe(true);expect(h.starts).toBe(0);
+    await click(button('Choisir la plume Geai'));expect(start.disabled).toBe(true);
+    await click(button('Choisir la plume Sittelle'));await click(start);
     expect(host.querySelectorAll('.bird-pads button')).toHaveLength(3);expect(host.querySelector('.artwork-title')).toBeNull();expect(host.querySelector('.artwork-poem')).toBeNull();
     expect(host.querySelector<HTMLButtonElement>('.finalize-art')!.disabled).toBe(true);
   });
@@ -73,7 +73,7 @@ describe('choose three birds, paint, finalize',()=>{
     await paint();
     const sheet=host.querySelector('.bird-paper'),painter=h.painter;
     const toggle=[...host.querySelectorAll('button')].find(b=>b.textContent==='Toile seule')!;
-    expect(host.querySelector<HTMLDetailsElement>('.atelier-panel')!.open).toBe(false);
+    expect(host.querySelector('.atelier-panel')).toBeNull();
     expect(host.querySelector<HTMLDetailsElement>('.atelier-more')!.open).toBe(false);
     expect(host.querySelector('.final-dedication')).toBeNull();
     await click(toggle);
@@ -90,18 +90,36 @@ describe('choose three birds, paint, finalize',()=>{
   });
   it('offers eight choices including Pie and retains exactly three brushes with contextual controls',async()=>{
     expect(host.querySelectorAll('.trio-bird')).toHaveLength(8);
-    for(const name of ['Pie','Geai','Corneille'])await click(button(`Choisir ${name}`));
+    for(const name of ['Pie','Geai','Corneille'])await click(button(`Choisir la plume ${name}`));
     await click(host.querySelector('.trio-start button')!);
     const brushes=host.querySelectorAll<HTMLButtonElement>('.bird-pads .bird-pad');
     expect(brushes).toHaveLength(3);await click(brushes[0]);
-    expect(host.querySelector('.brush-context')!.getAttribute('aria-label')).toBe('Réglages de la brosse Pie');
-    expect(host.querySelector('[aria-label="Taille de la brosse Pie"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="Opacité de la brosse Pie"]')).not.toBeNull();
+    expect(host.querySelector('.brush-context')!.getAttribute('aria-label')).toBe('Réglages de la plume Pie');
+    expect(host.querySelector('[aria-label="Taille de la plume Pie"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Opacité de la plume Pie"]')).not.toBeNull();
     expect(h.starts).toBe(0);
+    expect(host.querySelectorAll('input[type=range]')).toHaveLength(2);
     await click(brushes[1]);expect(host.querySelectorAll('.brush-context')).toHaveLength(1);
     expect(host.querySelector('.brush-context')!.textContent).toContain('Geai');
-    await click(button('Fermer les réglages de la brosse'));
+    await click(button('Fermer les réglages de la plume'));
     expect(host.querySelector('.brush-context')).toBeNull();expect(document.activeElement).toBe(brushes[1]);
+  });
+  it('keeps a feather tip at the keyboard drawing position and replaces all bird silhouettes',async()=>{
+    expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Les 3 plumes de l'Haikuarelle");
+    expect(host.querySelectorAll('.trio-bird .feather-glyph')).toHaveLength(8);
+    expect(host.querySelector('.bird-glyph')).toBeNull();
+    await paint();
+    expect(host.querySelectorAll('.bird-pad .feather-glyph')).toHaveLength(3);
+    const paper=host.querySelector<HTMLElement>('.bird-paper')!;
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
+    const cursor=host.querySelector<HTMLElement>('.feather-cursor')!;
+    expect(cursor.style.left).toBe('51.6%');expect(cursor.style.top).toBe('50%');
+    expect(cursor.getAttribute('aria-hidden')).toBe('true');
+    expect(cursor.querySelector('.feather-glyph')).not.toBeNull();
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
+    expect(cursor.classList.contains('resonating')).toBe(true);
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+    expect(cursor.classList.contains('resonating')).toBe(false);
   });
   it('cancels a pending revelation when the user resumes or clears, keeping the selected trio',async()=>{
     await paint();await click(host.querySelector('.finalize-art')!);await click(host.querySelector('.artwork-drying button')!);
