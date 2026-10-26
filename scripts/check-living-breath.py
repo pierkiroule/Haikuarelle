@@ -28,11 +28,11 @@ with sync_playwright() as p:
     const segs=currents.map(c=>({ax:c.point.x*w,ay:(1-c.point.y)*h,bx:c.point.x*w,by:(1-c.point.y)*h,radius:c.radius*unit,target:0,strength:0,waterAmount:0,kind:1,slot:0,fx:c.vx*unit,fy:-c.vy*unit,coupling:c.coupling,breath:filaments}));
     p.step(1/30,i*1000/30,segs,[]);
    }
-   const a=read();let mass=0,cx=0,cy=0,dryDelta=0,wetDelta=0,waterBefore=0,waterAfter=0,outside=0,wholePigmentDelta=0,bestOutside=null;
+   const a=read();let mass=0,cx=0,cy=0,dryDelta=0,wetDelta=0,waterBefore=0,waterAfter=0,outside=0,wholePigmentDelta=0,bestOutside=null,farthest=0;
    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const i=(y*w+x)*4;wetDelta=Math.max(wetDelta,Math.abs(a[i+1]-start[i+1]));
     waterBefore+=start[i+1];waterAfter+=a[i+1];wholePigmentDelta=Math.max(wholePigmentDelta,Math.abs(a[i]-start[i]));
-    if(start[i+1]<.001&&a[i+1]>.015&&a[i]>.02){outside++;if(!bestOutside||a[i+1]>bestOutside.amount)bestOutside={point:{x:(x+.5)/w,y:1-(y+.5)/h},amount:a[i+1]};}
+    if(start[i+1]<.001&&a[i+1]>.015&&a[i]>.02){outside++;farthest=Math.max(farthest,x/w-.68);if(!bestOutside||a[i+1]>bestOutside.amount)bestOutside={point:{x:(x+.5)/w,y:1-(y+.5)/h},amount:a[i+1]};}
     if(x>w*.90)dryDelta=Math.max(dryDelta,Math.abs(a[i]-start[i]));
     if(x<w*.86){mass+=a[i];cx+=a[i]*x;cy+=a[i]*y;}
    }
@@ -59,7 +59,7 @@ with sync_playwright() as p:
    if(filaments&&!dryOnly&&bestOutside){
     const snapshot=p.captureMoisture();if(snapshot){e.wetPaper.replaceMoisture(snapshot,0);guideWater=e.waterAt(bestOutside.point);}
    }
-   return {centroid:[cx/mass,cy/mass],dryDelta,wetDelta,tip,edge,mass,branches,span,waterBefore,waterAfter,outside,wholePigmentDelta,guideWater};
+   return {centroid:[cx/mass,cy/mass],dryDelta,wetDelta,tip,edge,mass,branches,span,waterBefore,waterAfter,outside,wholePigmentDelta,guideWater,farthest};
   };
   const quiet=run(false),blowing=run(true),filaments=run(true,true),dryOnly=run(true,true,true),distance=Math.hypot(blowing.centroid[0]-quiet.centroid[0],blowing.centroid[1]-quiet.centroid[1]);
   const error=g.getError();e.destroy();return {quiet,blowing,filaments,dryOnly,displacement:distance,error};
@@ -67,6 +67,7 @@ with sync_playwright() as p:
  assert result['displacement']>.15,result
  assert result['blowing']['dryDelta']<1e-5 and result['blowing']['wetDelta']<1e-5,result
  assert result['filaments']['outside']>8,result
+ assert result['filaments']['farthest']>.09,result
  assert result['blowing']['outside']==0,result
  assert result['filaments']['wetDelta']>.01,result
  assert result['filaments']['guideWater']>.01,result

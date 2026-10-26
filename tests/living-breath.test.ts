@@ -34,11 +34,20 @@ it('gives the first movement an impulse, then settles and renews it after liftin
  expect(b.move({x:.41,y:.5},530,.5,.45)!.coupling).toBeCloseTo(first.coupling);
 });
 
-it('allows a short outward follow-through only after actually moving through water',()=>{
+it('allows a longer outward follow-through only after actually moving through water',()=>{
  const b=new LivingBreath();b.move({x:.5,y:.5},0,.6,.45);
  expect(b.move({x:.51,y:.5},30,.6,.45)).not.toBeNull();
  expect(b.move({x:.53,y:.5},60,.6,0)).not.toBeNull();
- expect(b.move({x:.54,y:.5},260,.6,0)).toBeNull();
+ expect(b.move({x:.54,y:.5},260,.6,0)).not.toBeNull();
+ b.move({x:.55,y:.5},480,.6,0);
+ expect(b.move({x:.56,y:.5},700,.6,0)).toBeNull();
  b.reset();b.move({x:.5,y:.5},300,.6,0);
  expect(b.move({x:.51,y:.5},330,.6,0)).toBeNull();
+});
+
+it('bounds the long follow-through spatially, even before its timeout',()=>{
+ const b=new LivingBreath();b.move({x:.4,y:.5},0,.6,.45);
+ b.move({x:.41,y:.5},30,.6,.45);
+ expect(b.move({x:.6,y:.5},120,.6,0)).not.toBeNull();
+ expect(b.move({x:.8,y:.5},180,.6,0)).toBeNull();
 });

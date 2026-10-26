@@ -17,8 +17,8 @@ export class LivingBreath {
   if(moisture>=.008)this.wetCarry={point:{...point},time,amount:moisture};
   else{
     const carry=this.wetCarry;
-    if(!carry||time-carry.time>220||Math.hypot((point.x-carry.point.x)*metric.x,(point.y-carry.point.y)*metric.y)>radius*1.8)return null;
-    moisture=carry.amount*(1-(time-carry.time)/220);
+    if(!carry||time-carry.time>650||Math.hypot((point.x-carry.point.x)*metric.x,(point.y-carry.point.y)*metric.y)>radius*3.5)return null;
+    moisture=carry.amount*(1-(time-carry.time)/650);
   }
   const wet=Math.min(1,moisture/.15);
   const attack=.65+.35*Math.exp(-Math.max(0,time-this.startedAt)/170);

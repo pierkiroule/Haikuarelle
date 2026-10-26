@@ -363,6 +363,14 @@ vec4 fieldSharp(vec2 p) {
   return clamp(r, min(min(a, c), min(d, e)), max(max(a, c), max(d, e)));
 }
 
+float breathEnvelope(vec2 position){
+  vec2 direction=uBreath.zw/max(length(uBreath.zw),0.0001);
+  vec2 rel=(position-uBreath.xy)/max(uBreathShape.x,1.0);
+  float forward=dot(rel,direction),across=dot(rel,vec2(-direction.y,direction.x));
+  float reach=length(vec2(forward/(forward>0.0?4.5:1.0),across/0.8));
+  return 1.0-smoothstep(0.35,1.0,reach);
+}
+
 vec2 breathDisplacement(vec2 position){
   if(uBreathShape.y<=0.0)return vec2(0.0);
   float speed=length(uBreath.zw);
@@ -370,8 +378,7 @@ vec2 breathDisplacement(vec2 position){
   vec2 direction=uBreath.zw/max(speed,0.0001);
   vec2 side=vec2(-direction.y,direction.x);
   vec2 rel=position-uBreath.xy;
-  float reach=length(rel)/max(uBreathShape.x,1.0);
-  float envelope=1.0-smoothstep(0.4,2.1,reach);
+  float envelope=breathEnvelope(position);
   if(envelope<=0.0)return vec2(0.0);
 
   // A widening fan with two levels of forks. The same parent channel
@@ -379,15 +386,15 @@ vec2 breathDisplacement(vec2 position){
   float along=dot(position,direction)/uUnit;
   float across=dot(position,side)/uUnit;
   float forward=dot(rel,direction)/uUnit;
-  float bend=0.7*gnoise(vec2(along*15.0,across*11.0)+uSeedOff);
+  float bend=0.7*gnoise(vec2(along*6.0,across*11.0)+uSeedOff);
   float phase=across*100.0+bend*3.0+uSeedOff.x;
   float fork=smoothstep(-0.015,0.065,forward);
   float parent=abs(sin(phase));
-  float primary=1.0-smoothstep(0.10,0.34,abs(parent-fork*0.72));
+  float primary=1.0-smoothstep(0.08,0.27,abs(parent-fork*0.72));
   float twig=1.0-smoothstep(0.10,0.28,abs(abs(sin(phase*2.0+bend))-0.55));
-  float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.04,0.11,forward));
+  float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.10,0.24,forward));
   float irregular=0.6+0.4*smoothstep(-0.4,0.4,gnoise(vec2(across*19.0,along*8.0)+uSeedOff));
-  vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.95);
+  vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.4);
   float extension=min(speed*uDt*30.0,min(uUnit*0.018,6.0));
   return fan*extension*envelope*branching*irregular*uBreathShape.y;
 }
@@ -440,14 +447,18 @@ void main() {
   if(uMaterial>0.5 && uBreathShape.y>0.0){
     vec4 original=fieldAt(q),mobile=mobileWater(original),transport=vec4(0.0);
     // Paired face flux carries water AND its suspended pigment across the old
-    // shoreline. Each donor gives at most 22% per face; dry pigment cannot move.
+    // shoreline. Each donor gives at most 24% per face; dry pigment cannot move.
     // Fractional, sheet-scaled steps keep the gesture visible at high density.
-    float stride=max(1.0,uUnit*0.0073);
-    for(int axis=0;axis<4;axis++){
+    // Short exchanges keep the root connected; longer, fractional exchanges
+    // pull its wet tip outward without widening the entire stain.
+    for(int link=0;link<8;link++){
+      int axis=link%4;
+      float stride=max(1.0,uUnit*(link<4?0.0073:0.0292));
+      float share=link<4?0.3:0.7;
       vec2 direction=axis==0?vec2(1,0):axis==1?vec2(-1,0):axis==2?vec2(0,1):vec2(0,-1);
       vec2 offset=direction*stride;
       vec2 displacement=breathDisplacement(q+offset*0.5);
-      float rate=clamp(dot(displacement,direction)/stride,-0.22,0.22);
+      float rate=clamp(dot(displacement,direction)/stride,-0.24,0.24)*share;
       // No flux outside the physical paper.
       vec2 other=q+offset;
       if(any(lessThan(other,vec2(0.5)))||any(greaterThan(other,uSize-0.5)))rate=0.0;
@@ -455,7 +466,7 @@ void main() {
     }
     if(dot(abs(transport),vec4(1))>0.000001){
       f=original+transport;
-      airMask=1.0-smoothstep(0.4,2.1,length(q-uBreath.xy)/max(uBreathShape.x,1.0));
+      airMask=breathEnvelope(q);
       vec2 direction=uBreath.zw/max(length(uBreath.zw),0.0001);
       airSide=vec2(-direction.y,direction.x);
     }
