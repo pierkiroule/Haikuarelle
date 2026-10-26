@@ -12,8 +12,8 @@ describe('finished artwork PNG',()=>{
     expect(blob.type).toBe('image/png');expect(canvas.width).toBe(2304);expect(canvas.height).toBe(5110);
     expect(ctx.drawImage).toHaveBeenCalledWith(image,0,369);
     const calls=ctx.fillText.mock.calls;expect(calls[0][0]).toBe('Souffle d’azur');expect(calls[0][2]).toBeLessThan(369);
-    expect(calls.slice(1,4).map(c=>c[0])).toEqual(verses);expect(calls.slice(1).every(c=>c[2]>4096+369)).toBe(true);
-    expect(calls[4][0]).toContain('Pour Pier');expect(calls[4][0]).toContain("Plume d’Haïkuarelle");expect(image.close).toHaveBeenCalledOnce();
+    expect(calls.slice(1,4).map(c=>c[0])).toEqual(verses);expect(calls.slice(1,5).every(c=>c[2]>4096+369)).toBe(true);
+    expect(calls[4][0]).toContain('Pour Pier');expect(calls[4][0]).toContain("Plume d’Haïkuarelle");expect(calls[5]).toEqual(['•°○',2304*.97,369+4096*.98]);expect(image.close).toHaveBeenCalledOnce();
   });
   it('releases the bitmap if encoding fails',async()=>{
     const image={width:100,height:160,close:vi.fn()};

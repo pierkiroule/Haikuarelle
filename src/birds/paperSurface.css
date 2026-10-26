@@ -28,3 +28,5 @@
 .bird-studio.direct-studio.bird-viewing.flow-finished{
   --sheet-height:max(160px,calc(100dvh - 235px));
 }
+
+.paper-signature{position:absolute;right:3%;bottom:2%;z-index:1;pointer-events:none;user-select:none;color:rgba(163,68,61,.72);font:normal clamp(9px,1.8vw,14px)/1 Georgia,serif;letter-spacing:.06em}
