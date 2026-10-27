@@ -1,6 +1,5 @@
 import {openAudio,analyzeExcerpt,type AudioDocument} from '../audio/file';
 import type {AudioAnalysis} from '../audio/types';
-import type {Point} from '../engine/types';
 import {BIRD_PADS,type BirdId} from './catalog';
 export interface BirdSound {document:AudioDocument;analysis:AudioAnalysis}
 export interface BirdPlayback extends BirdSound {elapsed:()=>number;cycleDuration:number;audibility?:()=>number}
@@ -11,35 +10,6 @@ export class BirdAudioBank{
   private controller=new AbortController();
   private context:AudioContext|null=null;
   private source:AudioBufferSourceNode|null=null;
-  private position:Point|null=null;
-  private panner:StereoPannerNode|null=null;
-  private reply:{source:AudioBufferSourceNode;gain:GainNode;panner:StereoPannerNode;filter:BiquadFilterNode}|null=null;
-  private replyToken=0;
-  get mainBusy():boolean{return this.source!==null;}
-  get replyBusy():boolean{return this.reply!==null;}
-  setPosition(point:Point):void{this.position={...point};if(this.panner&&this.context)this.panner.pan.setTargetAtTime(Math.max(-.85,Math.min(.85,(point.x-.5)*1.7)),this.context.currentTime,.08);}
-  /** One bounded secondary voice. Replies never replace the hand's main source. */
-  async playReply(id:BirdId,point:Point,level:number,onStart:(sound:BirdPlayback)=>void,onEnd:()=>void):Promise<void>{
-    if(this.disposed||this.reply||!this.context||this.context.state!=='running')return;
-    const token=++this.replyToken,sound=await this.prepare(id),context=this.context;
-    if(this.disposed||token!==this.replyToken||this.reply||context.state!=='running'||this.mainBusy)return;
-    const source=context.createBufferSource(),gain=context.createGain(),panner=context.createStereoPanner(),filter=context.createBiquadFilter();
-    const first=sound.analysis.frames.find(f=>f.active&&f.energy>0)?.time??0;
-    const offset=Math.max(0,first-.08),duration=Math.min(3.5,sound.document.duration-offset);
-    if(duration<=.1)return;
-    const start=context.currentTime,attack=Math.min(.25,duration*.2),tail=Math.min(.85,duration*.4),volume=Math.max(0,Math.min(.28,level));
-    source.buffer=sound.document.buffer;filter.type='lowpass';filter.frequency.value=3000+level*10000;filter.Q.value=.4;
-    panner.pan.value=Math.max(-.85,Math.min(.85,(point.x-.5)*1.7));
-    gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(volume,start+attack);gain.gain.setValueAtTime(volume,start+duration-tail);gain.gain.linearRampToValueAtTime(0,start+duration);
-    source.connect(filter);filter.connect(gain);gain.connect(panner);panner.connect(context.destination);
-    const reply={source,gain,panner,filter};this.reply=reply;
-    source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();panner.disconnect();if(this.reply===reply)this.reply=null;onEnd();};
-    try{source.start(0,offset,duration);onStart({...sound,cycleDuration:duration,elapsed:()=>context.state==='running'?offset+context.currentTime-start:-1,
-      audibility:()=>context.state==='running'?volume/.72*Math.max(0,Math.min(1,(context.currentTime-start)/attack,(start+duration-context.currentTime)/tail)):0});}
-    catch(error){this.stopReplies();throw error;}
-  }
-  stopReplies():void{this.replyToken++;const r=this.reply;if(!r)return;this.reply=null;try{r.source.stop();}catch{}r.source.disconnect();r.gain.disconnect();r.panner.disconnect();r.filter.disconnect();}
-
   private gain:GainNode|null=null;
   private filter:BiquadFilterNode|null=null;
   private immersion:{level:()=>number;release:()=>void}|null=null;
@@ -113,38 +83,23 @@ export class BirdAudioBank{
         source.stop(Math.min(releaseAt+.67,start+duration+.01));
       }};
       source.connect(filter);filter.connect(gain);
-    }else{
-      gain.gain.value=.72;
-      if(this.position){
-        const start=context.currentTime,duration=cycleDuration,attack=Math.min(.045,duration*.1),tail=Math.min(.12,duration*.1);
-        gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.72,start+attack);gain.gain.setValueAtTime(.72,start+duration-tail);gain.gain.linearRampToValueAtTime(0,start+duration);
-        audibility=()=>context.state==='running'?Math.max(0,Math.min(1,(context.currentTime-start)/attack,(start+duration-context.currentTime)/tail)):0;
-      }
-      source.connect(gain);
-    }
-    if(this.position&&context.createStereoPanner){
-      const panner=context.createStereoPanner();panner.pan.value=(this.position.x-.5)*1.7;gain.connect(panner);panner.connect(context.destination);this.panner=panner;
-    }else gain.connect(context.destination);
+    }else{gain.gain.value=.72;source.connect(gain);}
+    gain.connect(context.destination);
     this.source=source;this.gain=gain;this.ended=onEnd;
-    source.onended=()=>{source.disconnect();gain.disconnect();if(this.source===source){this.filter?.disconnect();this.filter=null;this.panner?.disconnect();this.panner=null;this.immersion=null;this.source=null;this.gain=null;const done=this.ended;this.ended=null;done?.();}};
+    source.onended=()=>{source.disconnect();gain.disconnect();if(this.source===source){this.filter?.disconnect();this.filter=null;this.immersion=null;this.source=null;this.gain=null;const done=this.ended;this.ended=null;done?.();}};
     const started=context.currentTime;
     try{
       source.start();onStart({...sound,cycleDuration,audibility,elapsed:()=>{if(context.state!=='running')return -1;const elapsed=Math.max(0,context.currentTime-started);return options.loop?elapsed%cycleDuration:elapsed;}});
       if(options.loop&&this.source===source&&token===this.token)this.timer=setTimeout(()=>this.stop(),90000);
     }catch(error){this.stop();throw error;}
   }
-  fadeStop():void{
-    this.token++;if(!this.context||!this.source||!this.gain){this.stop();return;}
-    const now=this.context.currentTime;this.gain.gain.cancelScheduledValues(now);this.gain.gain.setValueAtTime(Math.max(0,this.gain.gain.value),now);this.gain.gain.linearRampToValueAtTime(0,now+.25);
-    try{this.source.stop(now+.27);}catch{this.stop();}
-  }
   submerge():void{this.immersion?.release();}
   stop():void{
     this.token++;
     if(this.timer!==null){clearTimeout(this.timer);this.timer=null;}
     if(this.source){this.source.onended=null;try{this.source.stop();}catch{}this.source.disconnect();this.source=null;}
-    this.gain?.disconnect();this.gain=null;this.panner?.disconnect();this.panner=null;this.filter?.disconnect();this.filter=null;this.immersion=null;
+    this.gain?.disconnect();this.gain=null;this.filter?.disconnect();this.filter=null;this.immersion=null;
     const done=this.ended;this.ended=null;done?.();
   }
-  destroy():void{this.disposed=true;this.controller.abort();this.stop();this.stopReplies();this.loops.clear();this.cache.clear();void this.context?.close();this.context=null;}
+  destroy():void{this.disposed=true;this.controller.abort();this.stop();this.loops.clear();this.cache.clear();void this.context?.close();this.context=null;}
 }

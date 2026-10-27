@@ -358,9 +358,6 @@ uniform float uFlowing;
 // Active breath only: center, air velocity; radius and bounded coupling.
 uniform vec4 uBreath;
 uniform vec2 uBreathShape;
-uniform int uSoundCount;
-uniform vec4 uSound[2];
-uniform vec2 uSoundShape[2];
 uniform float uBleed;        // 0..1 how far wet pigment spreads
 uniform float uDryKeep;      // wetness multiplier this step
 uniform float uFixation;     // voluntary evaporation pins increasingly dry pigment
@@ -378,10 +375,6 @@ uniform vec4 uSegP[MAX_SEGS];      // radius, target pigment, strength, kind + 4
 
 out vec4 o;
 
-uniform sampler2D uShared;
-uniform float uCohort;
-uniform float uLifeKeep;
-uniform float uWaterKeep;
 float materialNoise(vec2 p){return uMaterial>0.5?0.8*paperNoise(ROT*p):gnoise(p);}
 float materialFbm(vec2 p,int octaves){
   if(uMaterial<0.5)return fbm(p,octaves);
@@ -390,8 +383,8 @@ float materialFbm(vec2 p,int octaves){
   return value/max(total,0.001);
 }
 vec4 rawAt(vec2 p){return texture(uField,p/uSize);}
-float waterAt(vec2 p){return uCohort>0.5?texture(uShared,p/uSize).y:rawAt(p).y;}
-vec4 fieldAt(vec2 p) { vec4 f=rawAt(p);if(uCohort>0.5)f.y=waterAt(p);return f; }
+float waterAt(vec2 p){return rawAt(p).y;}
+vec4 fieldAt(vec2 p) {return rawAt(p);}
 
 /** What a pigment amount p of ink "slot" stores in the BA channels. */
 vec2 inkOf(float slot, float p) {
@@ -477,16 +470,6 @@ vec2 breathDisplacement(vec2 position){
   fan=normalize(direction+side*lateral*mix(0.12,0.78,fringe));
   return fan*extension*envelope*pressure*uBreathShape.y;
 }
-vec2 coupledDisplacement(vec2 position){
-  vec2 result=breathDisplacement(position);
-  for(int i=0;i<2;i++){
-    if(i>=uSoundCount)break;
-    vec2 rel=(position-uSound[i].xy)/max(uSoundShape[i].x,1.0);
-    float envelope=1.0-smoothstep(0.15,1.0,length(rel));
-    result+=uSound[i].zw*uDt*4.0*min(0.3,uSoundShape[i].y)*envelope;
-  }
-  return result;
-}
 vec4 mobileWater(vec4 value){
   float fraction=smoothstep(0.0001,0.001,value.y);
   return vec4(value.x*fraction,value.y,value.zw*fraction);
@@ -515,7 +498,7 @@ void main() {
     src = d.xy + rel * sqrt(max(1.0 - (d.w - d.z) / max(ds, d.w), 0.0));
   }
 
-  if (uFlowing > 0.5 && uBreathShape.y<=0.0 && uSoundCount==0) {
+  if (uFlowing > 0.5 && uBreathShape.y<=0.0) {
     vec2 destination=src-texture(uVel,src/uSize).xy*uDt;
     if(uMaterial>0.5){
       // Currents carry pigment only through a continuous wet route. Dry paper
@@ -531,7 +514,7 @@ void main() {
   // Prepared water is held on the cotton until explicit evaporation. Moving
   // ordinary pigment currents must not erode it. Explicit breath transport follows.
   if (uDryKeep >= 1.0) f.y = texelFetch(uField, ivec2(q), 0).y;
-  if(uMaterial>0.5 && (uBreathShape.y>0.0||uSoundCount>0)){
+  if(uMaterial>0.5 && uBreathShape.y>0.0){
     vec4 original=rawAt(q),mobile=mobileWater(vec4(original.x,waterAt(q),original.zw)),transport=vec4(0.0);
     mobile.y=original.y;
     // Paired face flux carries water AND its suspended pigment across the old
@@ -541,7 +524,7 @@ void main() {
     // Fractional, sheet-scaled steps keep the gesture visible at high density.
     // Short exchanges keep the root connected; longer, fractional exchanges
     // pull its wet tip outward without widening the entire stain.
-    float longStep=uBreathShape.y>0.0?max(1.0,uUnit*0.045):1.0;
+    float longStep=max(1.0,uUnit*0.045);
     for(int link=0;link<12;link++){
       int axis=link%4,group=link/4;
       // Every exchange has an exact opposite on the donor cell: interpolation
@@ -551,11 +534,8 @@ void main() {
       if(share<=0.0)continue;
       vec2 direction=axis==0?vec2(1,0):axis==1?vec2(-1,0):axis==2?vec2(0,1):vec2(0,-1);
       vec2 offset=direction*stride;
-      vec2 displacement=coupledDisplacement(q+offset*0.5);
-      // Opposing audible currents can export on four faces: stay below 4*.22.
-      float limit=uSoundCount>0?0.22:0.32;
-      float rate=clamp(dot(displacement,direction)/stride,-limit,limit)*share;
-      if(uBreathShape.y<=0.0)rate*=smoothstep(0.003,0.015,min(waterAt(q),waterAt(q+offset)));
+      vec2 displacement=breathDisplacement(q+offset*0.5);
+      float rate=clamp(dot(displacement,direction)/stride,-0.32,0.32)*share;
       // No flux outside the physical paper.
       vec2 other=q+offset;
       if(any(lessThan(other,vec2(0.5)))||any(greaterThan(other,uSize-0.5)))rate=0.0;
@@ -570,8 +550,8 @@ void main() {
   // Pairwise capillary exchange: mass moves toward the pinned, thinner wet
   // margin. The symmetric conductance preserves pigment instead of painting a
   // decorative outline. Mobility fades as water evaporates, leaving the rim.
-  if(uBreathShape.y<=0.0 && uSoundCount==0){
-    vec4 center = f;if(uCohort>0.5)center.y=waterAt(q);
+  if(uBreathShape.y<=0.0){
+    vec4 center = f;
     vec3 exchange = vec3(0.0);
     // Adjacent cells and diagonal exchange keep ONE connected, isotropic film.
     // Integer long strides used to isolate parity grids and reveal square pixels.
@@ -594,8 +574,8 @@ void main() {
         (1.0-smoothstep(0.025,0.23,neighbor.y)) * smoothstep(0.006,0.035,neighbor.y);
       // Distinct optical pigments diffuse much less across each other's boundary.
       // Empty wet cotton remains permeable, so individual colour fields spread.
-      vec4 colourCenter=uCohort>0.5?texture(uShared,src/uSize):center;
-      vec4 colourNeighbor=uCohort>0.5?texture(uShared,(src+offset)/uSize):neighbor;
+      vec4 colourCenter=center;
+      vec4 colourNeighbor=neighbor;
       if (uMaterial > 0.5 && min(colourCenter.x,colourNeighbor.x) > 0.015) {
         float difference = length(colourCenter.zw/max(colourCenter.x,1e-4)-colourNeighbor.zw/max(colourNeighbor.x,1e-4));
         mobility *= mix(1.0,0.004,smoothstep(0.015,0.08,difference));
@@ -708,11 +688,6 @@ void main() {
   // The inks can never add up to more than the pigment that's there.
   f.zw = max(f.zw, 0.0);
   f.zw *= min(1.0, f.x / max(f.z + f.w, 1e-5));
-  if(uCohort>0.5){
-    // Uneven loss reveals mineral islands without changing the age of deposits.
-    float erosion=0.8+0.4*smoothstep(-0.6,0.6,materialNoise(q/max(uUnit,1.0)*83.0+uSeedOff));
-    f.xzw*=pow(uLifeKeep,erosion);f.y*=uWaterKeep;
-  }
   o = f;
 }
 `;
@@ -1019,6 +994,9 @@ void main() {
   // Reconstruct moisture independently, even when pigment is sampled at 1:1.
   // Thin wet fronts must not expose individual cells of the physical mask.
   float wet=uDetail>0.5?max(0.0,materialSample(uField,at/uFieldSize).y):fv.y;
+  // Suspended pigment floats above the cotton. Its mineral imprint emerges
+  // as the film retreats, instead of embossing the first wet deposit.
+  float paperCapture=uDetail>0.5?mix(0.06,1.0,1.0-smoothstep(0.006,0.10,wet)):1.0;
   vec2 other = pv > 1e-4 ? clamp(fv.zw / pv, 0.0, 1.0) : vec2(0.0);
   inkShare = vec3(max(1.0 - other.x - other.y, 0.0), other);
 
@@ -1118,7 +1096,7 @@ void main() {
       // the source. Absorption is an approximation, not a spectral simulation.
       float mineral = (paperT.g * 0.4 - 0.15) * 5.0;
       float mottling = 0.88 + 0.36 * rag + 0.22 * f1.y;
-      float concentration = max(0.0, pv * mottling * (1.0 + uTexture * mineral * (0.25 + 0.75 * (1.0 - clamp(pv, 0.0, 1.0)))));
+      float concentration = max(0.0, pv * mottling * (1.0 + uTexture * paperCapture * mineral * (0.25 + 0.75 * (1.0 - clamp(pv, 0.0, 1.0)))));
       // Sharpen transported pigment only as it dries. Reuse the four gradient
       // samples; bounded local contrast cannot add paint outside the field.
       float crisp = uDrySharpness * uDryingDetail * (1.0-smoothstep(0.015,0.28,wet));
@@ -1185,35 +1163,11 @@ void main() {
   col *= 1.0 - damp * 0.16 * (1.0 - pig * 0.82);
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.
-  col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * tooth * gran;
-  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(0.06,0.65,pig) * light;
-  col *= 1.0 + 0.65 * uTexture * grain;
+  col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * paperCapture * tooth * gran;
+  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(1.0,paperCapture,pig) * mix(0.06,0.65,pig) * light;
+  col *= 1.0 + 0.65 * uTexture * mix(1.0,paperCapture,pig) * grain;
 
   vec3 outc = toSrgb(col) + (hash12(frag) - 0.5) / 255.0;
   fragColor = vec4(outc, 1.0);
 }
-`;
-
-/** Temporal layers share one water field; optical absorption adds linearly. */
-export const COHORT_SUM = `#version 300 es
-precision highp float;
-uniform sampler2D uSrc;
-uniform sampler2D uAdd;
-out vec4 o;
-void main(){ivec2 q=ivec2(gl_FragCoord.xy);o=texelFetch(uSrc,q,0)+texelFetch(uAdd,q,0);}
-`;
-
-export const COHORT_AGE = `#version 300 es
-precision highp float;
-uniform sampler2D uSrc;
-uniform float uLifeKeep;
-uniform float uWaterKeep;
-uniform float uUnit;
-uniform vec2 uSeedOff;
-out vec4 o;
-${NOISE}
-${COTTON_NOISE}
-void main(){vec2 q=gl_FragCoord.xy;vec4 f=texelFetch(uSrc,ivec2(q),0);
- float erosion=0.8+0.4*smoothstep(-0.6,0.6,0.8*paperNoise(ROT*(q/max(uUnit,1.0)*83.0+uSeedOff)));
- f.xzw*=pow(uLifeKeep,erosion);f.y*=uWaterKeep;o=f;}
 `;

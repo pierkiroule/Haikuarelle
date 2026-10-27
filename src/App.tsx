@@ -31,7 +31,6 @@ import './creation.css';
 import {CreationPalette} from './birds/CreationPalette';
 import {FeatherEncounter} from './birds/FeatherEncounter';
 import {FeatherGlyph} from './birds/FeatherGlyph';
-const Exhibition=lazy(()=>import('./exhibition/Exhibition'));
 const Validation=lazy(()=>import('./Validation'));
 const Legacy=lazy(()=>import('./LegacyStudio'));
 const randomSeed=()=>crypto.getRandomValues(new Uint32Array(1))[0];
@@ -279,4 +278,4 @@ export function BirdStudio(){
     {notice&&<div className="toast" role="status">{notice}</div>}
   </div>;
 }
-export default function App(){const params=new URLSearchParams(location.search);return params.has('validation')?<Suspense fallback={<p>Ouverture…</p>}><Validation/></Suspense>:params.has('mp3')?<Suspense fallback={<p>Ouverture…</p>}><Legacy/></Suspense>:params.has('atelier')?<BirdStudio/>:<Suspense fallback={<p>Le papier s’ouvre…</p>}><Exhibition/></Suspense>;}
+export default function App(){const params=new URLSearchParams(location.search);return params.has('validation')?<Suspense fallback={<p>Ouverture…</p>}><Validation/></Suspense>:params.has('mp3')?<Suspense fallback={<p>Ouverture…</p>}><Legacy/></Suspense>:<BirdStudio/>;}

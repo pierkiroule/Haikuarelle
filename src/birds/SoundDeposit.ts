@@ -3,7 +3,7 @@ import type {Bird} from './catalog';
 import type {BirdAudioBank} from './BirdAudioBank';
 import type {Point} from '../engine/types';
 type Painter=Pick<HaikuarelleEngine,'startSoundStain'|'moveSoundStain'|'stopBird'>;
-type Sounds=Pick<BirdAudioBank,'play'|'stop'>&Partial<Pick<BirdAudioBank,'fadeStop'>>;
+type Sounds=Pick<BirdAudioBank,'play'|'stop'>;
 interface Callbacks{preparing:(bird:Bird)=>void;started:(bird:Bird)=>void;stopped:()=>void;marked:(bird:Bird,point:Point,seed:number)=>void;error:(message:string)=>void}
 /** A tap owns a complete phrase. Pointer movement and release do not own its lifetime. */
 export class SoundDeposit{
@@ -21,7 +21,7 @@ export class SoundDeposit{
         if(token!==this.token||!this.active)return;
         const ok=this.painter.startSoundStain(sound.analysis,bird,{...point},seed,size,layer,sound.elapsed,origin=>{
           if(token===this.token&&this.active)this.callbacks.marked(bird,origin,seed);
-        },opacity,sound.audibility);
+        },opacity);
         if(!ok){this.cancel();this.callbacks.error('Ce chant ne peut pas démarrer. Réessaie ce dépôt.');return;}
         this.started=true;
         if(this.pendingPoint)this.painter.moveSoundStain(this.pendingPoint,false);
@@ -38,5 +38,5 @@ export class SoundDeposit{
     else this.pendingPoint={...point};
   }
   /** Explicit interruption only: reset, Escape, hidden tab or disposal. */
-  cancel(fade=false):void{this.token++;this.active=false;this.pendingPoint=null;this.started=false;if(fade&&this.sounds.fadeStop)this.sounds.fadeStop();else this.sounds.stop();this.painter.stopBird();this.callbacks.stopped();}
+  cancel():void{this.token++;this.active=false;this.pendingPoint=null;this.started=false;this.sounds.stop();this.painter.stopBird();this.callbacks.stopped();}
 }
