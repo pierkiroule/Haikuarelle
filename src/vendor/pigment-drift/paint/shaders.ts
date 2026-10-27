@@ -684,11 +684,17 @@ void main() {
         f.x += add;
         f.zw += inkOf(slot, add);
       }
-      if (!wetOnly && sp.w < 512.0) f.y = max(f.y, (1.0 - smoothstep(1.0, 1.8, dn)) * 0.95);
+      if (!wetOnly && sp.w < 512.0) {
+        float waterDn=uMaterial>0.5?d/sp.x+0.10*materialFbm(q/uUnit*4.0+uSeedOff,2)+0.025*materialNoise(q/uUnit*11.0+uSeedOff.yx):dn;
+        f.y=max(f.y,(1.0-smoothstep(1.0,1.8,waterDn))*0.95);
+      }
     } else if (kind < 1.5) {
       // Bit 512 denotes an explicit quantity from the silent-water tool.
       float waterAmount = sp.w >= 512.0 ? clamp(sp.y, 0.0, 1.0) : 1.0;
-      f.y = max(f.y, (1.0 - smoothstep(0.6, 1.25, dn)) * 0.45 * waterAmount);
+      // A water meniscus has broad lobes, not the pigment's fine ragged tooth.
+      // High-frequency brush rag aliases into tiled notches in the wet mask.
+      float waterDn=uMaterial>0.5?d/sp.x+0.10*materialFbm(q/uUnit*4.0+uSeedOff,2)+0.025*materialNoise(q/uUnit*11.0+uSeedOff.yx):dn;
+      f.y=max(f.y,(1.0-smoothstep(0.6,1.25,waterDn))*0.45*waterAmount);
     } else {
       f.xzw *= 1.0 - cov * sp.z;
       f.y *= 1.0 - cov * 0.5;
@@ -1010,7 +1016,9 @@ void main() {
 
   vec4 fv = pigmentField(at);
   float pv = fv.x;
-  float wet = fv.y;
+  // Reconstruct moisture independently, even when pigment is sampled at 1:1.
+  // Thin wet fronts must not expose individual cells of the physical mask.
+  float wet=uDetail>0.5?max(0.0,materialSample(uField,at/uFieldSize).y):fv.y;
   vec2 other = pv > 1e-4 ? clamp(fv.zw / pv, 0.0, 1.0) : vec2(0.0);
   inkShare = vec3(max(1.0 - other.x - other.y, 0.0), other);
 
@@ -1171,8 +1179,10 @@ void main() {
   float tooth = pig * (0.6 + 0.8 * (1.0 - pig));
   // Clear water on cotton is visible before pigment arrives. This comes from the
   // actual wetness channel and evaporates with it; it is never baked into paper.
-  float damp = pow(smoothstep(0.003, 0.20, wet),0.45) * uDetail;
-  col *= 1.0 - damp * 0.22 * (1.0 - pig * 0.82);
+  // Continuous optical thickness: the old fractional power exaggerated tiny
+  // moisture differences and turned wet-mask cells into a hard grey shoreline.
+  float damp=(wet/(wet+0.035))*smoothstep(0.0,0.012,wet)*uDetail;
+  col *= 1.0 - damp * 0.16 * (1.0 - pig * 0.82);
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.
   col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * tooth * gran;
