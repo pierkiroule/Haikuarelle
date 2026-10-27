@@ -22,6 +22,15 @@ describe('placed haiku and signature export',()=>{
   expect(ctx.fillText.mock.calls[0][1]).toBe(200);expect(ctx.fillText.mock.calls[1][1]).toBe(100);
   expect(ctx.fillText.mock.calls[0][2]).toBeLessThan(ctx.fillText.mock.calls[1][2]);
  });
+ it('exports the painting transform independently of the text and signature',async()=>{
+  const image={width:1000,height:1400,close:vi.fn()},ctx={drawImage:vi.fn(),fillRect:vi.fn(),fillText:vi.fn(),measureText:()=>({})};
+  vi.stubGlobal('createImageBitmap',async()=>image);vi.stubGlobal('document',{createElement:()=>({getContext:()=>ctx,toBlob:(cb:BlobCallback)=>cb(new Blob(['png']))})});
+  await exportResonantArtwork(new Blob(),['a','b','c'],{x:.1,y:.7,size:.03},undefined,{x:.2,y:.1,scale:.6});
+  expect(ctx.fillRect).toHaveBeenCalledWith(0,0,1000,1400);
+  expect(ctx.drawImage).toHaveBeenCalledWith(image,200,140,600,840);
+  expect(ctx.fillText.mock.calls[0][1]).toBe(100);
+  expect(ctx.fillText.mock.calls.at(-1)?.[0]).toBe('•°○');
+ });
  it('releases the bitmap if encoding fails',async()=>{
   const image={width:100,height:160,close:vi.fn()},ctx={drawImage(){},fillText(){},measureText:()=>({})};
   vi.stubGlobal('createImageBitmap',async()=>image);vi.stubGlobal('document',{createElement:()=>({getContext:()=>ctx,toBlob:(cb:BlobCallback)=>cb(null)})});

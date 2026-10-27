@@ -33,3 +33,10 @@ Le titre et le bloc de trois lignes se déplacent indépendamment au toucher, à
 Le PNG conserve la feuille entière, les coordonnées et les tailles relatives des deux blocs, et la signature rouge •°○. Aucun nom d’utilisateur ou dédicace n’est ajouté. L’interface indique que la participation n’attribue pas de propriété exclusive ; ce texte d’interface ne remplace pas des conditions juridiques de diffusion.
 
 `scripts/check-resonant-haiku.py` vérifie le parcours avec un vrai chant, le déplacement, la taille, la confirmation et le PNG signé sur ordinateur et mobile. Les tests unitaires contrôlent aussi la dépendance des vers aux familles de formes et le dessin du texte à ses coordonnées exportées.
+
+
+### Séchage et composition de la peinture
+
+Le séchage affiche un halo bleu pulsant autour de la feuille et une barre en bas avec soleil tournant. La progression suit les ticks physiques, sans minuterie cosmétique indépendante ; la durée simulée reste de 12 secondes. Le halo et le soleil restent fixes si la réduction des animations est demandée. Les anciennes particules de séchage sont retirées.
+
+Après révélation du haïku, la peinture entière peut être réduite entre 25 et 100 % puis déplacée au toucher, à la souris ou au clavier. Ses proportions restent intactes et elle reste dans le papier. Le bouton de recentrage restitue la taille originale. Titre, vers et signature restent indépendants. Le PNG applique la même transformation à l’image à pleine résolution ; reprendre la plume restitue la composition originale sans altérer la simulation des pigments. Les observateurs de taille des textes ne sont plus recréés à chaque déplacement.

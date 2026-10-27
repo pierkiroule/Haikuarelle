@@ -10,3 +10,7 @@
 @media(max-width:760px){.bird-studio.direct-studio.flow-finished{padding-bottom:0}.bird-studio.direct-studio.flow-finished .bird-workbench{padding:12px 0}.bird-studio.direct-studio.flow-finished .bird-instrument{position:static;display:block;padding:14px 0;border:0;background:transparent;box-shadow:none}.resonant-actions{width:100%;max-width:none}.bird-studio.direct-studio.flow-finished .bird-pad-board{position:static}.resonant-actions .finalize-art{max-width:none!important;width:100%}}
 
 .resonant-title{font-style:italic;font-weight:700}
+/* Composition changes only presentation: original pigment simulation stays intact. */
+.bird-studio.direct-studio.flow-finished .bird-paper{background:#f7f5ed;overflow:hidden}
+.painting-handle{position:absolute;z-index:2;box-sizing:border-box;outline:1px dashed #607e6b66;outline-offset:-2px;touch-action:none;cursor:grab}
+.painting-handle:active{cursor:grabbing}.painting-handle:focus-visible{outline:2px solid #607e6b;outline-offset:-3px}

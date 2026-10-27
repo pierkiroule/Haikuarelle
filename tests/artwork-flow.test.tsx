@@ -91,7 +91,8 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   it('reveals three morphic verses after drying, lets the user place them and gates sharing until confirmation',async()=>{
     await paint();const canvas=host.querySelector('canvas');await click(host.querySelector('.finalize-art')!);
     expect(host.querySelector('.flow-drying')).not.toBeNull();expect(host.querySelector('.resonant-haiku')).toBeNull();
-    await act(async()=>h.painter!.complete());expect(host.querySelector('.flow-finished')).not.toBeNull();
+    expect(host.querySelector('.artwork-paper.is-drying')).not.toBeNull();expect(host.querySelector('.drying-feathers')).toBeNull();expect(host.querySelector<HTMLProgressElement>('.drying-progress progress')!.value).toBe(0);
+    await act(async()=>h.painter!.complete());expect(host.querySelector('.flow-finished')).not.toBeNull();expect(host.querySelector('.drying-progress')).toBeNull();expect(host.querySelector('.artwork-paper.is-drying')).toBeNull();
     expect(host.querySelector('.resonant-haiku')).toBeNull();await click(host.querySelector('.reveal-haiku')!);
     const poem=host.querySelector<HTMLElement>('.resonant-haiku')!;expect(poem.children).toHaveLength(3);expect(host.querySelector('.artwork-title')).toBeNull();
     expect(host.querySelector<HTMLButtonElement>('.share-art')!.disabled).toBe(true);
