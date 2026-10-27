@@ -1,3 +1,4 @@
+import {TraceClock,lifetime} from '../../../exhibition/lifecycle';
 // The paint studio's WebGL2 engine: a pigment field on a sheet of paper,
 // moved by a small fluid sim and rendered in the pigment drift style.
 
@@ -53,6 +54,8 @@ export interface Segment {
   wetOnly?: boolean;
   /** Local air jets that stretch the wet pigment rim into fine tendrils. */
   breath?: boolean;
+  /** Bounded audible current: transports water/pigment inside an existing basin. */
+  resonant?:boolean;
   /** Explicit clear-water level, 0..1; omission preserves existing brush behavior. */
   waterAmount?: number;
   /** Ink 0..2 in legacy mode, optical pigment 0..15 when Look.pigments is set. */
@@ -134,6 +137,18 @@ export class PaintEngine {
   private rgba: Format;
   private aux: Aux | null = null;
   private field!: [Target, Target];
+  private traceClock:TraceClock|null=null;
+  private cohorts:{epoch:number;target:Target}[]=[];
+  private cohortSpare:Target|null=null;
+  private cohortPool:Target[]=[];
+  private lifeNow=0;
+  private lifePrevious=0;
+  /** Enable before newSheet; total layer allocation is limited by the clock. */
+  enableExhibition():void{this.traceClock=new TraceClock();}
+  setLifeTime(seconds:number):void{this.lifePrevious=this.lifeNow;this.lifeNow=Math.max(this.lifeNow,seconds);}
+  get temporalStats(){return {layers:this.cohorts.length,allocated:this.cohorts.length+this.cohortPool.length+(this.cohortSpare?1:0),capacity:this.traceClock?.capacity??0,fieldPixels:this.fieldW*this.fieldH};}
+  get hasLivingPigment():boolean{return this.cohorts.some(c=>this.traceClock!.age(c.epoch,this.lifeNow)<lifetime());}
+
   private vel!: [Target, Target];
   private pressure!: [Target, Target];
   private divergence!: Target;
@@ -160,6 +175,8 @@ export class PaintEngine {
   private absorption: number[] = [];
   private tweenStart = 0;
   private tweenMs = 0;
+  private soundBuf=new Float32Array(8);
+  private soundShapeBuf=new Float32Array(4);
   private segBuf = new Float32Array(MAX_SEGS * 4);
   private segPBuf = new Float32Array(MAX_SEGS * 4);
   private forceBuf = new Float32Array(MAX_SEGS * 4);
@@ -199,7 +216,7 @@ export class PaintEngine {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
     const sources: Record<string, string> = {
-      copy: SH.COPY, fill: SH.FILL, encode: SH.ENCODE, decode: SH.DECODE, settle: SH.SETTLE,
+      cohortAge:SH.COHORT_AGE, cohortSum:SH.COHORT_SUM, copy: SH.COPY, fill: SH.FILL, encode: SH.ENCODE, decode: SH.DECODE, settle: SH.SETTLE,
       velStep: SH.VEL_STEP, curl: SH.CURL, vorticity: SH.VORTICITY, divergence: SH.DIVERGENCE,
       scale: SH.SCALE, jacobi: SH.JACOBI, gradient: SH.GRADIENT,
       fieldStep: SH.FIELD_STEP, compose: SH.COMPOSE, paper: SH.PAPER, flow: SH.FLOW, drying:SH.DRYING_MASKS, render: SH.RENDER,
@@ -389,12 +406,12 @@ export class PaintEngine {
   /** Advances the sheet by dt seconds. Returns false when nothing needed doing. */
   step(dt: number, now: number, segs: Segment[], drops: Drop[]): boolean {
     const gl = this.gl;
-    const forcing = segs.some((s) => !s.breath && s.coupling > 0);
+    const forcing = segs.some((s) => !s.breath && !s.resonant && s.coupling > 0);
     if (forcing) this.flowUntil = now + 2000;
     if (segs.length || drops.length) this.wetUntil = now + Math.max(2500 + 6000 * this.look.bleed, (this.look.dryingTime ?? 0) * 5600);
     const flowing = now < this.flowUntil;
     const wet = now < this.wetUntil;
-    if (!flowing && !wet && !segs.length && !drops.length && this.settleLeft <= 0) {
+    if (!this.traceClock && !flowing && !wet && !segs.length && !drops.length && this.settleLeft <= 0) {
       if (this.velDirty) this.stopFlow();
       return false;
     }
@@ -406,7 +423,7 @@ export class PaintEngine {
       this.segBuf.set([s.ax, s.ay, s.bx, s.by], i * 4);
       this.segPBuf.set(segmentPayload(s), i * 4);
       // Breath has its own coupled water/pigment flux, never a second colour-only current.
-      this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.breath?0:s.coupling], i * 4);
+      this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.breath||s.resonant?0:s.coupling], i * 4);
     }
     const nd = Math.min(drops.length, MAX_DROPS);
     for (let i = 0; i < nd; i++) {
@@ -449,8 +466,18 @@ export class PaintEngine {
     }
 
     const breath=segs.slice(0,n).find(s=>s.breath);
+    const sonic=segs.slice(0,n).filter(s=>s.resonant).slice(0,2);
+    this.soundBuf.fill(0);this.soundShapeBuf.fill(0);
+    sonic.forEach((s,i)=>{this.soundBuf.set([s.ax,s.ay,s.fx,s.fy],i*4);this.soundShapeBuf.set([s.radius,s.coupling],i*2);});
     const bleed = this.look.bleed;
-    this.run('fieldStep', this.field[1], (u) => {
+    const shared=this.field[0];
+    const runField=(input:Target,output:Target,deposit=true,epoch=0)=>this.run('fieldStep',output,(u)=>{
+      gl.uniform1f(u.uCohort,this.traceClock?1:0);
+      gl.uniform1f(u.uLifeKeep,this.traceClock?this.traceClock.ratio(epoch,this.lifePrevious,this.lifeNow):1);
+      gl.uniform1f(u.uWaterKeep,this.traceClock?this.traceClock.ratio(epoch,this.lifePrevious,this.lifeNow,true):1);
+      gl.uniform1i(u.uSoundCount,sonic.length);
+      gl.uniform4fv(u.uSound,this.soundBuf);
+      gl.uniform2fv(u.uSoundShape,this.soundShapeBuf);
       gl.uniform4f(u.uBreath,breath?.ax??0,breath?.ay??0,breath?.fx??0,breath?.fy??0);
       gl.uniform2f(u.uBreathShape,breath?.radius??1,breath?.coupling??0);
       gl.uniform1f(u.uOptical,this.absorption.length?1:0);
@@ -459,20 +486,50 @@ export class PaintEngine {
       gl.uniform1f(u.uDt, dt);
       gl.uniform1f(u.uFlowing, flowing ? 1 : 0);
       gl.uniform1f(u.uBleed, bleed);
-      gl.uniform1f(u.uDryKeep, Math.exp(-dt / (this.look.dryingTime ?? (0.7 + 2.2 * bleed))));
+      gl.uniform1f(u.uDryKeep, this.traceClock?1:Math.exp(-dt / (this.look.dryingTime ?? (0.7 + 2.2 * bleed))));
       gl.uniform1f(u.uMaterial, (this.look.detail ?? 0) > 0.5 ? 1 : 0);
-      gl.uniform1f(u.uFixation,(this.look.detail??0)>.5&&Number.isFinite(this.look.dryingTime)?1:0);
+      gl.uniform1f(u.uFixation,this.traceClock?1:(this.look.detail??0)>.5&&Number.isFinite(this.look.dryingTime)?1:0);
       gl.uniform1f(u.uDryFloor, this.look.dryingTime === undefined ? 0.02 : 0);
       gl.uniform2f(u.uSeedOff, this.meta.seed[0], this.meta.seed[1]);
       gl.uniform1f(u.uUnit, this.meta.unit * this.k);
-      gl.uniform1i(u.uDropCount, nd);
+      gl.uniform1i(u.uDropCount, deposit?nd:0);
       gl.uniform4fv(u.uDrop, this.dropBuf);
       gl.uniform4fv(u.uDropInk, this.dropInkBuf);
-      gl.uniform1i(u.uSegCount, n);
+      gl.uniform1i(u.uSegCount, deposit?n:0);
       gl.uniform4fv(u.uSeg, this.segBuf);
       gl.uniform4fv(u.uSegP, this.segPBuf);
-    }, { uField: this.field[0].tex, uVel: this.vel[0].tex });
-    this.swap(this.field);
+    }, {uField:input.tex,uShared:shared.tex,uVel:this.vel[0].tex});
+    if(!this.traceClock){runField(this.field[0],this.field[1]);this.swap(this.field);}
+    else {
+      const clock=this.traceClock,epoch=clock.epoch(this.lifeNow);
+      for(const cohort of this.cohorts.filter(c=>!clock.alive(c.epoch,this.lifeNow)))this.cohortPool.push(cohort.target);
+      this.cohorts=this.cohorts.filter(c=>clock.alive(c.epoch,this.lifeNow));
+      const deposits=segs.some(s=>s.strength>0)||drops.some(d=>d.ink>0);
+      if(deposits&&!this.cohorts.some(c=>c.epoch===epoch)){
+        const target=this.cohortPool.pop()??this.makeTarget(this.fieldW,this.fieldH,this.rgba,true);
+        this.fillTarget(target,[0,0,0,0]);this.cohorts.push({epoch,target});
+      }
+      if(this.cohorts.length){
+        this.cohortSpare??=this.makeTarget(this.fieldW,this.fieldH,this.rgba,true);
+        for(const cohort of this.cohorts){
+          const sharedWet=this.cohorts.some(c=>clock.age(c.epoch,this.lifeNow)<clock.config.wet);
+          if(!sharedWet&&!deposits&&!breath&&!sonic.length&&!nd){
+            this.run('cohortAge',this.cohortSpare,u=>{
+              gl.uniform1f(u.uLifeKeep,clock.ratio(cohort.epoch,this.lifePrevious,this.lifeNow));
+              gl.uniform1f(u.uWaterKeep,clock.ratio(cohort.epoch,this.lifePrevious,this.lifeNow,true));
+              gl.uniform1f(u.uUnit,this.meta.unit*this.k);gl.uniform2f(u.uSeedOff,...this.meta.seed);
+            },{uSrc:cohort.target.tex});
+          }else runField(cohort.target,this.cohortSpare,cohort.epoch===epoch,cohort.epoch);
+          const previous=cohort.target;cohort.target=this.cohortSpare;this.cohortSpare=previous;
+        }
+      }
+      this.fillTarget(this.field[0],[0,0,0,0]);
+      for(const cohort of this.cohorts){
+        this.run('cohortSum',this.field[1],()=>{},{uSrc:this.field[0].tex,uAdd:cohort.target.tex});this.swap(this.field);
+      }
+    }
+
+
 
     if (this.settleLeft > 0 && this.settleTarget) {
       this.settleLeft -= dt;
@@ -731,7 +788,10 @@ export class PaintEngine {
 
   /** Frees every GPU target, except `keep` (used to carry the old sheet over when growing). */
   private release(keep?: Target): void {
-    this.clearHistory();
+    this.clearHistory();this.lifeNow=0;this.lifePrevious=0;
+    for(const c of this.cohorts)this.deleteTarget(c.target);this.cohorts=[];
+    for(const t of this.cohortPool)this.deleteTarget(t);this.cohortPool=[];
+    if(this.cohortSpare)this.deleteTarget(this.cohortSpare);this.cohortSpare=null;
     if(this.moistureTarget){this.deleteTarget(this.moistureTarget);this.moistureTarget=null;}
     for (const t of this.pool.splice(0)) this.deleteTarget(t);
     if (this.settleTarget) this.deleteTarget(this.settleTarget);
