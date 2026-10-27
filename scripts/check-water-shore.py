@@ -14,7 +14,7 @@ p=ctx.program(vertex_shader='#version 330\nin vec2 aPos;void main(){gl_Position=
 size=256;empty=np.zeros((size,size,4),dtype='f4');src=ctx.texture((size,size),4,empty.tobytes(),dtype='f4');src.filter=(moderngl.LINEAR,moderngl.LINEAR);src.repeat_x=False;src.repeat_y=False;src.use(0)
 vel=ctx.texture((size,size),2,dtype='f4');vel.use(1)
 out=ctx.texture((size,size),4,dtype='f4');f=ctx.framebuffer([out]);f.use()
-for name,value in {'uField':0,'uShared':0,'uVel':1,'uSize':(size,size),'uUnit':size,'uDt':1/30,'uDryKeep':1.,'uMaterial':1.,'uSegCount':1,'uSeedOff':(3.7,8.1),'uBreathShape':(1.,0.)}.items():
+for name,value in {'uField':0,'uVel':1,'uSize':(size,size),'uUnit':size,'uDt':1/30,'uDryKeep':1.,'uMaterial':1.,'uSegCount':1,'uSeedOff':(3.7,8.1),'uBreathShape':(1.,0.)}.items():
  if name in p:p[name].value=value
 seg=np.zeros((16,4),dtype='f4');seg[0]=[128,128,128,128];p['uSeg'].write(seg.tobytes());params=np.zeros((16,4),dtype='f4');radius=size*.12;params[0]=[radius,1,.45,513];p['uSegP'].write(params.tobytes())
 b=ctx.buffer(np.array([-1,-1,1,-1,-1,1,1,1],dtype='f4').tobytes());vao=ctx.simple_vertex_array(p,b,'aPos');vao.render(moderngl.TRIANGLE_STRIP)
