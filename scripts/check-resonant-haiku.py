@@ -66,7 +66,7 @@ with sync_playwright() as pw:
   page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+paper_box['width']*.1,y-paper_box['height']*.08,steps=5);page.mouse.up()
   dragged=poem.bounding_box();assert abs(dragged['x']-before['x'])+abs(dragged['y']-before['y'])>5
   page.get_by_role('slider',name='Taille du haïku',exact=True).fill('42');poem.focus();page.keyboard.press('ArrowLeft')
-  p=poem.bounding_box();assert p['x']>=paper_box['x'] and p['x']+p['width']<=paper_box['x']+paper_box['width']+1,(p,paper_box)
+  paper_box=paper.bounding_box();p=poem.bounding_box();assert p['x']>=paper_box['x'] and p['x']+p['width']<=paper_box['x']+paper_box['width']+1,(p,paper_box)
   assert p['y']>=paper_box['y'] and p['y']+p['height']<=paper_box['y']+paper_box['height']*.95,(p,paper_box)
   page.screenshot(path=f'/tmp/composition-editor-{width}.png',full_page=True)
   page.get_by_role('button',name='Valider les placements').click();assert not page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
