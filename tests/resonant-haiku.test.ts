@@ -1,7 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {readArtwork,makeResonantHaiku,morphicFamily,MORPHIC_LINES,BIRD_TITLE_REFERENCE,type ArtworkReading} from '../src/birds/artworkPoetry';
 import {RESONANT_STANZAS,SENSORY_OPENINGS} from '../src/birds/resonantLexicon';
-import {fitPoem} from '../src/birds/poemPlacement';
 const reading:ArtworkReading={tones:['blue'],coverage:.25,centerY:.5,islands:1,vertical:false,complexity:30,density:.4};
 const marks=[{bird:'mesange' as const,seed:7,point:{x:.5,y:.5}}];
 describe('a response from actual morphology and bird ecology',()=>{
@@ -43,8 +42,4 @@ describe('a response from actual morphology and bird ecology',()=>{
   }
  });
  it('does not generate words without a real painting',()=>{expect(makeResonantHaiku([],7,reading,'mesange')).toBeNull();expect(makeResonantHaiku(marks,7,{...reading,coverage:0},'mesange')).toBeNull();});
- it('clamps placement and reduces oversized text to preserve the signature strip',()=>{
-  const p=fitPoem({x:1,y:1,size:.06},.5,.2);expect(p.x+.5).toBeLessThanOrEqual(.965);expect(p.y+.2).toBeLessThanOrEqual(.94);
-  expect(fitPoem({x:0,y:0,size:.06},1.4,.4).size).toBeLessThan(.06);
- });
 });

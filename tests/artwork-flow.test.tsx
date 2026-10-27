@@ -60,12 +60,13 @@ async function paint(){
 }
 beforeEach(async()=>{
   vi.useFakeTimers();
+  vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue({font:'',measureText:(text:string)=>({width:text.length*15})} as unknown as CanvasRenderingContext2D);
   h.placed=[];h.starts=0;h.moves=0;h.stops=0;h.painter=null;h.previews=[];h.previewStops=0;h.previewEnd=()=>{};vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
   vi.stubGlobal('matchMedia',()=>({matches:true}));vi.stubGlobal('requestAnimationFrame',()=>1);vi.stubGlobal('cancelAnimationFrame',()=>{});
   host=document.createElement('div');document.body.append(host);root=createRoot(host);
   await act(async()=>root.render(<BirdStudio/>));
 });
-afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.useRealTimers();});
+afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.restoreAllMocks();vi.useRealTimers();});
 describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   it('reveals the touched feather’s haiku immediately with its song, without a confirmation',async()=>{
     expect(host.querySelectorAll('.feather-choice')).toHaveLength(8);
@@ -97,31 +98,20 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     const poem=host.querySelector<HTMLElement>('.resonant-haiku')!;expect(poem.children).toHaveLength(3);expect(host.querySelector('.artwork-title')).toBeNull();
     expect(host.querySelector<HTMLButtonElement>('.share-art')!.disabled).toBe(true);
     const title=host.querySelector<HTMLElement>('.resonant-title')!;expect(title.textContent!.toLowerCase()).toContain('geai');
-    const oldTitleLeft=title.style.left,oldPoemLeft=poem.style.left;
+    const titleTop=title.style.top,poemTop=poem.style.top;
     await act(async()=>title.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
-    expect(title.style.left).not.toBe(oldTitleLeft);expect(poem.style.left).toBe(oldPoemLeft);
-    const left=poem.style.left;await act(async()=>poem.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));expect(poem.style.left).not.toBe(left);
+    expect(title.style.top).toBe(titleTop);expect(poem.style.top).toBe(poemTop);expect(title.tabIndex).toBe(-1);
     await click(host.querySelector('.place-haiku')!);expect(host.querySelector<HTMLButtonElement>('.share-art')!.disabled).toBe(false);expect(poem.classList.contains('is-editable')).toBe(false);
     expect(host.querySelector('.final-dedication')).toBeNull();expect(host.querySelector('.shared-attribution')!.textContent).toContain('pas de propriété exclusive');
     expect(host.querySelector('canvas')).toBe(canvas);await click(host.querySelector('.resume-art')!);expect(host.querySelector('.resonant-haiku')).toBeNull();expect(host.querySelector('.flow-paint')).not.toBeNull();
   });
-  it('edits title and verses independently with three fonts, colors, alignment and per-element reset',async()=>{
+  it('offers only painting controls and keeps both text blocks fixed',async()=>{
     await paint();await click(host.querySelector('.finalize-art')!);await act(async()=>h.painter!.complete());await click(host.querySelector('.reveal-haiku')!);
-    const tabs=()=>Array.from(host.querySelectorAll<HTMLButtonElement>('.composition-tabs button'));
-    await click(tabs()[1]);
-    const font=host.querySelector<HTMLSelectElement>('[aria-label="Typographie"]')!;expect(font.options).toHaveLength(3);
-    await act(async()=>{font.value='sans';font.dispatchEvent(new Event('change',{bubbles:true}));});
-    await click(host.querySelector('[aria-label="Couleur #78504a"]')!);
-    const centered=Array.from(host.querySelectorAll<HTMLButtonElement>('.composition-segments button')).find(b=>b.textContent==='Centré')!;await click(centered);
+    expect(host.querySelector('.composition-tabs')).toBeNull();expect(host.querySelector('select')).toBeNull();expect(host.querySelector('input[type="color"]')).toBeNull();
+    expect(host.querySelectorAll('.composition-editor input')).toHaveLength(1);expect(host.querySelector('[aria-label="Taille de la peinture"]')).not.toBeNull();
     const title=host.querySelector<HTMLElement>('.resonant-title')!,poem=host.querySelector<HTMLElement>('.resonant-haiku')!;
-    expect(title.style.fontFamily).toContain('Arial');expect(title.style.color).toBe('rgb(120, 80, 74)');expect(title.style.textAlign).toBe('center');
-    expect(poem.style.fontFamily).toContain('Georgia');expect(poem.style.textAlign).toBe('left');
-    await click(host.querySelector('.composition-reset')!);expect(title.style.fontFamily).toContain('Georgia');expect(title.style.textAlign).toBe('left');
-    await click(tabs()[2]);await click(host.querySelector('[aria-label="Couleur #202b35"]')!);expect(poem.style.color).toBe('rgb(32, 43, 53)');expect(title.style.color).toBe('rgb(53, 72, 62)');
-    await click(tabs()[0]);expect(host.querySelector('[aria-label="Typographie"]')).toBeNull();expect(host.querySelector('[aria-label="Taille de la peinture"]')).not.toBeNull();
-    await click(host.querySelector('.place-haiku')!);expect(host.querySelector('.composition-editor')).toBeNull();
-    await click(host.querySelector('.resume-art')!);await click(host.querySelector('.finalize-art')!);await act(async()=>h.painter!.complete());await click(host.querySelector('.reveal-haiku')!);
-    expect(host.querySelector<HTMLElement>('.resonant-haiku')!.style.color).toBe('rgb(53, 72, 62)');
+    expect(title.classList.contains('fixed-poetry')).toBe(true);expect(poem.children).toHaveLength(3);expect(parseFloat(title.style.top)).toBeLessThan(10);expect(parseFloat(poem.style.top)).toBeGreaterThan(70);
+    await click(host.querySelector('.place-haiku')!);expect(host.querySelector('.painting-handle')).toBeNull();expect(host.querySelector('.fixed-poetry')).not.toBeNull();
   });
   it('enters an immersive atelier, reopens tool settings and leaves with Escape without recreating the painting',async()=>{
     await encounter();
