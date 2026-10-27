@@ -10,6 +10,7 @@ vi.mock('../src/vendor/pigment-drift/paint/engine',()=>({
   PaintEngine:class{
     canvas:HTMLCanvasElement;gl={};ready=false;k=1;isContextLost=false;
     newSheet=vi.fn(()=>{this.ready=true;});setLook=vi.fn();setView=vi.fn();
+    captureMoisture=vi.fn(()=>null);
     step=vi.fn();render=vi.fn();dispose=vi.fn();
     constructor(canvas:HTMLCanvasElement){this.canvas=canvas;}
   },
@@ -218,4 +219,74 @@ it('plays an immersed water clock through the fluid response without creating pi
  expect(segs.some(s=>s.coupling>0&&Math.hypot(s.fx,s.fy)>0)).toBe(true);
  expect(segs.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0)).toBe(true);
  expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);e.stopWaterSong();
+});
+
+it('breath drives wet pigment without depositing or refilling and stops accepting input during drying',()=>{
+ const e=open(),p={x:.5,y:.5};e.beginSignature(8);e.wetBrush(p,.8);e.holdWater();
+ const initial=e.waterAt(p);vi.mocked(e.paint.step).mockClear();
+ e.blow(p,0,.6);e.blow({x:.51,y:.5},30,.6);frame(1);frame(101);
+ const forces=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]);
+ expect(forces.length).toBeGreaterThan(0);
+ expect(forces.every(s=>s.kind===1&&s.strength===0&&s.waterAmount===0&&s.fx>0&&s.breath===true)).toBe(true);
+ expect(e.status.hasPigment).toBe(false);expect(e.waterAt(p)).toBe(initial);
+ e.liftBreath(true);vi.mocked(e.paint.step).mockClear();
+ e.blow({x:.9,y:.9},150,.6);e.blow({x:.91,y:.9},180,.6);frame(201);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2])).toEqual([]);
+ e.setDrying(true);e.blow(p,220,.6);e.blow({x:.51,y:.5},250,.6);frame(301);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2])).toEqual([]);
+});
+
+ it.each([.1,.57,.9])('finishes voluntary drying in 12 simulation seconds at wetness %s, with fully settled moisture',async wetness=>{
+  const e=open();e.update({wetness});e.beginSignature(8);
+  const point={x:.5,y:.5};e.wetBrush(point,.7);e.holdWater();
+  const initial=e.waterAt(point),start=e.status.ticks/30;
+  e.setDrying(true);
+  expect(e.composition.duration-start).toBeCloseTo(12);
+  const look=vi.mocked(e.paint.setLook).mock.calls.at(-1)![0];
+  expect(look.dryingTime).toBeCloseTo(12/5.6);
+  await e.finish();
+  expect(e.status.phase).toBe('complete');expect(e.status.ticks/30-start).toBeCloseTo(12);
+  expect(e.waterAt(point)).toBeLessThan(initial*.005);
+ });
+
+it('synchronizes the transported moisture once on breath release and dries the extensions',async()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ const width=20,height=32,water=new Float32Array(width*height);
+ for(let y=12;y<20;y++)for(let x=10;x<19;x++)water[y*width+x]=.3;
+ vi.mocked(e.paint.captureMoisture).mockReturnValue({width,height,water});
+ e.blow({x:.5,y:.5},0,.6);e.blow({x:.51,y:.5},30,.6);frame(1);frame(101);
+ e.liftBreath();e.liftBreath();
+ expect(e.paint.captureMoisture).toHaveBeenCalledTimes(1);
+ expect(e.waterAt({x:.85,y:.5})).toBeCloseTo(.3);
+ e.setDrying(true);await e.finish();expect(e.waterAt({x:.85,y:.5})).toBeLessThan(.3*.005);
+});
+
+it('refreshes the moving moisture during a continuous breath before gating its next position',()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ const width=20,height=32,water=new Float32Array(width*height);
+ for(let y=12;y<20;y++)for(let x=10;x<19;x++)water[y*width+x]=.3;
+ vi.mocked(e.paint.captureMoisture).mockReturnValue({width,height,water});
+ e.blow({x:.5,y:.5},0,.6);e.blow({x:.51,y:.5},30,.6);frame(1);frame(101);
+ e.blow({x:.85,y:.5},180,.6);
+ expect(e.paint.captureMoisture).toHaveBeenCalledTimes(1);
+ expect(e.waterAt({x:.85,y:.5})).toBeCloseTo(.3);
+ vi.mocked(e.paint.step).mockClear();frame(201);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).some(s=>s.breath&&s.ax>1500)).toBe(true);
+ e.liftBreath();expect(e.paint.captureMoisture).toHaveBeenCalledTimes(2);
+});
+
+it('keeps a quick flick alive for a finite strong burst after release, even before its first frame',()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ vi.mocked(e.paint.step).mockClear();e.blow({x:.5,y:.5},0,.8);e.blow({x:.54,y:.5},16,.8);e.liftBreath();expect(e.isBlowing).toBe(true);
+ for(let t=1;t<=1401;t+=50)frame(t);
+ const forces=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).filter(s=>s.breath);
+ expect(forces).toHaveLength(18);expect(e.isBlowing).toBe(false);expect(forces[0].coupling).toBeGreaterThan(forces.at(-1)!.coupling);
+ expect(forces.every(s=>s.waterAmount===0&&s.strength===0&&s.fx>0)).toBe(true);
+ expect(e.status.hasPigment).toBe(false);expect(e.paint.captureMoisture).toHaveBeenCalledTimes(1);
+});
+it('explicit interruption cancels a pending breath burst before any force is applied',()=>{
+ const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
+ vi.mocked(e.paint.step).mockClear();e.blow({x:.5,y:.5},0,.8);e.blow({x:.54,y:.5},16,.8);e.liftBreath(true);
+ frame(1);frame(101);
+ expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).some(s=>s.breath)).toBe(false);
 });

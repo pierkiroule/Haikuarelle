@@ -5,7 +5,7 @@ import type {EngineSettings,Point,InkStroke} from '../engine/types';
 import type {AudioFrame} from '../audio/types';
 import type {Bird} from './catalog';
 import type {BrushFrame,BrushSegment} from './ResonantBrush';
-import {WetPaper,type WetRegion} from './WetPaper';
+import {WetPaper,WET_FILM_THRESHOLD,type WetRegion} from './WetPaper';
 import {planSplashes} from './splashes';
 
 
@@ -48,17 +48,18 @@ export class SoundStain {
     this.axis=this.rng()*Math.PI*2;
     // A preferential direction, not an evenly spaced radial rosette.
     let best=-1;
-    const initialAxis=this.axis;
+    const initialAxis=this.axis,thinSource=water.at(origin,placedAt)<.04;
     for(let i=0;i<24;i++){
       const a=initialAxis+i*Math.PI/12;
       const q=this.offset(origin,a,.06+.06*size);
-      const score=water.at(q,placedAt)+this.rng()*.13;
+      const amount=water.at(q,placedAt);
+      const score=(thinSource?(amount>=WET_FILM_THRESHOLD?.5+clamp(amount/.06):0):amount)+this.rng()*.13;
       if(score>best){best=score;this.axis=a;}
     }
     this.reach=.08+.18*size;
     this.bloom=this.offset(origin,this.axis+1.3,.017+.02*size);
     this.region=water.region(origin,placedAt,Math.max(12,(audibleTimes.length||60)*3.2),createRng(seed^0x753b1));
-    this.splashes=planSplashes(seed,bird.slot,water,this.region,placedAt,settings.format).map(s=>({...s,waterAmount:0,effect:'splash'}));
+    this.splashes=thinSource?[]:planSplashes(seed,bird.slot,water,this.region,placedAt,settings.format).map(s=>({...s,waterAmount:0,effect:'splash'}));
   }
   /** Gesture changes the material source while the same full phrase plays. */
   move(point:Point,time:number,connect=true):void{
@@ -108,14 +109,14 @@ export class SoundStain {
     const energy=clamp(feature.energy),attack=clamp(feature.flux),resonance=clamp(this.settings.resonance??.96);
     // Broad connected marks follow the hand; audio still owns their pigment.
     for(const gesture of this.gestures.splice(0,3)){
-      const wet=this.water.at(gesture.b,time)>.025;
+      const wet=this.water.at(gesture.b,time)>=WET_FILM_THRESHOLD;
       const radius=(.012+.045*this.size)*(.35+1.15*Math.pow(energy,.65));
       if(this.bird.id==='pie')segments.push({...this.dot(gesture.b,.001+.006*this.rng(),(.3+.5*energy)),wetOnly:false,waterAmount:0,effect:'splash'});
-      else segments.push({...this.dot(gesture.b,radius,(.22+.62*energy)),a:gesture.a,wetOnly:false,waterAmount:0,effect:'wash',coupling:wet?.12:0});
+      else segments.push({...this.dot(gesture.b,radius,(.22+.62*energy)),a:gesture.a,wetOnly:wet&&this.water.at(gesture.b,time)<.04,waterAmount:0,effect:'wash',coupling:wet?.12:0});
     }
     // Dry cotton catches a compact, broken deposit. It adds pigment, not an
     // invisible water pool. Nearby prepared water alone can mobilise its edges.
-    if(this.water.at(this.anchor,time)<.025){
+    if(this.water.at(this.anchor,time)<WET_FILM_THRESHOLD){
       const angle=this.rng()*Math.PI*2,r=(.008+.020*this.size)*Math.sqrt(this.rng());
       const p=this.offset(this.anchor,angle,r);
       const radius=this.bird.id==='pie'?(.001+.005*this.rng()):(.013+.038*this.size)*(.30+1.05*Math.pow(energy,.7));
@@ -130,7 +131,7 @@ export class SoundStain {
       const target=Math.ceil(this.region.sites.length*clamp(progress/.82));
       while(this.regionCursor<target&&segments.length<8){
         const p=this.region.sites[this.regionCursor++].point;
-        if(this.water.at(p,time)<.012)continue;
+        if(this.water.at(p,time)<WET_FILM_THRESHOLD)continue;
         segments.push({...this.dot(p,(.0012+.006*Math.pow(this.rng(),2))*(.5+this.size),(.55+.35*energy)),effect:'splash'});
       }
       this.tick++;
@@ -176,10 +177,12 @@ export class SoundStain {
       // Wet paths win over arbitrary radial motion, with a small persistent drift.
       for(const turn of [-.85,-.42,0,.42,.85]){
         const a=baseAngle+turn,q=this.offset(f.point,a,stride*1.8);
-        const score=this.water.at(q,time)*2.4-Math.abs(turn)*.13+this.rng()*.06;
+        const amount=this.water.at(q,time);
+        const preference=w<.04?(amount>=WET_FILM_THRESHOLD?.5+clamp(amount/.06):0):amount*2.4;
+        const score=preference-Math.abs(turn)*.13+this.rng()*.06;
         if(score>best){best=score;angle=a;}
       }
-      const outside=w<.035;
+      const outside=w<WET_FILM_THRESHOLD;
       if(outside&&f.length>.018){f.life=100;continue;}
       const next=this.offset(f.point,angle,stride*(.3+.7*clamp(w*2.5)));
       const radius=(.016+.06*this.size)*opening*(.28+.72*taper)*f.weight*(.5+.5*clamp(w*3))*(.85+this.rng()*.3)*(this.bird.id==='geai'?.67:width);

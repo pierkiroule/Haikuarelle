@@ -2,10 +2,13 @@ import type {Point} from '../engine/types';
 import {sheetFor,type ArtworkFormat} from '../engine/layout';
 import {clamp} from '../engine/composition';
 
+export const WET_FILM_THRESHOLD=.006;
+
 export interface WetStroke {a:Point;b:Point;radius:number;amount:number;time:number}
 export interface WetSite {point:Point;from:Point;distance:number}
 export interface WetRegion {sites:WetSite[];radius:number;area:number}
-export const dryingTime=(wetness:number)=>3.4+5.2*clamp(wetness);
+// Shorter evaporation, with the same full settling tail (5.6 time constants).
+export const dryingTime=(wetness:number)=>.82*(3.4+5.2*clamp(wetness));
 // Conservative approximation of FIELD_STEP's clear-water shoulder (0.6..1.25).
 const coverageAt=(d:number)=>{const t=clamp((d-.6)/.6);return 1-t*t*(3-2*t);};
 /** A small CPU guide to the water actually deposited into the GPU's G channel.
@@ -14,13 +17,27 @@ const coverageAt=(d:number)=>{const t=clamp((d-.6)/.6);return 1-t*t*(3-2*t);};
  */
 export class WetPaper {
   private strokes:WetStroke[]=[];
+  private raster:{width:number;height:number;water:Float32Array;time:number}|null=null;
   private sx:number;private sy:number;
   constructor(format:ArtworkFormat='portrait',public tau=6.15){
     const sheet=sheetFor(format),unit=Math.min(sheet.width,sheet.height);
     this.sx=sheet.width/unit;this.sy=sheet.height/unit;
   }
+  replaceMoisture(snapshot:{width:number;height:number;water:Float32Array},time:number):void{
+    if(snapshot.width<1||snapshot.height<1||snapshot.water.length!==snapshot.width*snapshot.height)return;
+    this.raster={...snapshot,water:snapshot.water.slice(),time};this.strokes=[];
+  }
+  private sampled(p:Point,time:number):number{
+    const r=this.raster;if(!r)return 0;
+    const x=clamp(p.x*r.width-.5,0,r.width-1),y=clamp(p.y*r.height-.5,0,r.height-1);
+    const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+    const at=(dx:number,dy:number)=>r.water[Math.min(r.height-1,iy+dy)*r.width+Math.min(r.width-1,ix+dx)];
+    const v=(at(0,0)*(1-fx)+at(1,0)*fx)*(1-fy)+(at(0,1)*(1-fx)+at(1,1)*fx)*fy;
+    return v*Math.exp(-Math.max(0,time-r.time)/this.tau);
+  }
   hold(time:number):void{this.retime(time,Infinity);}
   retime(time:number,tau:number):void{
+    if(this.raster){const r=this.raster,decay=Math.exp(-Math.max(0,time-r.time)/this.tau);r.water=r.water.map(v=>v*decay);r.time=time;}
     this.strokes=this.strokes.map(s=>({...s,amount:s.amount*Math.exp(-Math.max(0,time-s.time)/this.tau),time}));
     this.tau=tau;
   }
@@ -31,7 +48,7 @@ export class WetPaper {
     if(this.strokes.length>1024)this.strokes=this.strokes.filter((_,i)=>i%2===0);
   }
   at(p:Point,time:number):number{
-    let water=0;
+    let water=this.sampled(p,time);
     for(const s of this.strokes){
       const dx=(s.b.x-s.a.x)*this.sx,dy=(s.b.y-s.a.y)*this.sy;
       const px=(p.x-s.a.x)*this.sx,py=(p.y-s.a.y)*this.sy;
@@ -53,16 +70,25 @@ export class WetPaper {
       if(sites.some(p=>Math.hypot((p.point.x-point.x)*this.sx,(p.point.y-point.y)*this.sy)<Math.min(p.radius,s.radius)*.85))continue;
       sites.push({point,radius:s.radius,amount});
     }
+    if(this.raster&&sites.length<3){
+      const r=this.raster,stride=Math.max(1,Math.floor(Math.min(r.width,r.height)/18));
+      for(let y=0;y<r.height&&sites.length<3;y+=stride)for(let x=0;x<r.width&&sites.length<3;x+=stride){
+        const point={x:(x+.5)/r.width,y:(y+.5)/r.height},amount=this.sampled(point,time);
+        if(amount<.025||sites.some(s=>Math.hypot((s.point.x-point.x)*this.sx,(s.point.y-point.y)*this.sy)<.12))continue;
+        sites.push({point,radius:.045,amount});
+      }
+    }
     return sites;
   }
   /** Snapshot the connected basin, ordered by travel distance from the sample.
-   * Rasterization is bounded (about 6k cells), independent of screen resolution.
+   * Rasterization is bounded (about 6k cells, 18k after a water snapshot), independent of screen resolution.
    * Disconnected pools and dry cuts are excluded before any pigment is scheduled.
    */
   region(origin:Point,time:number,maxSites=120,random:()=>number=()=>.5):WetRegion{
-    const step=.018,nx=Math.ceil(this.sx/step),ny=Math.ceil(this.sy/step),count=nx*ny;
-    const dx=this.sx/nx,dy=this.sy/ny,mask=new Float32Array(count),threshold=.025;
+    const step=this.raster?.01:.018,nx=Math.ceil(this.sx/step),ny=Math.ceil(this.sy/step),count=nx*ny;
+    const dx=this.sx/nx,dy=this.sy/ny,mask=new Float32Array(count),threshold=WET_FILM_THRESHOLD;
     const point=(i:number):Point=>({x:clamp((i%nx+.5)/nx,.025,.975),y:clamp((Math.floor(i/nx)+.5)/ny,.025,.975)});
+    if(this.raster)for(let i=0;i<count;i++)mask[i]=this.sampled(point(i),time);
     for(const s of this.strokes){
       const water=s.amount*Math.exp(-Math.max(0,time-s.time)/this.tau);if(water<threshold)continue;
       const ax=s.a.x*this.sx,ay=s.a.y*this.sy,bx=s.b.x*this.sx,by=s.b.y*this.sy;
@@ -124,5 +150,5 @@ export class WetPaper {
     });
     return {sites:sites.slice(0,budget),radius:spacing*.94,area};
   }
-  get count():number{return this.strokes.length;}
+  get count():number{return this.strokes.length+(this.raster?1:0);}
 }

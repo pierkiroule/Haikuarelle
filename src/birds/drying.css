@@ -1,0 +1,46 @@
+.bird-studio.direct-studio .artwork-paper.is-drying{overflow:visible}
+.drying-feathers{position:absolute;inset:0;pointer-events:none;user-select:none;z-index:2;color:#95856a;--breeze-rise:clamp(50px,22cqw,145px)}
+.drying-feather{position:absolute;width:var(--breeze-size);opacity:0;animation:var(--breeze-flight) var(--breeze-duration) cubic-bezier(.4,0,.25,1) var(--breeze-delay) infinite;will-change:transform,opacity}
+.drying-feather.on-left{right:calc(100% + 3px);--breeze-x:clamp(-32px,-3cqw,-5px)}
+.drying-feather.on-right{left:calc(100% + 3px);--breeze-x:clamp(5px,3cqw,32px)}
+.drying-feather-tumble{display:block;transform-origin:45% 60%;animation:drying-tumble var(--breeze-spin) ease-in-out var(--breeze-delay) infinite;animation-direction:var(--breeze-direction)}
+.drying-feather-tumble>.feather-glyph{display:block;width:100%;height:auto;transform-origin:50% 55%;animation:drying-flutter var(--breeze-flutter) ease-in-out var(--breeze-delay) infinite}
+/* Independent drift, tumble and flutter avoid a synchronized upward bob. */
+@keyframes drying-drift-0{
+  0%{opacity:0;transform:translate(0,30px)}
+  16%{opacity:.65;transform:translate(var(--breeze-x),5px)}
+  36%{opacity:.55;transform:translate(calc(var(--breeze-x)*.25),-30px)}
+  55%{opacity:.7;transform:translate(calc(var(--breeze-x)*.85),-12px)}
+  76%{opacity:.5;transform:translate(calc(var(--breeze-x)*.4),calc(var(--breeze-rise)*-.7))}
+  100%{opacity:0;transform:translate(var(--breeze-x),calc(var(--breeze-rise)*-1))}
+}
+@keyframes drying-drift-1{
+  0%{opacity:0;transform:translate(var(--breeze-x),-25px)}
+  20%{opacity:.55;transform:translate(calc(var(--breeze-x)*.2),15px)}
+  41%{opacity:.7;transform:translate(calc(var(--breeze-x)*.95),-15px)}
+  62%{opacity:.6;transform:translate(calc(var(--breeze-x)*.35),calc(var(--breeze-rise)*-.65))}
+  82%{opacity:.4;transform:translate(var(--breeze-x),calc(var(--breeze-rise)*-.5))}
+  100%{opacity:0;transform:translate(calc(var(--breeze-x)*.6),calc(var(--breeze-rise)*-1))}
+}
+@keyframes drying-drift-2{
+  0%{opacity:0;transform:translate(calc(var(--breeze-x)*.4),20px)}
+  18%{opacity:.6;transform:translate(var(--breeze-x),-20px)}
+  39%{opacity:.45;transform:translate(calc(var(--breeze-x)*.15),-5px)}
+  58%{opacity:.7;transform:translate(calc(var(--breeze-x)*.8),calc(var(--breeze-rise)*-.8))}
+  79%{opacity:.5;transform:translate(calc(var(--breeze-x)*.25),calc(var(--breeze-rise)*-.6))}
+  100%{opacity:0;transform:translate(var(--breeze-x),calc(var(--breeze-rise)*-1.1))}
+}
+@keyframes drying-tumble{
+  0%{transform:rotate(-65deg)}
+  23%{transform:rotate(35deg)}
+  48%{transform:rotate(195deg)}
+  71%{transform:rotate(145deg)}
+  100%{transform:rotate(295deg)}
+}
+@keyframes drying-flutter{
+  0%,100%{transform:perspective(100px) rotateY(-45deg) rotateX(12deg)}
+  40%{transform:perspective(100px) rotateY(65deg) rotateX(-18deg)}
+  72%{transform:perspective(100px) rotateY(10deg) rotateX(22deg)}
+}
+@media(max-width:480px){.drying-feather{width:10px}.drying-feather.on-left{right:calc(100% - 4px);--breeze-x:-2px}.drying-feather.on-right{left:calc(100% - 4px);--breeze-x:2px}}
+@media(prefers-reduced-motion:reduce){.drying-feathers{display:none}}

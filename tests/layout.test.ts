@@ -1,8 +1,16 @@
 import {describe,expect,it} from 'vitest';
-import {SHEETS,PIGMENT_RESOLUTION,displaySize,exportSize,frameComposition} from '../src/engine/layout';
+import {SHEETS,PIGMENT_RESOLUTION,paintingQuality,displaySize,exportSize,frameComposition} from '../src/engine/layout';
 import {compose} from '../src/engine/composition';
 const settings={palette:'estuaire',granulation:.72,wetness:.64,complexity:.52};
 describe('portrait and HD presentation',()=>{
+  it('keeps the complete A4 paper at 210:297 including protected text bands',()=>{
+    const sheet=SHEETS.a4;
+    expect(sheet.width/(sheet.height+sheet.width*.44)).toBeCloseTo(210/297,10);
+    const size=exportSize('a4');
+    const fullHeight=size.height+Math.round(size.width*.16)+Math.round(size.width*.28);
+    expect(fullHeight).toBeLessThanOrEqual(4097);
+    expect(Math.abs(size.width/fullHeight-210/297)).toBeLessThan(.001);
+  });
   it('has actual portrait 9:16 and Full HD landscape simulation fields',()=>{
     expect(SHEETS.portrait).toEqual({width:1080,height:1920});
     expect(SHEETS.landscape).toEqual({width:1920,height:1080});
@@ -37,3 +45,24 @@ describe('portrait and HD presentation',()=>{
     }
   });
 });
+
+ describe('automatic painting quality',()=>{
+  it('gives well-equipped desktops a finer stable field and a full 4K detail atlas',()=>{
+   const q=paintingQuality({coarse:false,memory:8,cores:12});
+   expect(q.tier).toBe('studio');expect(q.scale*1080).toBe(1800);expect(q.scale*1920).toBe(3200);
+   expect(paintingQuality({memory:8,cores:8}).tier).toBe('fine');
+   expect(q.pixels).toBe(1800*3200);expect(q.detailPixels).toBe(2304*4096);
+  });
+  it('bounds mobile memory without assuming all phones are equally powerful',()=>{
+   expect(paintingQuality({coarse:true,memory:2,cores:8}).tier).toBe('light');
+   expect(paintingQuality({coarse:true,memory:4,cores:8}).pixels).toBe(1080*1920);
+   expect(paintingQuality({coarse:true,memory:8,cores:8}).pixels).toBe(1440*2560);
+   const q=paintingQuality({coarse:true,memory:2});const display=displaySize(1440,2560,3,true,q.displayPixels);
+   expect(display.width*display.height).toBeLessThan(2.11e6);
+  });
+  it('keeps the previous QHD default when optional browser hints are unavailable or invalid',()=>{
+   for(const hints of [{},{memory:NaN,cores:Infinity},{memory:-1,cores:0},{coarse:true}]){
+    expect(paintingQuality(hints).tier).toBe('fine');expect(paintingQuality(hints).pixels).toBe(1440*2560);
+   }
+  });
+ });

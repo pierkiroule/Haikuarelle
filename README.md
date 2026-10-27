@@ -65,7 +65,7 @@ Documentation et planche des quatre nouveautés : [Sept plumages](docs/SEPT-PLUM
 Correctif V11.1 : la toile garde le même gabarit entre peinture, séchage et révélation des mots. Son bitmap GPU est isolé dans une couche positionnée pour éviter que sa définition interne pilote la hauteur du cadre. Portrait 9:16 et paysage 16:9 sont conservés. Le titre et le haïku occupent des bandes protégées du papier, hors du champ de peinture. Les contrôles de géométrie sont documentés dans [Proportions de la feuille](docs/PROPORTIONS-DE-LA-FEUILLE.md).
 
 
-Portrait 9:16 ou paysage 16:9, grand écran et commandes tactiles. Champ QHD 1 440 × 2 560 lorsque le GPU le permet ; export de peinture 2 304 × 4 096 en portrait, puis marge du haïku (2 304 × 5 110 au total, titre et haïku inclus). L’eau claire est plus contrastée et s’efface en séchant. Le papier est fin, sans quadrillage. Les lavis utilisent une concentration continue pour éviter les bandes artificielles. Les échanges entre cellules voisines et diagonales évitent les sous-grilles laissées par les anciens pas de diffusion. Au grossissement et à l’export, une reconstruction cubique positive adoucit les cellules sans accentuer leurs carrés.
+Portrait 9:16 ou paysage 16:9, grand écran et commandes tactiles. Champ adaptatif de 864 × 1 536 à 1 800 × 3 200, avec un profil QHD 1 440 × 2 560 par défaut lorsque les indications de ressources sont indisponibles, toujours limité par le GPU ; export de peinture 2 304 × 4 096 en portrait, puis marge du haïku (2 304 × 5 110 au total, titre et haïku inclus). L’eau claire est plus contrastée et s’efface en séchant. Le papier est fin, sans quadrillage. Les lavis utilisent une concentration continue pour éviter les bandes artificielles. Les échanges entre cellules voisines et diagonales évitent les sous-grilles laissées par les anciens pas de diffusion. Au grossissement et à l’export, une reconstruction cubique positive adoucit les cellules sans accentuer leurs carrés.
 
 `1` : choisir la plume sonore. Sur la feuille, maintenir espace/Entrée et utiliser les flèches pour peindre au clavier. Relâcher la touche lève le pinceau. `F` : grand écran. `Échap` : lever le pinceau et sortir du grand écran.
 
@@ -77,7 +77,7 @@ Contrôles, exemples et limites : [Pinceau sonore](docs/PINCEAU-SONORE.md).
 
 ## Séchage et détails
 
-Le séchage utilise un bruit organique à support triangulaire, une accentuation modérée et un éclairage du grain très discret pour éviter le gaufrage carré. Les gradients sont lus dans le même champ reconstruit que la couleur, sans réaccentuer la grille. Quatre masques alpha procéduraux font émerger des variations de densité dans une même teinte, des délavages, des auréoles internes et des poches minérales. Un dépôt de bord suit le vrai contour du pigment et se renforce quand l’eau se retire. Les zones calmes et les blancs restent présents. Le réglage **Grain & relief** module l’intensité de cette matière. **Netteté** renforce progressivement le contraste local du pigment, les contours et les auréoles à mesure que l’eau se retire. **Seuil des détails** sélectionne les poches minérales : une valeur plus élevée privilégie les dépôts les plus marqués. Ces réglages agissent sur le rendu courant et sur le PNG, sans rejouer les gestes. L’atlas de séchage est échantillonné à la résolution d’affichage, plafonnée à 1 440 × 2 560 pixels équivalents (environ 14 Mio RGBA8). Il est précalculé une fois par placement de feuille ; aucune étape supplémentaire de simulation fluide n’est ajoutée. Les textures restent procédurales, sans promesse de reproduction physique exacte.
+Le séchage utilise un bruit organique à support triangulaire, une accentuation modérée et un éclairage du grain très discret pour éviter le gaufrage carré. Les gradients sont lus dans le même champ reconstruit que la couleur, sans réaccentuer la grille. Quatre masques alpha procéduraux font émerger des variations de densité dans une même teinte, des délavages, des auréoles internes et des poches minérales. Un dépôt de bord suit le vrai contour du pigment et se renforce quand l’eau se retire. Les zones calmes et les blancs restent présents. Le réglage **Grain & relief** module l’intensité de cette matière. **Netteté** renforce progressivement le contraste local du pigment, les contours et les auréoles à mesure que l’eau se retire. **Seuil des détails** sélectionne les poches minérales : une valeur plus élevée privilégie les dépôts les plus marqués. Ces réglages agissent sur le rendu courant et sur le PNG, sans rejouer les gestes. L’atlas de séchage est échantillonné à la résolution d’affichage, plafonnée selon le profil : de 1 080 × 1 920 à 2 304 × 4 096 pixels équivalents (QHD par défaut). Il est précalculé une fois par placement de feuille ; aucune étape supplémentaire de simulation fluide n’est ajoutée. Les textures restent procédurales, sans promesse de reproduction physique exacte.
 
 Comparaisons et limites V10 : [Netteté au séchage](docs/NETTETE-ET-EFFACEMENT.md).
 
@@ -146,3 +146,55 @@ Le premier contact d’un geste d’eau joue le chant de l’oiseau à travers u
 La goutte utilise un canal d’analyse dédié au mouvement de l’eau et n’autorise jamais de pigment. Son enveloppe sonore pilote les courants. La plume conserve le chant clair, entier et sans boucle. Une seule source est partagée : si le chant de peinture joue déjà, l’eau le rejoint sans le relancer ; passer à la plume remplace le chant immergé sans superposer les samples. Les interruptions explicites, la fermeture et le masquage de l’onglet libèrent aussi le filtre.
 
 `python scripts/check-immersed-water.py` vérifie le vrai graphe audio dans Chromium aux formats ordinateur et mobile : filtre sur la goutte, diminution du volume et des aigus au relâchement, absence de pigment et chant naturel sur la plume.
+
+### Le souffle du vivant
+
+L’atelier propose Eau, Plume et Souffle. En mode Souffle, glisser sur une zone humide entraîne les pigments dans la direction du geste ; la vitesse module une force plafonnée et le curseur Taille règle sa largeur. Au clavier, maintenir espace ou Entrée puis utiliser les flèches. Aucun chant ni pigment supplémentaire n’est déclenché. Le souffle étire surtout le bord avant de la peinture en filaments étroits, de longueurs irrégulières. Des couloirs de transport courbes et ancrés au papier entraînent uniquement les pigments déjà présents dans la pellicule humide ; leur direction suit le geste. Au relâchement, une rafale bornée termine la poussée ; la diffusion capillaire normale reprend ensuite dans l’eau déplacée.
+
+Le souffle transporte désormais l’eau et ses pigments au-delà du contour initial de la flaque. Des échanges de flux bornés entraînent la pellicule humide sur le papier sec ; le pigment sec préexistant reste immobile. Les courants audio ordinaires restent confinés aux chemins humides. Le séchage, l’effacement et les interruptions retirent les forces en attente. Le repère de direction est décoratif et absent de l’export.
+
+Contrôle GPU optionnel : `PYTHONPATH=/chemin/vers/playwright python3 scripts/check-living-breath.py`, après `npm run dev`. Il compare une tache avec et sans souffle et vérifie le déplacement de pigment, la stabilité des zones sèches et l’absence d’ajout d’eau.
+
+Le séchage volontaire dure désormais 12 secondes de simulation, avec une constante d’évaporation de `12 / 5.6` partagée entre le guide d’eau et le GPU. Cela conserve une humidité résiduelle inférieure à 0,5 % à la fin ; l’eau reste disponible tant que cette étape n’est pas lancée. Les appareils qui ne soutiennent pas la cadence de simulation peuvent prendre davantage de temps réel.
+
+
+### Qualité automatique et fixation des détails
+
+Le moteur choisit un profil au démarrage à partir du type de pointeur et des indications facultatives de mémoire et de processeurs du navigateur. Ces indications sont une estimation prudente, pas une mesure de performance du GPU. La résolution reste fixe pendant l’œuvre et les limites de texture du GPU restent prioritaires.
+
+| Profil | Champ portrait | Sélection |
+| --- | --- | --- |
+| Léger | 864 × 1 536 | Mémoire annoncée ≤ 2 Go |
+| Équilibré | 1 080 × 1 920 | Tactile, mémoire ≤ 4 Go ou ≤ 4 processeurs |
+| Fin | 1 440 × 2 560 | Profil par défaut, notamment si les indications manquent |
+| Atelier | 1 800 × 3 200 | Pointeur fin, mémoire ≥ 8 Go et ≥ 12 processeurs logiques |
+
+Le profil Atelier calcule 56 % de cellules de pigment en plus que l’ancien QHD fixe. Son atlas procédural de séchage peut atteindre la définition complète de l’export 4K ; il ne reconstruit pas une simulation 4K ni des gestes perdus. L’affichage respecte la densité de l’écran sous un plafond de mémoire ; le profil léger plafonne aussi ses tampons d’affichage et son atlas.
+
+Pendant les 12 secondes de séchage, l’advection et les échanges capillaires ralentissent davantage avec la baisse de l’humidité. Les dépôts fins se fixent progressivement ; aucune accentuation globale ou nouvelle trame n’est ajoutée. Les échanges restent symétriques entre cellules et la réhumidification permet à la matière de bouger à nouveau.
+
+Validation GPU optionnelle : `scripts/check-detail-fixation.py` compare deux champs identiques avec la même évaporation, en désactivant uniquement la fixation pour la référence. Le test vérifie une meilleure conservation du contraste des filaments, une masse de pigment comparable, la même eau et la stabilité du pigment sec. Les performances sur téléphone physique ne sont pas mesurées.
+
+
+Le souffle du vivant s’ouvre en rhizome : impulsion initiale énergique, éventail directionnel et deux niveaux de bifurcations irrégulières. Le bord de la flaque peut avancer sur le papier sec. Le transport utilise des flux par faces, avec des donneurs plafonnés à 32 % par face, et déplace ensemble la pellicule d’eau et le pigment en suspension. Il ne déplace pas le pigment déjà sec. La carte d’eau CPU est resynchronisée pendant le geste (au plus une fois toutes les 180 ms), puis à sa levée depuis une petite capture GPU de 256 pixels au grand côté ; les nouveaux prolongements participent aux gestes suivants, à la résonance et au séchage de 12 secondes. Un suivi de 650 ms permet au geste de franchir l’ancien contour sans se couper immédiatement ; il ne crée rien sur une toile entièrement sèche.
+
+Le contrôle GPU du souffle vérifie des branches colorées à l’extérieur du contour initial, un volume d’eau approximativement conservé (tolérance numérique de 5 %), la présence des nouvelles zones dans le guide CPU et l’absence de déplacement de la peinture sèche distante. Le contrôle force aussi une entrée de souffle sur un champ sans eau pour vérifier qu’aucun pigment ni aucune humidité n’apparaissent.
+
+
+Le souffle déplace d’abord la masse d’eau sous le geste et emporte son pigment en suspension : le point de départ se vide et le front avance. Une pression continue agit au cœur de la flaque ; les ramifications modulent seulement sa frange avant. Un même flux transporte l’humidité et les composantes optiques du pigment. Les liens entiers, combinés sur plusieurs distances, partagent exactement leurs donneurs ; ils évitent de rééchantillonner séparément l’eau et la couleur. Pendant le geste, les anciens courants ne déplacent plus la couleur indépendamment de l’eau. Le souffle n’injecte pas de vitesse résiduelle dans ce second solveur.
+
+Le suivi au-delà de l’ancienne flaque reste borné en temps (650 ms) et en distance (3,5 rayons). La mise à jour du guide pendant le geste permet de suivre l’eau réellement déplacée, au lieu de s’arrêter sur sa position initiale. Le séchage volontaire reste à 12 secondes de simulation.
+
+`scripts/check-breath-transport.py` vérifie sur le GPU, dans deux directions, le déplacement du centre de la flaque, la diminution de l’eau dans la zone de départ, l’alignement des centres d’eau et de pigment, la conservation de leur masse et de leur rapport de concentration, et la stabilité du pigment sec distant. Les mesures sont celles de scènes contrôlées à champ réduit ; elles ne constituent pas une mesure de fluidité sur téléphone physique.
+
+
+Un mouvement bref conserve désormais neuf pas de poussée, soit environ 0,3 seconde de simulation, même si le doigt est relâché avant la première image. La pression décroît puis s’arrête ; un arrêt explicite, un changement d’outil, une annulation ou le séchage interrompent la rafale. Le plafond de déplacement haute définition passe de 6 à 24 cellules par pas et les flux sont renforcés, tout en gardant des donneurs positifs. Le guide d’eau est aussi actualisé à la fin de la rafale.
+
+`scripts/check-strong-breath.py` bloque temporairement les images d’animation pour reproduire le geste relâché trop tôt, puis vérifie dans le véritable atelier ses neuf impulsions, l’absence de nouveau dépôt et l’absence d’erreur navigateur aux formats ordinateur et mobile. Le test GPU `check-breath-transport.py` vérifie aussi ce geste bref via le moteur complet, avec un déplacement net de la flaque et la conservation de l’eau et des pigments.
+
+
+Le souffle étire la pellicule en racines d’eau : l’écoulement diverge à l’avant, augmente la surface humide et répartit le même volume sur une couche plus mince. Le cœur reste poussé de façon continue et les bifurcations se forment vers les pointes. Ces racines restent constituées d’eau seule tant qu’aucun pigment n’y est déposé ; aucune couleur procédurale n’est ajoutée.
+
+Les films à partir de 0,006 d’humidité participent aux chemins de peinture. Le guide des flaques est plus fin après transport, et une petite épaisseur ne déclenche plus automatiquement un dépôt de peinture sèche. Sur ces filaments minces, les lavis restent limités au chemin humide et les projections sèches satellites sont supprimées ; les dépôts sur papier réellement sec restent disponibles. La diffusion et la visibilité de l’eau tiennent aussi compte des films fins. La fin du chant immergé ne suspend pas une rafale de souffle active sur de l’eau sans pigment.
+
+`scripts/check-water-roots.py` vérifie le scénario complet : eau claire, souffle, puis dépôt sonore local. Dans la scène contrôlée, la surface humide augmente d’environ 67 % et l’épaisseur moyenne diminue d’environ 40 % à volume pratiquement constant. La peinture colore un filament nouvellement étiré sans changer l’eau ni toucher la flaque séparée ; ces chiffres décrivent cette scène, pas tous les gestes.

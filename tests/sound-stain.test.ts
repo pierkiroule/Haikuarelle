@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {SoundStain} from '../src/birds/SoundStain';
-import {WetPaper} from '../src/birds/WetPaper';
+import {WetPaper,WET_FILM_THRESHOLD} from '../src/birds/WetPaper';
 import {BIRD_PADS,BIRD_BRUSHES} from '../src/birds/catalog';
 import type {EngineSettings} from '../src/engine/types';
 import type {AudioFrame} from '../src/audio/types';
@@ -85,7 +85,7 @@ describe('one sample dropped into water creates a finite stain',()=>{
     expect(segments.length).toBeGreaterThan(15);
     expect(Math.min(...segments.map(s=>s.b.x))).toBeGreaterThan(.25);
     expect(Math.max(...segments.map(s=>s.b.x))).toBeLessThan(.8);
-    expect(segments.every(s=>s.b.y<.6&&w.at(s.b,0)>.025)).toBe(true);
+    expect(segments.every(s=>s.b.y<.6&&w.at(s.b,0)>=WET_FILM_THRESHOLD)).toBe(true);
     expect(s.step(undefined,1).segments).toEqual([]);
   });
 });
@@ -109,4 +109,15 @@ it('connects the gesture on dry and wet cotton but never joins separate taps',()
     expect(tap.segments.some(d=>d.a.x===.8&&d.b.x===.8)).toBe(true);
     expect(s.step({...note(4),active:false},.14).segments).toEqual([]);
   }
+});
+
+it('lays a wet glaze in a thin root instead of a broad dry deposit or remote splashes',()=>{
+ const w=new WetPaper('portrait',Infinity),width=100,height=178,water=new Float32Array(width*height);
+ for(let y=86;y<92;y++)for(let x=30;x<85;x++)water[y*width+x]=.012;
+ w.replaceMoisture({width,height,water},0);
+ const origin={x:.62,y:.5},s=new SoundStain({...BIRD_PADS[1],pigmentSlot:1},12,origin,settings,w,.5);
+ s.move({x:.64,y:.5},0);
+ const segments=Array.from({length:8},(_,i)=>s.step({...note(i),flux:.1},i/30)).flatMap(f=>f.segments);
+ expect(segments.length).toBeGreaterThan(0);
+ expect(segments.every(segment=>segment.wetOnly&&!segment.water&&segment.effect!=='splash')).toBe(true);
 });

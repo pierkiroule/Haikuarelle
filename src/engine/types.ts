@@ -10,7 +10,7 @@ export interface WatercolorEngine {
   exportPNG(): Promise<Blob>;
   destroy(): void;
 }
-export interface EngineSettings { palette: string; granulation: number; wetness: number; complexity: number; ink?: number; resonance?:number; sharpness?:number; dryingThreshold?:number; format?: 'portrait'|'landscape' }
+export interface EngineSettings { palette: string; granulation: number; wetness: number; complexity: number; ink?: number; resonance?:number; sharpness?:number; dryingThreshold?:number; format?: 'portrait'|'landscape'|'a4' }
 export type Phase = 'idle' | 'wetting' | 'wash' | 'meeting' | 'bloom' | 'ink' | 'drying' | 'complete';
 export interface EngineStatus { seed: number; progress: number; phase: Phase; paused: boolean; fps: number; ticks: number; wetStrokes?:number; hasPigment?:boolean }
 export interface Point { x: number; y: number }

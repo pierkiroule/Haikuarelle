@@ -51,6 +51,8 @@ export interface Segment {
   kind: Kind;
   /** HAÏKUARELLE: glaze only the existing damp film, without adding water. */
   wetOnly?: boolean;
+  /** Local air jets that stretch the wet pigment rim into fine tendrils. */
+  breath?: boolean;
   /** Explicit clear-water level, 0..1; omission preserves existing brush behavior. */
   waterAmount?: number;
   /** Ink 0..2 in legacy mode, optical pigment 0..15 when Look.pigments is set. */
@@ -149,6 +151,8 @@ export class PaintEngine {
   private maxTexels: number;
   private maxScale: number;
   private maxDimension: number;
+  private detailBudget:number;
+  private moistureTarget:Target|null=null;
   private paperFrom: number[] = [];
   private paperTo: number[] = [];
   private labFrom: number[] = [];
@@ -162,7 +166,7 @@ export class PaintEngine {
   private dropBuf = new Float32Array(MAX_DROPS * 4);
   private dropInkBuf = new Float32Array(MAX_DROPS * 4);
 
-  constructor(canvas: HTMLCanvasElement, opts: { coarse: boolean; fieldBudget?: number; fieldScale?:number; maxDimension?:number }) {
+  constructor(canvas: HTMLCanvasElement, opts: { coarse: boolean; fieldBudget?: number; fieldScale?:number; maxDimension?:number; detailBudget?:number }) {
     this.canvas = canvas;
     const gl = canvas.getContext('webgl2', {
       antialias: false, alpha: false, depth: false, stencil: false,
@@ -182,6 +186,7 @@ export class PaintEngine {
     this.maxTexels = opts.fieldBudget ?? (opts.coarse ? 0.55e6 : 2.1e6);
     this.maxScale = opts.fieldScale ?? 1;
     this.maxDimension = opts.maxDimension ?? 2048;
+    this.detailBudget=opts.detailBudget??1440*2560;
     this.historyBytes = opts.coarse ? 28e6 : 100e6;
 
     this.vao = gl.createVertexArray()!;
@@ -384,7 +389,7 @@ export class PaintEngine {
   /** Advances the sheet by dt seconds. Returns false when nothing needed doing. */
   step(dt: number, now: number, segs: Segment[], drops: Drop[]): boolean {
     const gl = this.gl;
-    const forcing = segs.some((s) => s.coupling > 0);
+    const forcing = segs.some((s) => !s.breath && s.coupling > 0);
     if (forcing) this.flowUntil = now + 2000;
     if (segs.length || drops.length) this.wetUntil = now + Math.max(2500 + 6000 * this.look.bleed, (this.look.dryingTime ?? 0) * 5600);
     const flowing = now < this.flowUntil;
@@ -400,7 +405,8 @@ export class PaintEngine {
       const s = segs[i];
       this.segBuf.set([s.ax, s.ay, s.bx, s.by], i * 4);
       this.segPBuf.set(segmentPayload(s), i * 4);
-      this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.coupling], i * 4);
+      // Breath has its own coupled water/pigment flux, never a second colour-only current.
+      this.forceBuf.set([s.fx, s.fy, s.radius * 1.3, s.breath?0:s.coupling], i * 4);
     }
     const nd = Math.min(drops.length, MAX_DROPS);
     for (let i = 0; i < nd; i++) {
@@ -442,8 +448,11 @@ export class PaintEngine {
       this.stopFlow();
     }
 
+    const breath=segs.slice(0,n).find(s=>s.breath);
     const bleed = this.look.bleed;
     this.run('fieldStep', this.field[1], (u) => {
+      gl.uniform4f(u.uBreath,breath?.ax??0,breath?.ay??0,breath?.fx??0,breath?.fy??0);
+      gl.uniform2f(u.uBreathShape,breath?.radius??1,breath?.coupling??0);
       gl.uniform1f(u.uOptical,this.absorption.length?1:0);
       if(this.absorption.length)gl.uniform3fv(u.uAbsorption,this.absorption);
       gl.uniform2f(u.uSize, this.fieldW, this.fieldH);
@@ -452,6 +461,7 @@ export class PaintEngine {
       gl.uniform1f(u.uBleed, bleed);
       gl.uniform1f(u.uDryKeep, Math.exp(-dt / (this.look.dryingTime ?? (0.7 + 2.2 * bleed))));
       gl.uniform1f(u.uMaterial, (this.look.detail ?? 0) > 0.5 ? 1 : 0);
+      gl.uniform1f(u.uFixation,(this.look.detail??0)>.5&&Number.isFinite(this.look.dryingTime)?1:0);
       gl.uniform1f(u.uDryFloor, this.look.dryingTime === undefined ? 0.02 : 0);
       gl.uniform2f(u.uSeedOff, this.meta.seed[0], this.meta.seed[1]);
       gl.uniform1f(u.uUnit, this.meta.unit * this.k);
@@ -575,8 +585,8 @@ export class PaintEngine {
     const fh = Math.max(1, Math.ceil(h / 4));
     const flow = this.makeTarget(fw, fh, this.rgba, true);
     // Fine backruns and sediment use full display sampling up to a bounded
-    // QHD atlas (14 MiB RGBA8). Baked once, with no extra fluid-simulation steps.
-    const detailScale=Math.min(1,Math.sqrt((1440*2560)/(w*h)));
+    // atlas selected at startup. Baked once, with no extra fluid-simulation steps.
+    const detailScale=Math.min(1,Math.sqrt(this.detailBudget/(w*h)));
     const drying = this.makeTarget(Math.max(1,Math.ceil(w*detailScale)), Math.max(1,Math.ceil(h*detailScale)), {internal:gl.RGBA8,format:gl.RGBA}, true, gl.UNSIGNED_BYTE);
     const flowTex = [flow.tex];
     gl.bindFramebuffer(gl.FRAMEBUFFER, flow.fbo);
@@ -601,6 +611,21 @@ export class PaintEngine {
     this.deleteTarget(a.drying);
     for (const t of a.flowTex) this.gl.deleteTexture(t);
     this.gl.deleteFramebuffer(a.flow.fbo);
+  }
+
+  /** Small top-down moisture guide, read once after a breath gesture. */
+  captureMoisture():{width:number;height:number;water:Float32Array}|null{
+    if(!this.ready||this.isContextLost)return null;
+    const scale=Math.min(1,256/Math.max(this.fieldW,this.fieldH));
+    const width=Math.max(1,Math.round(this.fieldW*scale)),height=Math.max(1,Math.round(this.fieldH*scale));
+    const g=this.gl;
+    const target=this.moistureTarget??(this.moistureTarget=this.makeTarget(width,height,this.rgba,true));
+    this.run('copy',target,u=>g.uniform4f(u.uMap,this.fieldW/width,this.fieldH/height,0,0),{uSrc:this.field[0].tex});
+    const pixels=new Float32Array(width*height*4),water=new Float32Array(width*height);
+    g.bindFramebuffer(g.FRAMEBUFFER,target.fbo);g.readPixels(0,0,width,height,g.RGBA,g.FLOAT,pixels);g.bindFramebuffer(g.FRAMEBUFFER,null);
+    if(g.getError()!==g.NO_ERROR)return null;
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++)water[y*width+x]=Math.max(0,pixels[((height-1-y)*width+x)*4+1]);
+    return {width,height,water};
   }
 
   /** Renders what the viewport shows at `scale` × CSS size; rows top-down, RGBA. */
@@ -707,6 +732,7 @@ export class PaintEngine {
   /** Frees every GPU target, except `keep` (used to carry the old sheet over when growing). */
   private release(keep?: Target): void {
     this.clearHistory();
+    if(this.moistureTarget){this.deleteTarget(this.moistureTarget);this.moistureTarget=null;}
     for (const t of this.pool.splice(0)) this.deleteTarget(t);
     if (this.settleTarget) this.deleteTarget(this.settleTarget);
     this.settleTarget = null;

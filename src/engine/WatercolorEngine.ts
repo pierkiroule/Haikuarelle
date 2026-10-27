@@ -1,3 +1,5 @@
+import {LivingBreath} from '../birds/LivingBreath';
+import type {WaterCurrent} from '../birds/ResonantWater';
 import {ResonantWater} from '../birds/ResonantWater';
 import {BIRD_COLOURS} from '../birds/colourPalettes';
 import { PaintEngine, Kind, type Segment, type Drop, type Look } from '../vendor/pigment-drift/paint/engine';
@@ -5,7 +7,7 @@ import { createRng } from '../vendor/pigment-drift/engine/params';
 import { compose, sampleGesture, TICK_RATE, DURATION, clamp } from './composition';
 import { getPalette, inkRamp, PLUMAGE_PIGMENTS } from './palettes';
 import { FineInkRenderer } from './FineInkRenderer';
-import {displaySize,frameComposition,sheetFor,PIGMENT_RESOLUTION} from './layout';
+import {displaySize,frameComposition,sheetFor,paintingQuality,type PaintingQuality} from './layout';
 import { composeAudio } from '../audio/composeAudio';
 import type { AudioAnalysis } from '../audio/types';
 import {composeBird} from '../birds/grammar';
@@ -17,6 +19,7 @@ import {SoundStain} from '../birds/SoundStain';
 import type {Point,InkStroke} from './types';
 import type { WatercolorEngine, EngineSettings, EngineStatus, Composition, Phase, Gesture } from './types';
 
+const RITUAL_DRYING_SECONDS=12;
 const DEFAULTS:EngineSettings={palette:'estuaire',granulation:.72,wetness:.64,complexity:.52,ink:.62,format:'landscape'};
 const phases: [number,Phase][]=[[1.1,'wetting'],[7.5,'wash'],[11.7,'meeting'],[15.7,'bloom'],[24,'drying']];
 
@@ -27,6 +30,7 @@ const phases: [number,Phase][]=[[1.1,'wetting'],[7.5,'wash'],[11.7,'meeting'],[1
  */
 export class HaikuarelleEngine implements WatercolorEngine {
   readonly paint:PaintEngine;
+  readonly quality:PaintingQuality;
   settings:EngineSettings;
   composition!:Composition;
   private fineInk:FineInkRenderer;
@@ -44,6 +48,12 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private wetPaper=new WetPaper();
   private waterPending:BrushSegment[]=[];
   private waterLast:Point|null=null;
+  private breath=new LivingBreath();
+  private breathPending:WaterCurrent|null=null;
+  private breathMoved=false;
+  private breathTicks=0;
+  private breathReleased=false;
+  private lastBreathSync=-Infinity;
   private waterBlooms:{point:Point;start:number;duration:number;radius:number}[]=[];
   private hasPigment=false;
   private tick=0;
@@ -65,8 +75,10 @@ export class HaikuarelleEngine implements WatercolorEngine {
   constructor(canvas:HTMLCanvasElement,settings:Partial<EngineSettings>={},onChange?:(s:EngineStatus)=>void,onError?:(s:string)=>void,options:{requireAudio?:boolean}={}) {
     this.settings={...DEFAULTS,...settings};this.onChange=onChange;this.onError=onError;
     this.requireAudio=options.requireAudio??false;
-    // Same simulation budget on every device. Only display resolution adapts.
-    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:PIGMENT_RESOLUTION.pixels,fieldScale:PIGMENT_RESOLUTION.scale,maxDimension:PIGMENT_RESOLUTION.maxDimension});
+    const coarse=matchMedia('(pointer:coarse)').matches;
+    const device=typeof navigator==='undefined'?undefined:navigator as Navigator&{deviceMemory?:number};
+    this.quality=paintingQuality({coarse,memory:device?.deviceMemory,cores:device?.hardwareConcurrency});
+    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:this.quality.pixels,fieldScale:this.quality.scale,maxDimension:this.quality.maxDimension,detailBudget:this.quality.detailPixels});
     this.fineInk=new FineInkRenderer(this.paint.gl);
     this.paint.afterRender=()=>this.fineInk.draw(this.tick/TICK_RATE,[.11,.16,.15]);
     this.observer=new ResizeObserver(()=>this.resize());
@@ -82,7 +94,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       pigments:this.performance&&palette.id==='plumages'?this.pigmentColours:undefined,
       layers:6,bleed:this.settings.wetness,drift:0,texture:this.settings.granulation,
       edges:this.performance?1:.74,hueDrift:.02,mist:this.performance?.015:.12,ridge:.13,feather:this.performance?.22:.82,density:this.performance?.83:.68,detail:this.performance?1:0,
-      dryingTime:this.performance?(this.drying?dryingTime(this.settings.wetness):Infinity):undefined,dryingDetail:this.performance?.95:0,
+      dryingTime:this.performance?(this.drying?RITUAL_DRYING_SECONDS/5.6:Infinity):undefined,dryingDetail:this.performance?.95:0,
       dryingSharpness:this.performance?(this.settings.sharpness??.72):0,dryingThreshold:this.performance?(this.settings.dryingThreshold??.56):0};
   }
   generate(seed:number):void {
@@ -101,6 +113,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     if(this.destroyed)return;
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
     this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;
+    this.breath.reset();this.breathPending=null;this.breathMoved=false;this.breathTicks=0;this.breathReleased=false;this.lastBreathSync=-Infinity;
     this.waterPending=[];this.waterLast=null;this.waterBlooms=[];this.hasPigment=false;
     this.drying=false;this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper=new WetPaper(this.settings.format,this.performance?Infinity:dryingTime(this.settings.wetness));
@@ -163,13 +176,38 @@ export class HaikuarelleEngine implements WatercolorEngine {
   }
   setDrying(enabled:boolean):void{
     if(!this.performance||this.destroyed)return;
-    this.drying=enabled;if(enabled)this.resonantWater=new ResonantWater(this.seed);
-    this.wetPaper.retime(this.tick/TICK_RATE,enabled?dryingTime(this.settings.wetness):Infinity);
+    this.liftBreath(true);this.drying=enabled;if(enabled)this.resonantWater=new ResonantWater(this.seed);
+    this.wetPaper.retime(this.tick/TICK_RATE,enabled?RITUAL_DRYING_SECONDS/5.6:Infinity);
     this.paint.setLook(this.look());
     this.composition.duration=this.tick/TICK_RATE+this.dryingDuration();
   }
+  blow(point:Point,time:number,size:number):void{
+    if(this.destroyed||!this.performance||this.drying)return;
+    // Keep the gesture on the actual moving water, not on the original mask.
+    if(this.breathMoved&&time-this.lastBreathSync>=180){this.syncBreathWater();this.lastBreathSync=time;}
+    const sheet=sheetFor(this.settings.format),unit=Math.min(sheet.width,sheet.height);
+    const current=this.breath.move(point,time,size,this.waterAt(point),{x:sheet.width/unit,y:sheet.height/unit});
+    if(!current)return;
+    this.breathPending=current;this.breathTicks=18;this.breathReleased=false;
+    if(!this.active||this.paused)this.last=0;
+    this.active=true;this.paused=false;
+    this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+this.dryingDuration());this.request();
+  }
+  get isBlowing():boolean{return this.breathPending!==null;}
+  private syncBreathWater():void{
+    if(this.breathMoved&&!this.destroyed){
+      const moisture=this.paint.captureMoisture();if(moisture)this.wetPaper.replaceMoisture(moisture,this.tick/TICK_RATE);
+    }
+    this.breathMoved=false;
+  }
+  liftBreath(cancel=false):void{
+    this.breath.reset();
+    if(cancel){this.breathPending=null;this.breathTicks=0;this.breathReleased=false;}
+    else this.breathReleased=!!this.breathPending;
+    this.syncBreathWater();this.lastBreathSync=-Infinity;
+  }
   waterAt(point:Point):number{return this.wetPaper.at(point,this.tick/TICK_RATE);}
-  private dryingDuration():number{return dryingTime(this.settings.wetness)*5.6;}
+  private dryingDuration():number{return this.drying?RITUAL_DRYING_SECONDS:dryingTime(this.settings.wetness)*5.6;}
   /** Drop one real sample onto dry or prepared wet paper. No live pointer path. */
   startSoundStain(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0,clock?:()=>number,onMark?:(p:Point)=>void,opacity=1):boolean{
     if(this.destroyed||!this.performance||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
@@ -238,7 +276,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   }
   private resize():void {
     const rect=this.paint.canvas.getBoundingClientRect();
-    const size=displaySize(rect.width,rect.height,devicePixelRatio||1,matchMedia('(pointer:coarse)').matches);
+    const size=displaySize(rect.width,rect.height,devicePixelRatio||1,matchMedia('(pointer:coarse)').matches,this.quality.displayPixels);
     const {width:w,height:h}=size,sheet=sheetFor(this.settings.format);
     if(this.lastDisplay[0]===w&&this.lastDisplay[1]===h&&this.paint.ready){
       this.paint.setView(sheet.width,sheet.height,w,h);return;
@@ -301,6 +339,13 @@ export class HaikuarelleEngine implements WatercolorEngine {
       appendFrame(frame);
       brushPoint=frame.point;this.composition.duration=time+this.dryingDuration();
     }
+    if(this.breathPending&&this.performance&&!this.drying&&segs.length<16){
+      const c=this.breathPending,pressure=.55+.45*this.breathTicks/18;
+      if(--this.breathTicks<=0)this.breathPending=null;
+      const x=c.point.x*sheet.width*this.paint.k,y=(1-c.point.y)*sheet.height*this.paint.k;
+      segs.push({ax:x,ay:y,bx:x,by:y,radius:c.radius*unit*this.paint.k,target:0,strength:0,waterAmount:0,
+        kind:Kind.Water,slot:0,breath:true,fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:c.coupling*pressure});
+    }
     if(this.performance&&!this.drying&&!this.voice){
       const response=this.resonantWater.step(waterFeature,time,this.wetPaper);
       // Preserve slots for fresh hand-placed water, including during a phrase.
@@ -351,9 +396,11 @@ export class HaikuarelleEngine implements WatercolorEngine {
     // Bound the grammar before it reaches the upstream uniform limits.
     if(segs.length>16||drops.length>4)throw new Error('Composition outside GPU gesture budget.');
     this.paint.step(1/TICK_RATE,(this.tick+1)*1000/TICK_RATE,segs,drops);
+    if(segs.some(s=>s.breath))this.breathMoved=true;
     if(stainPoint&&this.stainVoice&&!this.stainVoice.marked){this.hasPigment=true;this.stainVoice.marked=true;this.stainVoice.onMark?.(this.stainVoice.stain.origin);}
     if(brushPoint&&this.brushVoice&&!this.brushVoice.marked){this.hasPigment=true;this.brushVoice.marked=true;this.brushVoice.onMark?.(brushPoint);}
     this.tick++;
+    if(this.breathReleased&&!this.breathPending){this.syncBreathWater();this.breathReleased=false;}
   }
   private emit():void {
     if(!this.composition)return;
@@ -376,7 +423,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       if(this.settings.format!==before.format)this.beginSignature(this.seed);
       else {
         if(this.settings.wetness!==before.wetness){
-          this.wetPaper.retime(this.tick/TICK_RATE,this.drying?dryingTime(this.settings.wetness):Infinity);
+          this.wetPaper.retime(this.tick/TICK_RATE,this.drying?RITUAL_DRYING_SECONDS/5.6:Infinity);
           if(this.active)this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+this.dryingDuration());
         }
         this.paint.setLook(this.look());this.paint.render(0);
