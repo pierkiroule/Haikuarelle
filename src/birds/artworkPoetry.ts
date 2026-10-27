@@ -1,4 +1,5 @@
-import {BIRD_POETICS,composeBirdPoem} from './ornithopoetry';
+import {RESONANT_STANZAS,SENSORY_OPENINGS} from './resonantLexicon';
+import {composeBirdPoem} from './ornithopoetry';
 import type {BirdId} from './catalog';
 import type {BirdMark} from './haiku';
 
@@ -79,17 +80,16 @@ export function makeArtworkPoetry(marks:readonly BirdMark[],seed:number,reading:
   return words?{...words,reading:{...reading,tones:[...reading.tones]}}:null;
 }
 
-/** Readable morphic families: structure chooses the relation, the bird supplies
- * the living place and ecological closing. No remote service or colour=emotion rule. */
+/** Morphology chooses a coherent title/couplet; the opening anchors the bird. */
 export const MORPHIC_LINES={
- islands:['D’île en île, un appel','Les silences se répondent','Chaque rive attend une aile'],
- branching:['L’eau invente des racines','Un souffle ouvre les branches','Les chemins se cherchent encore'],
- rising:['Un souffle remonte la sève','La lumière cherche une cime','Le silence prend de la hauteur'],
- veil:['Le vent défait les frontières','L’eau garde un passage ouvert','Les contours deviennent souffle'],
- shelter:['L’ombre rassemble ses graines','Un abri se ferme au vent','Le silence habite un creux'],
- silence:['Une présence entre deux souffles','Le blanc retient une aile','Un appel agrandit le silence'],
- passage:['Un passage traverse l’eau','Le vent prolonge une branche','La lumière rejoint la lisière'],
-} as const;
+ islands:RESONANT_STANZAS.islands.map(s=>s.image),
+ branching:RESONANT_STANZAS.branching.map(s=>s.image),
+ rising:RESONANT_STANZAS.rising.map(s=>s.image),
+ veil:RESONANT_STANZAS.veil.map(s=>s.image),
+ shelter:RESONANT_STANZAS.shelter.map(s=>s.image),
+ silence:RESONANT_STANZAS.silence.map(s=>s.image),
+ passage:RESONANT_STANZAS.passage.map(s=>s.image),
+};
 export function morphicFamily(r:ArtworkReading):keyof typeof MORPHIC_LINES{
  if(r.islands>=3)return 'islands';
  if((r.complexity??0)>85)return 'branching';
@@ -102,14 +102,12 @@ export function morphicFamily(r:ArtworkReading):keyof typeof MORPHIC_LINES{
 export const BIRD_TITLE_REFERENCE:Record<BirdId,string>={
  rougegorge:'du rouge-gorge',merle:'du merle',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',geai:'du geai',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou',corneille:'de la corneille',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',pie:'de la pie',
 };
-const MORPHIC_TITLES:Record<keyof typeof MORPHIC_LINES,readonly string[]>={
- islands:['L’archipel','Les rives','Les escales'],branching:['Les racines','Les chemins','La ramure'],rising:['L’élan','La cime','L’ascension'],veil:['Le souffle','La brume','Le voile'],shelter:['Le refuge','L’abri','Le berceau'],silence:['Le silence','L’attente','La veille'],passage:['Le passage','La traversée','La lisière'],
-};
 export function makeResonantHaiku(marks:readonly BirdMark[],seed:number,reading:ArtworkReading,bird:BirdId):ArtworkPoetry|null{
  if(!marks.length||reading.coverage<=0)return null;
- const family=morphicFamily(reading),ecology=BIRD_POETICS[bird];
+ const family=morphicFamily(reading);
  let hash=marks.reduce((h,m)=>Math.imul(h^m.seed,16777619)>>>0,seed>>>0);
  hash=(hash^Math.round(reading.coverage*10000)^Math.round(reading.centerY*1000)^Math.round((reading.complexity??0)*10))>>>0;
- const choose=(lines:readonly string[],shift:number)=>lines[(hash>>>shift)%lines.length];
- return {title:`${choose(MORPHIC_TITLES[family],3)} ${BIRD_TITLE_REFERENCE[bird]}`,verses:[choose(ecology.lines[0],0),choose(MORPHIC_LINES[family],7),choose(ecology.lines[2],14)],reading:{...reading,tones:[...reading.tones]}};
+ const stanza=RESONANT_STANZAS[family][(hash>>>3)%RESONANT_STANZAS[family].length];
+ const opening=SENSORY_OPENINGS[bird][hash%SENSORY_OPENINGS[bird].length];
+ return {title:`${stanza.title} ${BIRD_TITLE_REFERENCE[bird]}`,verses:[opening,stanza.image,stanza.echo],reading:{...reading,tones:[...reading.tones]}};
 }

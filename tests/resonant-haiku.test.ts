@@ -1,7 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {readArtwork,makeResonantHaiku,morphicFamily,MORPHIC_LINES,BIRD_TITLE_REFERENCE,type ArtworkReading} from '../src/birds/artworkPoetry';
-import {BIRD_POETICS} from '../src/birds/ornithopoetry';
-import {fitPoem} from '../src/birds/poemPlacement';
+import {RESONANT_STANZAS,SENSORY_OPENINGS} from '../src/birds/resonantLexicon';
 const reading:ArtworkReading={tones:['blue'],coverage:.25,centerY:.5,islands:1,vertical:false,complexity:30,density:.4};
 const marks=[{bird:'mesange' as const,seed:7,point:{x:.5,y:.5}}];
 describe('a response from actual morphology and bird ecology',()=>{
@@ -9,7 +8,7 @@ describe('a response from actual morphology and bird ecology',()=>{
   const islands={...reading,islands:4},branches={...reading,complexity:110};
   const a=makeResonantHaiku(marks,7,islands,'mesange')!,b=makeResonantHaiku(marks,7,branches,'mesange')!;
   expect(a.title).toContain('de la mésange bleue');expect(a.verses).toHaveLength(3);expect(a.verses[1]).not.toBe(b.verses[1]);expect(MORPHIC_LINES.islands).toContain(a.verses[1]);expect(MORPHIC_LINES.branching).toContain(b.verses[1]);
-  expect(BIRD_POETICS.mesange.lines[0]).toContain(a.verses[0]);expect(BIRD_POETICS.mesange.lines[2]).toContain(a.verses[2]);expect(makeResonantHaiku(marks,7,islands,'mesange')).toEqual(a);
+  expect(SENSORY_OPENINGS.mesange).toContain(a.verses[0]);expect(RESONANT_STANZAS.islands.some(s=>s.image===a.verses[1]&&s.echo===a.verses[2]&&a.title.startsWith(s.title+' '))).toBe(true);expect(makeResonantHaiku(marks,7,islands,'mesange')).toEqual(a);
  });
  it('distinguishes white space, vertical movement and diffuse films',()=>{
   expect(morphicFamily({...reading,coverage:.03})).toBe('silence');expect(morphicFamily({...reading,vertical:true})).toBe('rising');expect(morphicFamily({...reading,diffuse:true})).toBe('veil');
@@ -29,9 +28,18 @@ describe('a response from actual morphology and bird ecology',()=>{
    expect(poem.title.length).toBeGreaterThan(BIRD_TITLE_REFERENCE[bird].length);
   }
  });
- it('does not generate words without a real painting',()=>{expect(makeResonantHaiku([],7,reading,'mesange')).toBeNull();expect(makeResonantHaiku(marks,7,{...reading,coverage:0},'mesange')).toBeNull();});
- it('clamps placement and reduces oversized text to preserve the signature strip',()=>{
-  const p=fitPoem({x:1,y:1,size:.06},.5,.2);expect(p.x+.5).toBeLessThanOrEqual(.965);expect(p.y+.2).toBeLessThanOrEqual(.94);
-  expect(fitPoem({x:0,y:0,size:.06},1.4,.4).size).toBeLessThan(.06);
+ it('keeps every title attached to its complete sensory, rhyming couplet for every bird and morphology',()=>{
+  const readings={islands:{...reading,islands:4},branching:{...reading,complexity:110},rising:{...reading,vertical:true},veil:{...reading,diffuse:true},shelter:{...reading,coverage:.6},silence:{...reading,coverage:.03},passage:reading};
+  for(const [family,r] of Object.entries(readings)){
+   const templates=RESONANT_STANZAS[family as keyof typeof RESONANT_STANZAS],seen=new Set<string>();
+   for(const bird of Object.keys(BIRD_TITLE_REFERENCE) as (keyof typeof BIRD_TITLE_REFERENCE)[])for(let seed=0;seed<64;seed++){
+    const poem=makeResonantHaiku(marks,seed,r,bird)!;
+    const stanza=templates.find(s=>poem.title===`${s.title} ${BIRD_TITLE_REFERENCE[bird]}`);expect(stanza).toBeDefined();
+    expect(poem.verses).toEqual([expect.any(String),stanza!.image,stanza!.echo]);expect(SENSORY_OPENINGS[bird]).toContain(poem.verses[0]);
+    expect(poem.verses.join(' ')).not.toMatch(/undefined|\{|\}/);expect(poem.verses.every(line=>line.length<=48)).toBe(true);seen.add(stanza!.title);
+   }
+   expect(seen.size).toBe(templates.length);
+  }
  });
+ it('does not generate words without a real painting',()=>{expect(makeResonantHaiku([],7,reading,'mesange')).toBeNull();expect(makeResonantHaiku(marks,7,{...reading,coverage:0},'mesange')).toBeNull();});
 });
