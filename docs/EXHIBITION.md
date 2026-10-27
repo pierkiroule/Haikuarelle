@@ -16,7 +16,7 @@ Le cycle initial dure 60 secondes : eau présente puis retirée progressivement 
 
 Les dépôts sont regroupés en cohortes de **trois secondes**, datées au début de leur intervalle. Leur durée est donc de **57 à 60 secondes**, jamais prolongée par de nouveaux apports. Ce compromis explicite évite une texture haute définition par geste. Les couches contiennent les masses d’absorption optique et leur propre eau ; elles sont advectées dans un champ d’eau commun puis additionnées pour le rendu. Le souffle transfère eau et pigments de toutes les couches avec les mêmes flux. Les réserves sèches restent des barrières aux courants ordinaires. L’érosion est modulée dans l’espace, sans motif carré, et chaque cohorte est retirée à son échéance.
 
-Au plus 20 cohortes actives, un tampon partagé et un petit pool recyclé. Le contrôle prolongé atteint 21 textures temporelles allouées, sans croissance. Le champ de simulation est plafonné à environ 320 000 cellules sur pointeur tactile, 650 000 sur pointeur fin, indépendamment de la taille du PNG. C’est un profil spécifique à l’exposition, plus économique que l’atelier individuel pour financer les âges superposés. Le rendu et les textures procédurales restent à la résolution d’affichage ; l’export ne reconstruit pas des détails physiques absents du champ. Aucun débit d’images sur téléphone physique n’a été mesuré.
+Au plus 20 cohortes actives, un tampon partagé et un petit pool recyclé. Le contrôle prolongé atteint 21 textures temporelles allouées, sans croissance. Le champ de simulation est plafonné à environ 480 000 cellules sur pointeur tactile, 900 000 sur pointeur fin, indépendamment de la taille du PNG. C’est un profil spécifique à l’exposition, plus économique que l’atelier individuel pour financer les âges superposés. Le rendu et les textures procédurales restent à la résolution d’affichage ; l’export ne reconstruit pas des détails physiques absents du champ. Aucun débit d’images sur téléphone physique n’a été mesuré.
 
 ## Paysage sonore
 
@@ -34,3 +34,11 @@ Les sons nécessitent un geste utilisateur. Le bouton de silence coupe les voix 
 - `scripts/check-exhibition-flow.py` : vrais MP3 et parcours tactile/clavier, choix de deux oiseaux, conservation du canvas, capture PNG A4, avertissement et relais après inactivité, absence de débordement sur 1200 × 1000 et 390 × 844.
 
 Ces contrôles utilisent Chromium et son GPU logiciel avec un champ réduit. Ils ne remplacent pas une écoute dans le lieu ni une mesure sur la borne finale. Une session collective est locale à un navigateur ; aucune synchronisation entre appareils n’est ajoutée.
+
+## Reconstruction de matière sans carrelage
+
+Les anciens atlas de mouvement/marbrures, calculés au quart de la définition, étaient agrandis par interpolation bilinéaire. Les changements de pente aux bords des texels pouvaient former des raccords en mosaïque. Le pinceau et l’érosion employaient aussi des bruits de gradient sur un support carré.
+
+Le rendu matériel utilise maintenant une reconstruction cubique positive pour les pigments, les marbrures et les masques de séchage. Elle conserve une surface continue, sans oscillations négatives ni flou CSS de la toile. Le bruit de matière et l’érosion utilisent le même support simplex tourné que le coton, avec des variantes de domaine ; le chemin historique reste disponible en mode de rendu non matériel. La résolution du champ d’exposition passe à environ 480 000 cellules tactiles et 900 000 cellules sur pointeur fin, avec la même borne de couches temporelles. Cela augmente leur coût mémoire d’environ 40 à 50 %.
+
+`scripts/check-material-seams.py` compile la fonction réellement utilisée par le rendu. Il rejette les cassures entre cellules lors de l’agrandissement d’un atlas et vérifie que le contraste subsiste. Le shader précédent échoue à ce contrôle ; le nouveau passe. Le contrôle du papier vérifie séparément l’absence du relief en quads 2 × 2.

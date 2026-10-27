@@ -586,7 +586,7 @@ export class PaintEngine {
     }
     // Breathing noise, at a quarter of the resolution (it's all low frequency).
     // HAÏKUARELLE: static breathing field is baked once, not on every render.
-    const flowKey = key + ':' + look.drift + ':' + (look.drift ? timeS : 0);
+    const flowKey = key + ':' + ((look.detail??0)>.5?1:0) + ':' + look.drift + ':' + (look.drift ? timeS : 0);
     if (aux.flowKey !== flowKey) {
     this.run('flow', aux.flow, (u) => {
       gl.uniform4f(u.uMap, map[0] * (w / aux.flow.w), map[1] * (h / aux.flow.h), map[2], map[3]);
@@ -594,6 +594,7 @@ export class PaintEngine {
       gl.uniform2f(u.uSeedOff, seed[0], seed[1]);
       gl.uniform1f(u.uTime, timeS);
       gl.uniform1f(u.uDrift, look.drift);
+      gl.uniform1f(u.uOrganic,(look.detail??0)>.5?1:0);
     }, {});
     aux.flowKey = flowKey;
     }

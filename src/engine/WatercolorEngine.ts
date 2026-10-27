@@ -91,7 +91,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     const coarse=matchMedia('(pointer:coarse)').matches;
     const device=typeof navigator==='undefined'?undefined:navigator as Navigator&{deviceMemory?:number};
     this.quality=paintingQuality({coarse,memory:device?.deviceMemory,cores:device?.hardwareConcurrency});
-    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:this.exhibition?(coarse?320000:650000):this.quality.pixels,fieldScale:this.quality.scale,maxDimension:this.quality.maxDimension,detailBudget:this.exhibition?1440*1080:this.quality.detailPixels});
+    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:this.exhibition?(coarse?480000:900000):this.quality.pixels,fieldScale:this.quality.scale,maxDimension:this.quality.maxDimension,detailBudget:this.exhibition?1440*1080:this.quality.detailPixels});
     if(this.exhibition)this.paint.enableExhibition();
     this.fineInk=new FineInkRenderer(this.paint.gl);
     this.paint.afterRender=()=>this.fineInk.draw(this.tick/TICK_RATE,[.11,.16,.15]);

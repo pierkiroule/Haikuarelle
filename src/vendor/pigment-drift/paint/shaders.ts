@@ -285,12 +285,67 @@ void main() {
 
 // ---------------------------------------------------------------- the sheet
 
+/** Shared isotropic material support for pigment, cotton and temporal erosion. */
+const COTTON_NOISE = /* glsl */ `
+// V3: triangular simplex support, rather than a visible square fiber lattice.
+float paperCorner(vec2 lattice, vec2 delta) {
+  float falloff = max(0.5 - dot(delta, delta), 0.0);
+  vec2 gradient = hash22(lattice) * 2.0 - 1.0;
+  gradient *= inversesqrt(max(dot(gradient, gradient), 0.08));
+  return falloff * falloff * falloff * falloff * dot(gradient, delta);
+}
+float paperNoise(vec2 p) {
+  const float F2 = 0.3660254037844386;
+  const float G2 = 0.2113248654051871;
+  vec2 cell = floor(p + (p.x + p.y) * F2);
+  vec2 a = p - cell + (cell.x + cell.y) * G2;
+  vec2 corner = a.x > a.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec2 b = a - corner + G2;
+  vec2 c = a - 1.0 + 2.0 * G2;
+  return 70.0 * (paperCorner(cell, a) + paperCorner(cell + corner, b) + paperCorner(cell + 1.0, c));
+}
+// Analytic simplex gradients: derivatives of sampled relief inherit the GPU's
+// 2x2 derivative quads and stamp a tiny embossed checkerboard onto the paper.
+vec2 paperCornerGradient(vec2 lattice, vec2 delta) {
+  float t = max(0.5-dot(delta,delta),0.0);
+  vec2 g = hash22(lattice)*2.0-1.0;
+  g *= inversesqrt(max(dot(g,g),0.08));
+  return t*t*t*t*g-8.0*t*t*t*dot(g,delta)*delta;
+}
+vec2 paperNoiseGradient(vec2 p) {
+  const float F2=0.3660254037844386,G2=0.2113248654051871;
+  vec2 cell=floor(p+(p.x+p.y)*F2);
+  vec2 a=p-cell+(cell.x+cell.y)*G2;
+  vec2 corner=a.x>a.y?vec2(1,0):vec2(0,1);
+  return 70.0*(paperCornerGradient(cell,a)
+    +paperCornerGradient(cell+corner,a-corner+G2)
+    +paperCornerGradient(cell+1.0,a-1.0+2.0*G2));
+}
+float cottonBandWeight(float footprint) {
+  return 1.0-smoothstep(0.35,0.85,footprint);
+}
+float filteredPaperNoise(vec2 p) {
+  return paperNoise(p)*cottonBandWeight(max(length(dFdx(p)),length(dFdy(p))));
+}
+float cottonFbm(vec2 p,int octaves) {
+  float sum=0.0,weight=0.5;
+  float footprint=max(length(dFdx(p)),length(dFdy(p)));
+  for(int i=0;i<6;i++){
+    if(i>=octaves)break;
+    sum+=weight*cottonBandWeight(footprint)*paperNoise(p);
+    p=ROT*p*2.03+vec2(13.7,8.1);footprint*=2.03;weight*=0.5;
+  }
+  return sum;
+}
+`;
+
+
 /**
  * One step of the pigment field: drops push the floating pigment outward
  * (suminagashi), the water carries it, wet paper lets it bleed, brushes lay
  * it down or lift it, and everything slowly dries.
  */
-export const FIELD_STEP = HEAD + NOISE + SEGMENTS + /* glsl */ `
+export const FIELD_STEP = HEAD + NOISE + COTTON_NOISE + SEGMENTS + /* glsl */ `
 uniform sampler2D uField;
 uniform sampler2D uVel;
 uniform vec2 uSize;
@@ -327,6 +382,13 @@ uniform sampler2D uShared;
 uniform float uCohort;
 uniform float uLifeKeep;
 uniform float uWaterKeep;
+float materialNoise(vec2 p){return uMaterial>0.5?0.8*paperNoise(ROT*p):gnoise(p);}
+float materialFbm(vec2 p,int octaves){
+  if(uMaterial<0.5)return fbm(p,octaves);
+  float value=0.0,weight=0.5,total=0.0;
+  for(int i=0;i<6;i++){if(i>=octaves)break;value+=weight*0.8*paperNoise(ROT*p);total+=weight;p=ROT*p*2.03+vec2(17.1,9.3);weight*=0.5;}
+  return value/max(total,0.001);
+}
 vec4 rawAt(vec2 p){return texture(uField,p/uSize);}
 float waterAt(vec2 p){return uCohort>0.5?texture(uShared,p/uSize).y:rawAt(p).y;}
 vec4 fieldAt(vec2 p) { vec4 f=rawAt(p);if(uCohort>0.5)f.y=waterAt(p);return f; }
@@ -399,14 +461,14 @@ vec2 breathDisplacement(vec2 position){
   // splits progressively downstream, instead of laying parallel teeth.
   float along=dot(position,direction)/uUnit;
   float across=dot(position,side)/uUnit;
-  float bend=0.7*gnoise(vec2(along*6.0,across*11.0)+uSeedOff);
+  float bend=0.7*materialNoise(vec2(along*6.0,across*11.0)+uSeedOff);
   float phase=across*100.0+bend*3.0+uSeedOff.x;
   float fork=smoothstep(-0.015,0.065,forward);
   float parent=abs(sin(phase));
   float primary=1.0-smoothstep(0.08,0.27,abs(parent-fork*0.72));
   float twig=1.0-smoothstep(0.10,0.28,abs(abs(sin(phase*2.0+bend))-0.55));
   float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.10,0.24,forward));
-  float irregular=0.6+0.4*smoothstep(-0.4,0.4,gnoise(vec2(across*19.0,along*8.0)+uSeedOff));
+  float irregular=0.6+0.4*smoothstep(-0.4,0.4,materialNoise(vec2(across*19.0,along*8.0)+uSeedOff));
   // Bulk pressure stays continuous; branching only modulates the leading fringe.
   float pressure=mix(1.0,0.25+0.75*branching*irregular,fringe);
   float lateral=clamp(dot(rel,side)/max(uBreathShape.x,1.0)+0.24*fringe*sin(phase*1.3+bend),-1.0,1.0);
@@ -443,7 +505,7 @@ void main() {
     vec2 rel = src - d.xy;
     // HAÏKUARELLE: clear-water blooms catch unevenly on the paper fibers.
     float bloomRag = 1.0 + (uDropInk[i].z > 0.5 ? 1.0 : 0.0) *
-      (0.24 * fbm(q / uUnit * 19.0 + uSeedOff, 3) + 0.06 * gnoise(q * 0.14 + uSeedOff));
+      (0.24 * materialFbm(q / uUnit * 19.0 + uSeedOff, 3) + 0.06 * materialNoise(q * 0.14 + uSeedOff));
     float ds = max(dot(rel, rel) / (bloomRag * bloomRag), 1e-6);
     if (ds < d.w) {
       float r1 = sqrt(d.w);
@@ -524,7 +586,7 @@ void main() {
       float moisture = min(min(center.y, neighbor.y),fieldAt(src + offset * 0.5).y);
       // A diagonal cannot leak across two pools touching only at a dry corner.
       if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
-      float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
+      float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,materialNoise((src + offset * 0.5) * 0.23 + uSeedOff));
       float mobility = mix(smoothstep(0.006,0.22,moisture),smoothstep(0.003,0.06,moisture),uMaterial) * fibre;
       // Symmetric moisture-dependent fixation, without sharpening or adding grain.
       mobility *= mix(1.0,smoothstep(0.018,0.18,moisture),uFixation);
@@ -575,14 +637,14 @@ void main() {
       // Ragged like the generator's washes: billows, fringes and fine tatters.
       // Broad lobes, medium scallops and fine paper catches share paper
       // coordinates: moving the brush never resets the edge pattern.
-      rag = fbm(S * 5.0 + uSeedOff, 3) * 0.52
-          + gnoise(S * 37.0 + uSeedOff.yx) * 0.24
-          + gnoise(S * 113.0 + 7.0) * 0.10;
+      rag = materialFbm(S * 5.0 + uSeedOff, 3) * 0.52
+          + materialNoise(S * 37.0 + uSeedOff.yx) * 0.24
+          + materialNoise(S * 113.0 + 7.0) * 0.10;
       // Never quite even inside: the load swells and thins like its turbulence.
-      swell = fbm(S * 3.0 + uSeedOff.yx + 4.4, 2) * 0.7 + gnoise(S * 9.0 + uSeedOff + 1.9) * 0.3
-            + 0.32 * gnoise(S * 31.0 + uSeedOff) + 0.16 * gnoise(S * 79.0 + uSeedOff.yx);
+      swell = materialFbm(S * 3.0 + uSeedOff.yx + 4.4, 2) * 0.7 + materialNoise(S * 9.0 + uSeedOff + 1.9) * 0.3
+            + 0.32 * materialNoise(S * 31.0 + uSeedOff) + 0.16 * materialNoise(S * 79.0 + uSeedOff.yx);
       // And the paper takes the water unevenly, so the edge softens in some places more than others.
-      bloom = smoothstep(-0.4, 0.4, gnoise(S * 2.2 + uSeedOff * 0.7 + 11.0));
+      bloom = smoothstep(-0.4, 0.4, materialNoise(S * 2.2 + uSeedOff * 0.7 + 11.0));
       shaped = true;
     }
     float kind = mod(sp.w, 4.0);
@@ -602,7 +664,7 @@ void main() {
     // Dry-brush streaks run along the stroke.
     vec2 ab = uSeg[i].zw - uSeg[i].xy;
     float side = dot(q - uSeg[i].xy, vec2(-ab.y, ab.x)) / max(length(ab), 1e-3) / sp.x;
-    float bristle = length(ab) > 0.5 ? 0.7 + 0.6 * smoothstep(-0.4, 0.4, gnoise(vec2(side * 3.2, 0.5) + uSeedOff)) : 1.0;
+    float bristle = length(ab) > 0.5 ? 0.7 + 0.6 * smoothstep(-0.4, 0.4, materialNoise(vec2(side * 3.2, 0.5) + uSeedOff)) : 1.0;
     if (kind < 0.5) {
       // Coherent colour planes retain subtle mineral variation without
       // procedural holes swallowing quiet notes or fragmenting every wash.
@@ -642,7 +704,7 @@ void main() {
   f.zw *= min(1.0, f.x / max(f.z + f.w, 1e-5));
   if(uCohort>0.5){
     // Uneven loss reveals mineral islands without changing the age of deposits.
-    float erosion=0.8+0.4*smoothstep(-0.6,0.6,gnoise(q/max(uUnit,1.0)*83.0+uSeedOff));
+    float erosion=0.8+0.4*smoothstep(-0.6,0.6,materialNoise(q/max(uUnit,1.0)*83.0+uSeedOff));
     f.xzw*=pow(uLifeKeep,erosion);f.y*=uWaterKeep;
   }
   o = f;
@@ -739,58 +801,6 @@ uniform vec2 uSeedOff;
  * Paper: everything that never moves, baked once per canvas size.
  *   r: edge grit   g: granulation   b: brush relief light   a: grain & cockling
  */
-const COTTON_NOISE = /* glsl */ `
-// V3: triangular simplex support, rather than a visible square fiber lattice.
-float paperCorner(vec2 lattice, vec2 delta) {
-  float falloff = max(0.5 - dot(delta, delta), 0.0);
-  vec2 gradient = hash22(lattice) * 2.0 - 1.0;
-  gradient *= inversesqrt(max(dot(gradient, gradient), 0.08));
-  return falloff * falloff * falloff * falloff * dot(gradient, delta);
-}
-float paperNoise(vec2 p) {
-  const float F2 = 0.3660254037844386;
-  const float G2 = 0.2113248654051871;
-  vec2 cell = floor(p + (p.x + p.y) * F2);
-  vec2 a = p - cell + (cell.x + cell.y) * G2;
-  vec2 corner = a.x > a.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-  vec2 b = a - corner + G2;
-  vec2 c = a - 1.0 + 2.0 * G2;
-  return 70.0 * (paperCorner(cell, a) + paperCorner(cell + corner, b) + paperCorner(cell + 1.0, c));
-}
-// Analytic simplex gradients: derivatives of sampled relief inherit the GPU's
-// 2x2 derivative quads and stamp a tiny embossed checkerboard onto the paper.
-vec2 paperCornerGradient(vec2 lattice, vec2 delta) {
-  float t = max(0.5-dot(delta,delta),0.0);
-  vec2 g = hash22(lattice)*2.0-1.0;
-  g *= inversesqrt(max(dot(g,g),0.08));
-  return t*t*t*t*g-8.0*t*t*t*dot(g,delta)*delta;
-}
-vec2 paperNoiseGradient(vec2 p) {
-  const float F2=0.3660254037844386,G2=0.2113248654051871;
-  vec2 cell=floor(p+(p.x+p.y)*F2);
-  vec2 a=p-cell+(cell.x+cell.y)*G2;
-  vec2 corner=a.x>a.y?vec2(1,0):vec2(0,1);
-  return 70.0*(paperCornerGradient(cell,a)
-    +paperCornerGradient(cell+corner,a-corner+G2)
-    +paperCornerGradient(cell+1.0,a-1.0+2.0*G2));
-}
-float cottonBandWeight(float footprint) {
-  return 1.0-smoothstep(0.35,0.85,footprint);
-}
-float filteredPaperNoise(vec2 p) {
-  return paperNoise(p)*cottonBandWeight(max(length(dFdx(p)),length(dFdy(p))));
-}
-float cottonFbm(vec2 p,int octaves) {
-  float sum=0.0,weight=0.5;
-  float footprint=max(length(dFdx(p)),length(dFdy(p)));
-  for(int i=0;i<6;i++){
-    if(i>=octaves)break;
-    sum+=weight*cottonBandWeight(footprint)*paperNoise(p);
-    p=ROT*p*2.03+vec2(13.7,8.1);footprint*=2.03;weight*=0.5;
-  }
-  return sum;
-}
-`;
 
 export const PAPER = HEAD + NOISE + MAPPING + COTTON_NOISE + /* glsl */ `
 uniform float uPx;
@@ -834,9 +844,17 @@ void main() {
  *   1: hue drift, mottling, mist, edge softness
  *   2: two pairs of noises the washes mix into their own edge wobble and load
  */
-export const FLOW = HEAD + NOISE + MAPPING + /* glsl */ `
+export const FLOW = HEAD + NOISE + MAPPING + COTTON_NOISE + /* glsl */ `
 uniform float uTime;
 uniform float uDrift;
+uniform float uOrganic;
+float flowNoise(vec2 p){return uOrganic>0.5?0.8*paperNoise(ROT*p):gnoise(p);}
+float flowFbm(vec2 p,int octaves){
+ if(uOrganic<0.5)return fbm(p,octaves);
+ float value=0.0,weight=0.5,total=0.0;
+ for(int i=0;i<6;i++){if(i>=octaves)break;value+=weight*0.8*paperNoise(ROT*p);total+=weight;p=ROT*p*2.03+vec2(17.1,9.3);weight*=0.5;}
+ return value/max(total,0.001);
+}
 layout(location = 0) out vec4 o0;
 layout(location = 1) out vec4 o1;
 layout(location = 2) out vec4 o2;
@@ -845,26 +863,26 @@ void main() {
   float ang = uTime * TAU / 26.0;
   vec2 orb = vec2(cos(ang), sin(ang)) * uDrift * 0.55;
   vec2 orb2 = vec2(cos(ang + 2.1), sin(ang + 2.1)) * uDrift * 0.4;
-  vec2 q = vec2(fbm(S * 0.9 + uSeedOff + orb, 3), fbm(S * 0.9 + uSeedOff.yx + vec2(5.2, 1.3) - orb, 3));
+  vec2 q = vec2(flowFbm(S * 0.9 + uSeedOff + orb, 3), flowFbm(S * 0.9 + uSeedOff.yx + vec2(5.2, 1.3) - orb, 3));
   vec2 r = vec2(
-    fbm(S * 1.7 + 1.6 * q + uSeedOff + vec2(1.7, 9.2) + orb2, 3),
-    fbm(S * 1.7 + 1.6 * q + uSeedOff + vec2(8.3, 2.8) - orb2, 3));
+    flowFbm(S * 1.7 + 1.6 * q + uSeedOff + vec2(1.7, 9.2) + orb2, 3),
+    flowFbm(S * 1.7 + 1.6 * q + uSeedOff + vec2(8.3, 2.8) - orb2, 3));
   vec2 warp = uDrift * vec2(0.016, 0.012) * (r + 0.5 * q) * uUnit;
-  float rag = fbm(S * 5.0 + uSeedOff * 1.3 + r * 0.7, 4);
-  float turb = fbm(S * 1.2 + q * 0.3 + uSeedOff + vec2(4.4, 1.9) + orb * 0.4, 4);
+  float rag = flowFbm(S * 5.0 + uSeedOff * 1.3 + r * 0.7, 4);
+  float turb = flowFbm(S * 1.2 + q * 0.3 + uSeedOff + vec2(4.4, 1.9) + orb * 0.4, 4);
   o0 = vec4(warp, rag, turb);
 
-  float driftN = fbm(S * 0.7 + q * 0.45 + uSeedOff + vec2(3.1, 7.7) + orb * 0.7, 3);
-  float mottle = fbm(S * 14.0 + r * 2.0 + uSeedOff * 0.7 + orb * 0.3, 3);
-  float mistN = fbm(vec2(S.x * 1.6, S.y * 3.6) + uSeedOff + orb * 0.6 + r * 0.5, 3);
-  float softN = fbm(S * 1.3 + uSeedOff + vec2(11.0, 4.0), 2);
+  float driftN = flowFbm(S * 0.7 + q * 0.45 + uSeedOff + vec2(3.1, 7.7) + orb * 0.7, 3);
+  float mottle = flowFbm(S * 14.0 + r * 2.0 + uSeedOff * 0.7 + orb * 0.3, 3);
+  float mistN = flowFbm(vec2(S.x * 1.6, S.y * 3.6) + uSeedOff + orb * 0.6 + r * 0.5, 3);
+  float softN = flowFbm(S * 1.3 + uSeedOff + vec2(11.0, 4.0), 2);
   o1 = vec4(driftN, mottle, mistN, softN);
 
   o2 = vec4(
-    gnoise(S * 1.8 + uSeedOff + vec2(5.3, 3.7) + orb * 0.35),
-    gnoise(S * 2.6 + uSeedOff + vec2(1.1, 8.4) - orb * 0.4),
-    fbm(S * 2.0 + uSeedOff + vec2(11.0, 2.0) + orb * 0.5, 2),
-    fbm(S * 2.3 + uSeedOff + vec2(3.0, 13.0) - orb * 0.5, 2));
+    flowNoise(S * 1.8 + uSeedOff + vec2(5.3, 3.7) + orb * 0.35),
+    flowNoise(S * 2.6 + uSeedOff + vec2(1.1, 8.4) - orb * 0.4),
+    flowFbm(S * 2.0 + uSeedOff + vec2(11.0, 2.0) + orb * 0.5, 2),
+    flowFbm(S * 2.3 + uSeedOff + vec2(3.0, 13.0) - orb * 0.5, 2));
 }
 `;
 
@@ -959,24 +977,34 @@ float hash12(vec2 p) {
 vec4 pigmentField(vec2 p);
 float hAt(vec2 t) { return heightOf(pigmentField(t).x); }
 
-// Positive cubic reconstruction when magnified: continuous rounded support,
-// no nearest-cell clamp terraces, negative ringing or invented pigment peaks.
-vec4 pigmentField(vec2 p) {
-  if (uDetail < 0.5 || min(uMap.x, uMap.y) >= 0.95) return texture(uField, p / uFieldSize);
+// Positive cubic support for ALL material atlases. Bilinear enlargement leaves
+// a slope discontinuity at every cell edge: visible tiled mottling after contrast.
+// Four hardware-linear taps reconstruct a C2 surface, without ringing/overshoot.
+vec4 materialSample(sampler2D atlas,vec2 uv) {
+  vec2 size=vec2(textureSize(atlas,0)),p=uv*size;
   vec2 cell=floor(p-0.5),f=fract(p-0.5),v=1.0-f;
   vec2 w0=v*v*v/6.0,w1=(3.0*f*f*f-6.0*f*f+4.0)/6.0;
   vec2 w2=(-3.0*f*f*f+3.0*f*f+3.0*f+1.0)/6.0,w3=f*f*f/6.0;
   vec2 g0=w0+w1,g1=w2+w3;
-  vec2 a=(cell-0.5+w1/g0)/uFieldSize,b=(cell+1.5+w3/g1)/uFieldSize;
-  return texture(uField,a)*g0.x*g0.y + texture(uField,vec2(b.x,a.y))*g1.x*g0.y
-    +texture(uField,vec2(a.x,b.y))*g0.x*g1.y + texture(uField,b)*g1.x*g1.y;
+  vec2 a=(cell-0.5+w1/g0)/size,b=(cell+1.5+w3/g1)/size;
+  return texture(atlas,a)*g0.x*g0.y+texture(atlas,vec2(b.x,a.y))*g1.x*g0.y
+    +texture(atlas,vec2(a.x,b.y))*g0.x*g1.y+texture(atlas,b)*g1.x*g1.y;
 }
+vec4 pigmentField(vec2 p) {
+  if(uDetail<0.5)return texture(uField,p/uFieldSize);
+  // At exact 1:1 texel centers there is nothing to reconstruct. Keep the
+  // physical fine deposits intact instead of filtering them a second time.
+  if(all(lessThan(abs(uMap.xy-1.0),vec2(0.0001)))&&all(lessThan(abs(fract(p)-0.5),vec2(0.0001))))
+    return texelFetch(uField,clamp(ivec2(p),ivec2(0),ivec2(uFieldSize)-1),0);
+  return materialSample(uField,p/uFieldSize);
+}
+vec4 flowSample(sampler2D atlas,vec2 uv){return uDetail>0.5?materialSample(atlas,uv):texture(atlas,uv);}
 
 void main() {
   vec2 frag = gl_FragCoord.xy;
   vec2 suv = frag / uRes;
   vec4 paperT = texelFetch(uPaperTex, ivec2(frag), 0);
-  vec4 f0 = texture(uFlow0, suv);
+  vec4 f0 = flowSample(uFlow0, suv);
   vec2 ft = frag * uMap.xy + uMap.zw;
   vec2 at = ft + f0.xy;
 
@@ -991,8 +1019,8 @@ void main() {
   float pig = 0.0;
 
   if (pv > 1e-4) {
-    vec4 f1 = texture(uFlow1, suv);
-    vec4 f2 = texture(uFlow2, suv);
+    vec4 f1 = flowSample(uFlow1, suv);
+    vec4 f2 = flowSample(uFlow2, suv);
     float rag = f0.z;
     float turb = f0.w;
     float driftN = f1.x;
@@ -1092,7 +1120,7 @@ void main() {
       float rim = exp(-abs(pv - 0.065) / 0.018) * dry * min(slope * 0.12, 0.85);
       concentration += rim * (0.045 + 0.035 * edgeN) * uEdge;
       if (uDryingDetail > 0.0) {
-        vec4 alpha = texture(uDryingTex, suv);
+        vec4 alpha = flowSample(uDryingTex, suv);
         float reveal = (1.0 - smoothstep(0.015, 0.30, wet)) * uDryingDetail;
         float material = reveal * (0.45 + 0.55 * uTexture);
         // A soft threshold selects coherent sediment pockets instead of laying
@@ -1174,7 +1202,8 @@ uniform float uUnit;
 uniform vec2 uSeedOff;
 out vec4 o;
 ${NOISE}
+${COTTON_NOISE}
 void main(){vec2 q=gl_FragCoord.xy;vec4 f=texelFetch(uSrc,ivec2(q),0);
- float erosion=0.8+0.4*smoothstep(-0.6,0.6,gnoise(q/max(uUnit,1.0)*83.0+uSeedOff));
+ float erosion=0.8+0.4*smoothstep(-0.6,0.6,0.8*paperNoise(ROT*(q/max(uUnit,1.0)*83.0+uSeedOff)));
  f.xzw*=pow(uLifeKeep,erosion);f.y*=uWaterKeep;o=f;}
 `;
