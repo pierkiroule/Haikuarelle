@@ -11,6 +11,17 @@ describe('placed haiku and signature export',()=>{
   expect(ctx.fillText.mock.calls.map(c=>c[0])).toEqual([...verses,'•°○']);expect(ctx.fillText.mock.calls[0][1]).toBe(p.x*2896);
   expect(ctx.fillText.mock.calls[1][2]-ctx.fillText.mock.calls[0][2]).toBeCloseTo(p.size*2896*1.6);expect(image.close).toHaveBeenCalledOnce();
  });
+ it('exports the title in bold italic Georgia at its own position and size',async()=>{
+  const image={width:1000,height:1414,close:vi.fn()},fonts:string[]=[];
+  const ctx={drawImage:vi.fn(),fillText:vi.fn(),measureText:()=>({fontBoundingBoxAscent:20,fontBoundingBoxDescent:5}),font:''};
+  ctx.fillText.mockImplementation(()=>{fonts.push(ctx.font);});
+  vi.stubGlobal('createImageBitmap',async()=>image);vi.stubGlobal('document',{createElement:()=>({width:0,height:0,getContext:()=>ctx,toBlob:(cb:BlobCallback)=>cb(new Blob(['png']))})});
+  await exportResonantArtwork(new Blob(),['a','b','c'],{x:.1,y:.7,size:.03},{text:'Le souffle de la mésange bleue',placement:{x:.2,y:.12,size:.04}});
+  expect(ctx.fillText.mock.calls.map(c=>c[0])).toEqual(['Le souffle de la mésange bleue','a','b','c','•°○']);
+  expect(fonts[0]).toBe('italic bold 40px Georgia');expect(fonts[1]).toBe('30px Georgia');
+  expect(ctx.fillText.mock.calls[0][1]).toBe(200);expect(ctx.fillText.mock.calls[1][1]).toBe(100);
+  expect(ctx.fillText.mock.calls[0][2]).toBeLessThan(ctx.fillText.mock.calls[1][2]);
+ });
  it('releases the bitmap if encoding fails',async()=>{
   const image={width:100,height:160,close:vi.fn()},ctx={drawImage(){},fillText(){},measureText:()=>({})};
   vi.stubGlobal('createImageBitmap',async()=>image);vi.stubGlobal('document',{createElement:()=>({getContext:()=>ctx,toBlob:(cb:BlobCallback)=>cb(null)})});

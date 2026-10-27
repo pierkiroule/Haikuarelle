@@ -2,7 +2,7 @@ export const RITUAL=[
   {stage:'choose',name:'La rencontre',title:'Une plume sonore qui t’attire',hint:'Choisis une plume parmi celles qui virevoltent. Un seul oiseau te confie les couleurs de son plumage et son univers poétique.'},
   {stage:'paint',name:'La création',title:'Fais dialoguer l’eau et le chant',hint:'Choisis la goutte ou la plume dans la palette. Ajoute de l’eau avant ou après le chant, sur le sec comme sur les pigments. L’eau reste présente jusqu’au séchage volontaire.'},
   {stage:'drying',name:'Le soleil',title:'Laisse sécher sous le soleil du silence',hint:'Les chants se taisent. L’eau se retire, les contours se précisent et la matière révèle ses détails. La matière se précise avant de révéler ses mots.'},
-  {stage:'finished',name:'Le partage',title:'Trois lignes en résonance',hint:'Révèle le haïku inspiré de ta peinture, déplace-le, ajuste sa taille puis valide son placement pour partager l’œuvre signée •°○.'},
+  {stage:'finished',name:'Le partage',title:'Le haïku en résonance',hint:'Révèle le haïku inspiré de ta peinture, place son titre et ses trois vers séparément, ajuste leurs tailles puis valide les placements pour partager l’œuvre signée •°○.'},
 ] as const;
 export type RitualStage=typeof RITUAL[number]['stage'];
 export function RitualProgress({stage}:{stage:RitualStage}){

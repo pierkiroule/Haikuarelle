@@ -53,6 +53,7 @@ export function BirdStudio(){
   const [colour,setColour]=useState<number|null>(null);
   const [tool,setTool]=useState<'water'|'plume'|'breath'>('water');
   const [placement,setPlacement]=useState<PoemPlacement>({x:.07,y:.78,size:.032});
+  const [titlePlacement,setTitlePlacement]=useState<PoemPlacement>({x:.07,y:.08,size:.034});
   const [poemPlaced,setPoemPlaced]=useState(false);
   const [selected,setSelected]=useState<BirdId>('rougegorge');
   const brush=brushPrefs[selected]?.size??.62,opacity=brushPrefs[selected]?.opacity??1;
@@ -178,6 +179,7 @@ export function BirdStudio(){
       if(!words)throw new Error('Ajoute quelques pigments avant de révéler le haïku.');
       const width=paper.current?.getBoundingClientRect().width??400;
       setPlacement({x:(reading.centerX??.5)>.5?.07:.40,y:reading.centerY<.5?.78:.10,size:Math.min(.045,Math.max(.026,12/Math.max(200,width)))});
+      setTitlePlacement({x:.07,y:reading.centerY<.5?.68:.04,size:Math.min(.045,Math.max(.030,12/Math.max(200,width)))});
       setPoetry(words);setPoemPlaced(false);
     }catch(cause){setNotice(cause instanceof Error?cause.message:'Le haïku n’a pas pu être révélé.');}
   };
@@ -228,11 +230,11 @@ export function BirdStudio(){
   const exportArt=async(mode:'download'|'share'='download')=>{
     if(!engine.current||!poetry||!poemPlaced||stage!=='finished'||exporting)return;stop();setExporting(true);
     try{
-      const png=await exportResonantArtwork(await engine.current.exportPNG(),poetry.verses,placement);
+      const png=await exportResonantArtwork(await engine.current.exportPNG(),poetry.verses,placement,{text:poetry.title,placement:titlePlacement});
       const filename=`haikuarelle-${seed}.png`;
       const result=await deliverArtwork(png,filename,APP_NAME,mode);
       if(result==='shared')setNotice('L’œuvre et ses trois vers ont pris leur envol.');
-      if(result==='saved')setNotice(mode==='share'?'L’œuvre est téléchargée : tu peux maintenant la partager.':'L’image et ses trois vers sont téléchargés, avec la signature •°○.');
+      if(result==='saved')setNotice(mode==='share'?'L’œuvre est téléchargée : tu peux maintenant la partager.':'L’œuvre est téléchargée, avec son titre, ses trois vers et la signature •°○.');
     }catch(error){setNotice(error instanceof Error?error.message:'L’export a échoué.');}finally{setExporting(false);}
   };
   const dryingEnd=(engine.current?.composition.duration??1)*30;
@@ -257,7 +259,7 @@ export function BirdStudio(){
         {stage==='drying'&&<DryingFeathers bird={selectedBird}/>}
         <div ref={paper} className="bird-paper stable-sheet tool-paint" tabIndex={canDraw?0:-1} role={stage==='finished'?'group':'button'} aria-disabled={stage==='finished'?undefined:!canDraw} aria-label={stage==='finished'?'Œuvre et haïku résonant':canBlow?"Souffle du vivant : glisse pour déplacer ensemble l’eau et les pigments humides. Au clavier, maintiens espace et utilise les flèches.":canWet?"Toile : maintiens et glisse pour déposer l’eau résonante. Au clavier, maintiens espace ou Entrée et utilise les flèches.":"Papier : touche ou glisse sur le papier sec ou humide pour peindre avec un chant entier. Au clavier, place la plume avec les flèches puis presse espace ou Entrée."} onPointerDown={down} onPointerMove={position} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release} onPointerLeave={()=>{if(pointer.current===null){setPoint(null);cursorPrevious.current=null;setFeatherTilt(0);}}} onKeyDown={keyboardPaper} onKeyUp={event=>{if((event.key===' '||event.key==='Enter')&&keyHeld.current){event.preventDefault();keyHeld.current=false;if(canWet)finishWater();else{engine.current?.liftBreath();setContact(false);}}}} onBlur={()=>{if(keyHeld.current){keyHeld.current=false;if(canWet)finishWater();else{engine.current?.liftBreath();setContact(false);}}}} onContextMenu={event=>event.preventDefault()}>
           <canvas ref={canvas} aria-label="Aquarelle et traces de plumes sur papier coton"/>
-          {poetry&&stage==='finished'&&<HaikuBlock verses={poetry.verses} placement={placement} editable={!poemPlaced&&!exporting} onChange={setPlacement}/>}
+          {poetry&&stage==='finished'&&<><HaikuBlock title verses={[poetry.title]} placement={titlePlacement} editable={!poemPlaced&&!exporting} onChange={setTitlePlacement}/><HaikuBlock verses={poetry.verses} placement={placement} editable={!poemPlaced&&!exporting} onChange={setPlacement}/></>}
           <span className="paper-signature" aria-hidden="true">•°○</span>
           {!marks.length&&!contact&&!error&&(!canWet||!waterPlaced)&&stage!=='drying'&&stage!=='finished'&&<div className="bird-paper-invitation">{canWet?<WaterDrop className="invitation-feather"/>:<FeatherGlyph bird={selectedBird} className="invitation-feather"/>}<span>{canBlow?'Un souffle, la matière s’étire.':canWet?(waterPlaced?'L’eau résonante est déposée.':'Un peu d’eau, avant les voix.'):'Ton oiseau peut entrer.'}</span><small>{canBlow?'Glisse sur une zone humide pour entraîner ses pigments.':canWet?'Dessine des chemins d’eau, sans un bruit.':'Dépose ou glisse la plume. Le chant anime ta matière.'}</small></div>}
           {point&&canPaint&&!error&&<div className={`brush-cursor feather-cursor ${contact?'resonating':''}`} aria-hidden="true" style={{left:`${point.x*100}%`,top:`${point.y*100}%`,'--feather-tilt':`${featherTilt}deg`} as React.CSSProperties}><span className="feather-hotspot"/><FeatherGlyph bird={paintingBird}/></div>}
@@ -277,7 +279,7 @@ export function BirdStudio(){
           {stage==='drying'&&<div className="artwork-drying" role="status"><SilenceSun/><progress aria-label="Séchage de l’œuvre" max="1" value={dryingProgress}/><span>Sous le soleil du silence…</span><button onClick={continuePainting}>Reprendre la plume</button></div>}
           {stage==='finished'&&<div className="resonant-actions">
             {!poetry?<button className="finalize-art reveal-haiku" onClick={revealHaiku} disabled={!!error}>Révéler le haïku résonant ✧</button>:<>
-              {!poemPlaced?<><p>Déplace les trois lignes sur la peinture, puis ajuste leur taille.</p><label className="haiku-size"><span>Taille du haïku</span><input aria-label="Taille du haïku" type="range" min="16" max="60" value={Math.round(placement.size*1000)} onChange={e=>setPlacement(p=>({...p,size:Number(e.target.value)/1000}))}/></label><button className="finalize-art place-haiku" onClick={()=>setPoemPlaced(true)}>Valider le placement</button></>:<button className="continue-art" onClick={()=>setPoemPlaced(false)}>Modifier le placement</button>}
+              {!poemPlaced?<><p>Déplace le titre et les trois lignes séparément, puis ajuste leur taille.</p><label className="haiku-size"><span>Taille du titre</span><input aria-label="Taille du titre" type="range" min="16" max="60" value={Math.round(titlePlacement.size*1000)} onChange={e=>setTitlePlacement(p=>({...p,size:Number(e.target.value)/1000}))}/></label><label className="haiku-size"><span>Taille du haïku</span><input aria-label="Taille du haïku" type="range" min="16" max="60" value={Math.round(placement.size*1000)} onChange={e=>setPlacement(p=>({...p,size:Number(e.target.value)/1000}))}/></label><button className="finalize-art place-haiku" onClick={()=>setPoemPlaced(true)}>Valider les placements</button></>:<button className="continue-art" onClick={()=>setPoemPlaced(false)}>Modifier les placements</button>}
               <button className="finalize-art share-art" onClick={()=>void exportArt('share')} disabled={!poemPlaced||exporting||!!error}>{exporting?'Préparation…':'Partager l’œuvre'} ↗</button>
               <button className="continue-art download-art" onClick={()=>void exportArt()} disabled={!poemPlaced||exporting||!!error}>Télécharger l’image · PNG</button>
             </>}

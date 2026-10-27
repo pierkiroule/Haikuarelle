@@ -99,11 +99,17 @@ export function morphicFamily(r:ArtworkReading):keyof typeof MORPHIC_LINES{
  if(r.coverage>.4&&(r.density??0)>.35)return 'shelter';
  return 'passage';
 }
+export const BIRD_TITLE_REFERENCE:Record<BirdId,string>={
+ rougegorge:'du rouge-gorge',merle:'du merle',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',geai:'du geai',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou',corneille:'de la corneille',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',pie:'de la pie',
+};
+const MORPHIC_TITLES:Record<keyof typeof MORPHIC_LINES,readonly string[]>={
+ islands:['L’archipel','Les rives','Les escales'],branching:['Les racines','Les chemins','La ramure'],rising:['L’élan','La cime','L’ascension'],veil:['Le souffle','La brume','Le voile'],shelter:['Le refuge','L’abri','Le berceau'],silence:['Le silence','L’attente','La veille'],passage:['Le passage','La traversée','La lisière'],
+};
 export function makeResonantHaiku(marks:readonly BirdMark[],seed:number,reading:ArtworkReading,bird:BirdId):ArtworkPoetry|null{
  if(!marks.length||reading.coverage<=0)return null;
  const family=morphicFamily(reading),ecology=BIRD_POETICS[bird];
  let hash=marks.reduce((h,m)=>Math.imul(h^m.seed,16777619)>>>0,seed>>>0);
  hash=(hash^Math.round(reading.coverage*10000)^Math.round(reading.centerY*1000)^Math.round((reading.complexity??0)*10))>>>0;
  const choose=(lines:readonly string[],shift:number)=>lines[(hash>>>shift)%lines.length];
- return {title:'',verses:[choose(ecology.lines[0],0),choose(MORPHIC_LINES[family],7),choose(ecology.lines[2],14)],reading:{...reading,tones:[...reading.tones]}};
+ return {title:`${choose(MORPHIC_TITLES[family],3)} ${BIRD_TITLE_REFERENCE[bird]}`,verses:[choose(ecology.lines[0],0),choose(MORPHIC_LINES[family],7),choose(ecology.lines[2],14)],reading:{...reading,tones:[...reading.tones]}};
 }

@@ -1,6 +1,6 @@
 # Atelier individuel et rendu aquarelle
 
-L’application propose un seul rituel : rencontre avec une plume, création sur toute la feuille A4, séchage volontaire de 12 secondes, révélation et placement de trois vers, puis partage ou téléchargement. L’eau reste disponible jusqu’au séchage choisi. L’œuvre ne disparaît pas automatiquement. Les paramètres historiques `?atelier` et `?exposition` ouvrent aussi cet atelier ; `?validation` et `?mp3` restent des outils spécialisés.
+L’application propose un seul rituel : rencontre avec une plume, création sur toute la feuille A4, séchage volontaire de 12 secondes, révélation et placement du titre et des trois vers, puis partage ou téléchargement. L’eau reste disponible jusqu’au séchage choisi. L’œuvre ne disparaît pas automatiquement. Les paramètres historiques `?atelier` et `?exposition` ouvrent aussi cet atelier ; `?validation` et `?mp3` restent des outils spécialisés.
 
 Les contrôleurs de relais, les couches temporelles, la dégradation par âge et les réponses sonores des anciens visiteurs ont été supprimés. Le chant complet de l’oiseau accompagne les pigments ; le geste d’eau garde son chant immergé. La simulation utilise le profil de qualité individuel complet, sans budget réservé aux cohortes.
 
@@ -10,7 +10,7 @@ Les contrôleurs de relais, les couches temporelles, la dégradation par âge et
 - Bruits de matière sur un support simplex tourné, sans support carré apparent.
 - Géométrie indépendante pour le contour de l’eau : grandes ondulations plutôt que les petites dentelures du pinceau pigmentaire. Le voile humide utilise une épaisseur optique continue et transparente.
 - Empreinte du papier atténuée dans la peinture fraîche, puis révélée progressivement lorsque l’eau se retire. Les textures sèches et la couleur moyenne sont conservées, sans flou global.
-- Export PNG de toute la feuille A4, avec le haïku placé sur la peinture et la signature •°○.
+- Export PNG de toute la feuille A4, avec le titre et les trois vers placés sur la peinture et la signature •°○.
 
 ## Contrôles de rendu
 
@@ -26,10 +26,10 @@ L’entrée dans l’atelier ouvre automatiquement une présentation immersive d
 
 ## Haïku résonant placé sur l’œuvre
 
-Le choix d’une plume ouvre directement la création, avec un aperçu sonore. Aucun titre ni haïku initial ne réserve de place sur la feuille : l’A4 entière est peignable. Après le séchage, « Révéler le haïku résonant » lit les pixels de la peinture et compose trois vers sans titre. Une grammaire locale croise l’univers de l’oiseau avec les îlots, la complexité des contours, les espaces blancs, la verticalité et la densité de matière. Il s’agit d’une interprétation poétique déterministe, sans service distant.
+Le choix d’une plume ouvre directement la création, avec un aperçu sonore. Aucun titre ni haïku initial ne réserve de place sur la feuille : l’A4 entière est peignable. Après le séchage, « Révéler le haïku résonant » lit les pixels de la peinture et compose un titre contenant le nom de l’oiseau et trois vers. Une grammaire locale croise l’univers de l’oiseau avec les îlots, la complexité des contours, les espaces blancs, la verticalité et la densité de matière. Il s’agit d’une interprétation poétique déterministe, sans service distant.
 
-Le bloc de trois lignes se déplace au toucher, à la souris ou avec les flèches du clavier (Maj pour un pas plus grand). Un curseur change sa taille. Le placement est limité à la feuille et préserve la zone de signature. « Valider le placement » active le partage et le téléchargement ; « Modifier le placement » permet de revenir à l’édition. Reprendre la peinture retire le haïku afin de produire une nouvelle lecture après séchage.
+Le titre et le bloc de trois lignes se déplacent indépendamment au toucher, à la souris ou avec les flèches du clavier (Maj pour un pas plus grand). Deux curseurs règlent séparément la taille du titre et celle des vers. Le titre utilise la même police Georgia que les vers, en gras italique. Le placement est limité à la feuille et préserve la zone de signature. « Valider le placement » active le partage et le téléchargement ; « Modifier le placement » permet de revenir à l’édition. Reprendre la peinture retire le haïku afin de produire une nouvelle lecture après séchage.
 
-Le PNG conserve la feuille entière, les coordonnées et la taille relatives du bloc, et la signature rouge •°○. Aucun titre, nom d’utilisateur ou dédicace n’est ajouté. L’interface indique que la participation n’attribue pas de propriété exclusive ; ce texte d’interface ne remplace pas des conditions juridiques de diffusion.
+Le PNG conserve la feuille entière, les coordonnées et les tailles relatives des deux blocs, et la signature rouge •°○. Aucun nom d’utilisateur ou dédicace n’est ajouté. L’interface indique que la participation n’attribue pas de propriété exclusive ; ce texte d’interface ne remplace pas des conditions juridiques de diffusion.
 
 `scripts/check-resonant-haiku.py` vérifie le parcours avec un vrai chant, le déplacement, la taille, la confirmation et le PNG signé sur ordinateur et mobile. Les tests unitaires contrôlent aussi la dépendance des vers aux familles de formes et le dessin du texte à ses coordonnées exportées.

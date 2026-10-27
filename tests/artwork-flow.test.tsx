@@ -95,6 +95,10 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     expect(host.querySelector('.resonant-haiku')).toBeNull();await click(host.querySelector('.reveal-haiku')!);
     const poem=host.querySelector<HTMLElement>('.resonant-haiku')!;expect(poem.children).toHaveLength(3);expect(host.querySelector('.artwork-title')).toBeNull();
     expect(host.querySelector<HTMLButtonElement>('.share-art')!.disabled).toBe(true);
+    const title=host.querySelector<HTMLElement>('.resonant-title')!;expect(title.textContent!.toLowerCase()).toContain('geai');
+    const oldTitleLeft=title.style.left,oldPoemLeft=poem.style.left;
+    await act(async()=>title.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
+    expect(title.style.left).not.toBe(oldTitleLeft);expect(poem.style.left).toBe(oldPoemLeft);
     const left=poem.style.left;await act(async()=>poem.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));expect(poem.style.left).not.toBe(left);
     await click(host.querySelector('.place-haiku')!);expect(host.querySelector<HTMLButtonElement>('.share-art')!.disabled).toBe(false);expect(poem.classList.contains('is-editable')).toBe(false);
     expect(host.querySelector('.final-dedication')).toBeNull();expect(host.querySelector('.shared-attribution')!.textContent).toContain('pas de propriété exclusive');
