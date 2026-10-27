@@ -277,10 +277,10 @@ it('refreshes the moving moisture during a continuous breath before gating its n
 
 it('keeps a quick flick alive for a finite strong burst after release, even before its first frame',()=>{
  const e=open();e.beginSignature(8);e.wetBrush({x:.5,y:.5},.7);e.holdWater();
- vi.mocked(e.paint.step).mockClear();e.blow({x:.5,y:.5},0,.8);e.blow({x:.54,y:.5},16,.8);e.liftBreath();
+ vi.mocked(e.paint.step).mockClear();e.blow({x:.5,y:.5},0,.8);e.blow({x:.54,y:.5},16,.8);e.liftBreath();expect(e.isBlowing).toBe(true);
  for(let t=1;t<=701;t+=50)frame(t);
  const forces=vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).filter(s=>s.breath);
- expect(forces).toHaveLength(9);expect(forces[0].coupling).toBeGreaterThan(forces.at(-1)!.coupling);
+ expect(forces).toHaveLength(9);expect(e.isBlowing).toBe(false);expect(forces[0].coupling).toBeGreaterThan(forces.at(-1)!.coupling);
  expect(forces.every(s=>s.waterAmount===0&&s.strength===0&&s.fx>0)).toBe(true);
  expect(e.status.hasPigment).toBe(false);expect(e.paint.captureMoisture).toHaveBeenCalledTimes(1);
 });

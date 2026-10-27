@@ -2,6 +2,8 @@ import type {Point} from '../engine/types';
 import {sheetFor,type ArtworkFormat} from '../engine/layout';
 import {clamp} from '../engine/composition';
 
+export const WET_FILM_THRESHOLD=.006;
+
 export interface WetStroke {a:Point;b:Point;radius:number;amount:number;time:number}
 export interface WetSite {point:Point;from:Point;distance:number}
 export interface WetRegion {sites:WetSite[];radius:number;area:number}
@@ -79,12 +81,12 @@ export class WetPaper {
     return sites;
   }
   /** Snapshot the connected basin, ordered by travel distance from the sample.
-   * Rasterization is bounded (about 6k cells), independent of screen resolution.
+   * Rasterization is bounded (about 6k cells, 18k after a water snapshot), independent of screen resolution.
    * Disconnected pools and dry cuts are excluded before any pigment is scheduled.
    */
   region(origin:Point,time:number,maxSites=120,random:()=>number=()=>.5):WetRegion{
-    const step=.018,nx=Math.ceil(this.sx/step),ny=Math.ceil(this.sy/step),count=nx*ny;
-    const dx=this.sx/nx,dy=this.sy/ny,mask=new Float32Array(count),threshold=.025;
+    const step=this.raster?.01:.018,nx=Math.ceil(this.sx/step),ny=Math.ceil(this.sy/step),count=nx*ny;
+    const dx=this.sx/nx,dy=this.sy/ny,mask=new Float32Array(count),threshold=WET_FILM_THRESHOLD;
     const point=(i:number):Point=>({x:clamp((i%nx+.5)/nx,.025,.975),y:clamp((Math.floor(i/nx)+.5)/ny,.025,.975)});
     if(this.raster)for(let i=0;i<count;i++)mask[i]=this.sampled(point(i),time);
     for(const s of this.strokes){

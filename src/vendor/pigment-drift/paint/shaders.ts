@@ -380,7 +380,7 @@ vec2 breathDisplacement(vec2 position){
   vec2 rel=position-uBreath.xy;
   float envelope=breathEnvelope(position);
   if(envelope<=0.0)return vec2(0.0);
-  vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.4);
+  vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.12);
   float extension=min(speed*uDt*30.0,min(uUnit*0.045,24.0));
   float forward=dot(rel,direction)/uUnit;
   float fringe=smoothstep(0.02,0.18,forward);
@@ -399,7 +399,11 @@ vec2 breathDisplacement(vec2 position){
   float branching=mix(primary,max(primary*0.55,twig*0.85),smoothstep(0.10,0.24,forward));
   float irregular=0.6+0.4*smoothstep(-0.4,0.4,gnoise(vec2(across*19.0,along*8.0)+uSeedOff));
   // Bulk pressure stays continuous; branching only modulates the leading fringe.
-  float pressure=mix(1.0,0.72+0.28*branching*irregular,fringe);
+  float pressure=mix(1.0,0.25+0.75*branching*irregular,fringe);
+  float lateral=clamp(dot(rel,side)/max(uBreathShape.x,1.0)+0.24*fringe*sin(phase*1.3+bend),-1.0,1.0);
+  // Divergent water paths spread the same volume across more paper. Their
+  // thickness therefore decreases; no new water mask or painted roots are added.
+  fan=normalize(direction+side*lateral*mix(0.12,0.78,fringe));
   return fan*extension*envelope*pressure*uBreathShape.y;
 }
 vec4 mobileWater(vec4 value){
@@ -437,7 +441,7 @@ void main() {
       // and dry cuts between pools remain barriers even while the fluid coasts.
       float channel=min(fieldAt(src).y,fieldAt(destination).y);
       for(int j=1;j<=4;j++)channel=min(channel,fieldAt(mix(src,destination,float(j)/5.0)).y);
-      src=mix(src,destination,mix(smoothstep(0.008,0.07,channel),smoothstep(0.018,0.16,channel),uFixation));
+      src=mix(src,destination,mix(smoothstep(0.003,0.04,channel),smoothstep(0.018,0.16,channel),uFixation));
     }else src=destination;
   }
   // Untouched texels are copied exactly (and cheaply); only moved ones are resampled.
@@ -450,7 +454,7 @@ void main() {
     vec4 original=fieldAt(q),mobile=mobileWater(original),transport=vec4(0.0);
     // Paired face flux carries water AND its suspended pigment across the old
     // shoreline. Each donor gives at most 32% per face; dry pigment cannot move.
-    // The forward fan spans less than 45 degrees: at most three faces export,
+    // The forward cone spans less than 90 degrees: at most three faces export,
     // so their combined outgoing fraction stays below one (3 * 0.32).
     // Fractional, sheet-scaled steps keep the gesture visible at high density.
     // Short exchanges keep the root connected; longer, fractional exchanges
@@ -497,7 +501,7 @@ void main() {
       // A diagonal cannot leak across two pools touching only at a dry corner.
       if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
       float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,gnoise((src + offset * 0.5) * 0.23 + uSeedOff));
-      float mobility = smoothstep(0.006,0.22,moisture) * fibre;
+      float mobility = mix(smoothstep(0.006,0.22,moisture),smoothstep(0.003,0.06,moisture),uMaterial) * fibre;
       // Symmetric moisture-dependent fixation, without sharpening or adding grain.
       mobility *= mix(1.0,smoothstep(0.018,0.18,moisture),uFixation);
       float neighborAffinity = 1.0 + uMaterial * 2.6 *
@@ -558,14 +562,14 @@ void main() {
     float kind = mod(sp.w, 4.0);
     float slot = mod(floor(sp.w / 4.0), 64.0);
     bool wetOnly = mod(floor(sp.w / 256.0), 2.0) > 0.5;
-    float wetMask = wetOnly ? smoothstep(0.005, 0.030, f.y) : 1.0;
+    float wetMask = wetOnly ? smoothstep(0.003, 0.012, f.y) : 1.0;
     if (wetOnly && wetMask > 0.0) {
       // A large pale glaze must not jump a dry slit into a neighbouring pool.
       // Check the actual GPU water along the short capillary route to this texel.
       vec2 anchor = mix(uSeg[i].xy, uSeg[i].zw, t);
       float channel = f.y;
       for (int j = 1; j <= 5; j++) channel = min(channel, fieldAt(mix(anchor, q, float(j) / 6.0)).y);
-      wetMask *= smoothstep(0.008, 0.025, channel);
+      wetMask *= smoothstep(0.003, 0.009, channel);
     }
     float dn = d / sp.x + rag;
     float cov = 1.0 - smoothstep(0.5, 1.0, dn);
@@ -604,7 +608,9 @@ void main() {
   }
 
   f.y = max(f.y * uDryKeep - uDt * uDryFloor, 0.0);
-  f.x = clamp(f.x, 0.0, 1.4);
+  // Optical pigment is stored mass, not a capped legacy relief height.
+  // Compressed water must retain its pigment instead of clipping its colour.
+  f.x = uOptical>0.5?max(f.x,0.0):clamp(f.x,0.0,1.4);
   // The inks can never add up to more than the pigment that's there.
   f.zw = max(f.zw, 0.0);
   f.zw *= min(1.0, f.x / max(f.z + f.w, 1e-5));
@@ -1106,7 +1112,7 @@ void main() {
   float tooth = pig * (0.6 + 0.8 * (1.0 - pig));
   // Clear water on cotton is visible before pigment arrives. This comes from the
   // actual wetness channel and evaporates with it; it is never baked into paper.
-  float damp = smoothstep(0.008, 0.28, wet) * uDetail;
+  float damp = pow(smoothstep(0.003, 0.20, wet),0.45) * uDetail;
   col *= 1.0 - damp * 0.22 * (1.0 - pig * 0.82);
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.

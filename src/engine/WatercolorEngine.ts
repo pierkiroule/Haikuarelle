@@ -193,6 +193,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.active=true;this.paused=false;
     this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+this.dryingDuration());this.request();
   }
+  get isBlowing():boolean{return this.breathPending!==null;}
   private syncBreathWater():void{
     if(this.breathMoved&&!this.destroyed){
       const moisture=this.paint.captureMoisture();if(moisture)this.wetPaper.replaceMoisture(moisture,this.tick/TICK_RATE);

@@ -89,7 +89,7 @@ export function BirdStudio(){
       waterSong.current=new WaterSong(sounds,painter,{
         preparing:()=>{if(live)setLoading(current.current.selected);},
         started:()=>{if(live){setLoading(null);setPlaying(current.current.selected);}},
-        stopped:()=>{if(live&&!stroke.current?.busy){setLoading(null);setPlaying(null);if(!waterGesture.current&&!painter.status.hasPigment)painter.holdWater();}},
+        stopped:()=>{if(live&&!stroke.current?.busy){setLoading(null);setPlaying(null);if(!waterGesture.current&&!painter.status.hasPigment&&!painter.isBlowing)painter.holdWater();}},
         error:message=>{if(live)setNotice(message);},
       });
       stroke.current=new SoundDeposit(sounds,painter,{

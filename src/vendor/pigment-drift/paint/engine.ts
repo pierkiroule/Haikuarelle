@@ -616,7 +616,7 @@ export class PaintEngine {
   /** Small top-down moisture guide, read once after a breath gesture. */
   captureMoisture():{width:number;height:number;water:Float32Array}|null{
     if(!this.ready||this.isContextLost)return null;
-    const scale=Math.min(1,192/Math.max(this.fieldW,this.fieldH));
+    const scale=Math.min(1,256/Math.max(this.fieldW,this.fieldH));
     const width=Math.max(1,Math.round(this.fieldW*scale)),height=Math.max(1,Math.round(this.fieldH*scale));
     const g=this.gl;
     const target=this.moistureTarget??(this.moistureTarget=this.makeTarget(width,height,this.rgba,true));
