@@ -34,7 +34,7 @@ import {FeatherGlyph} from './birds/FeatherGlyph';
 const Validation=lazy(()=>import('./Validation'));
 const Legacy=lazy(()=>import('./LegacyStudio'));
 const randomSeed=()=>crypto.getRandomValues(new Uint32Array(1))[0];
-const defaults:EngineSettings={palette:'plumages',granulation:.84,wetness:.57,complexity:.52,ink:.20,resonance:.96,sharpness:.80,dryingThreshold:.42,format:'portrait'};
+const defaults:EngineSettings={palette:'plumages',granulation:.84,wetness:.57,complexity:.52,ink:.20,resonance:.96,sharpness:.80,dryingThreshold:.42,format:'a4'};
 const idle:EngineStatus={seed:0,progress:0,phase:'idle',paused:true,fps:0,ticks:0};
 function Glyph({name}:{name:'screen'|'close'|'download'|'refresh'|'erase'|'stop'|'sound'}){
   const paths={screen:'M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4',close:'m6 6 12 12M18 6 6 18',download:'M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5',refresh:'M4 10a8 8 0 1 1 2 8M4 4v6h6',erase:'m15 3 6 6-11 11H6l-4-4L15 3zm-9 9 6 6m-2 2h12',stop:'M7 7h10v10H7z',sound:'m11 5-5 4H3v6h3l5 4zM15 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14'};
@@ -232,7 +232,7 @@ export function BirdStudio(){
     <FeatherDrift/>
     <header className="bird-header">
       <a className="bird-wordmark feather-wordmark" href="/" aria-label={APP_NAME}><img className="watercolor-brand" src="/brand/plume-aquarelle.webp" alt="" width="48" height="48" decoding="async"/><span className="brand-copy"><span>Plume</span><small>d’Haïkuarelle</small></span></a><span className="bird-edition">UN RITUEL D’EAU, DE CHANTS ET DE SILENCE</span>
-      <div className="bird-view-controls">{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{if(canWet)stop();setCanvasOnly(v=>!v);}}>Toile seule</button>}{stage==='choose'&&<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="portrait">Portrait</option><option value="landscape">Paysage HD</option></select>}{secondaryActions}</div>
+      <div className="bird-view-controls">{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{if(canWet)stop();setCanvasOnly(v=>!v);}}>Toile seule</button>}{stage==='choose'&&<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="a4">A4 · 21 × 29,7 cm</option><option value="portrait">Portrait allongé</option><option value="landscape">Paysage HD</option></select>}{secondaryActions}</div>
     </header>
     <RitualProgress stage={stage}/>
     {stage==='choose'&&<section className="bird-selection" aria-labelledby="trio-title"><p className="bird-eyebrow">01 · LA RENCONTRE</p><h1 id="trio-title">Une plume sonore<br/><em>qui t’attire.</em></h1><p>Choisis parmi les plumes virevoltantes. Un geste, une rencontre. Son plumage devient ta palette, son univers inspire tes mots.</p><FeatherEncounter onChoose={pickBird}/><span className="sr-only" role="status">{previewing?`Aperçu du chant : ${BIRDS.find(b=>b.id===previewing)?.name}`:''}</span></section>}
