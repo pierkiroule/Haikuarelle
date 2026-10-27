@@ -13,18 +13,10 @@ with sync_playwright() as p:
 
   page.evaluate('''async url=>{const {HaikuarelleEngine}=await import(url),begin=HaikuarelleEngine.prototype.beginSignature;HaikuarelleEngine.prototype.beginSignature=function(...args){window.__p=this;return begin.apply(this,args)}}''',modules[-1])
   page.locator('.feather-choice[data-bird=geai]').click()
-  verses=page.locator('.poem-invitation .poem-lines>span').all_text_contents();assert len(verses)==3
-  assert page.locator('.artwork-title').count()==1
-  page.get_by_role('button',name='Entrer dans l’atelier').click();page.wait_for_function('!!document.querySelector(".flow-paint")')
-  assert page.get_by_role('button',name='Choisir l’eau résonante',exact=True).get_attribute('aria-pressed')=='true'
-  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-  paper=page.locator('.bird-paper');box=paper.bounding_box();
-  title=page.locator('.artwork-paper>.artwork-title').bounding_box();footer=page.locator('.paper-footer').bounding_box()
-  assert title['y']+title['height']<=box['y']+1
-  assert box['y']+box['height']<=footer['y']+1
-  page.locator('.artwork-title h2').click();assert not page.evaluate('!!window.__p.status.hasPigment')
+  page.wait_for_function('!!document.querySelector(".flow-paint")')
+  assert page.locator('.artwork-title').count()==0 and page.locator('.resonant-haiku').count()==0
   assert page.locator('.paper-signature').inner_text()=='•°○'
-  assert page.locator('.paper-footer .poem-lines').evaluate('e=>parseFloat(getComputedStyle(e).fontSize)')>=9
+  paper=page.locator('.bird-paper')
   box=paper.bounding_box();x=box['x']+box['width']*.5;y=box['y']+box['height']*.5
   page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+box['width']*.08,y,steps=3);page.mouse.up()
   assert page.evaluate('window.__p.waterAt({x:.5,y:.5})')>0
@@ -37,19 +29,21 @@ with sync_playwright() as p:
   page.mouse.move(x,y);page.mouse.down();page.mouse.move(x-box['width']*.05,y,steps=3);page.mouse.up()
   assert page.locator('.flow-paint').count()==1
   assert page.evaluate('window.__p.waterAt({x:.5,y:.5})')>0
-  assert page.locator('.paper-footer .poem-lines>span').all_text_contents()==verses
+  assert page.locator('.resonant-haiku').count()==0
   page.screenshot(path=f'/tmp/creation-palette-{width}.png')
+  page.get_by_role('button',name='Déployer la palette',exact=True).click()
   expanded=paper.bounding_box()['height'];page.evaluate('window.__creationCanvas=document.querySelector(".bird-paper canvas")')
   page.get_by_role('button',name='Réduire la palette',exact=True).click();page.wait_for_timeout(300)
-  assert paper.bounding_box()['height']>expanded+50
+  assert abs(paper.bounding_box()['height']-expanded)<1
   assert page.evaluate('window.__creationCanvas===document.querySelector(".bird-paper canvas")')
   page.screenshot(path=f'/tmp/creation-palette-collapsed-{width}.png')
   page.get_by_role('button',name='Déployer la palette',exact=True).click()
   page.get_by_role('button',name='Laisser sécher',exact=True).click()
   page.evaluate('async()=>{await window.__p.finish()}');page.locator('.flow-finished').wait_for()
-  assert page.locator('.paper-footer .artwork-poem .poem-lines>span').all_text_contents()==verses
-  assert page.locator('.artwork-title h2').inner_text()
+  assert page.locator('.resonant-haiku').count()==0
+  page.get_by_role('button',name='Révéler le haïku résonant',exact=False).click()
+  assert page.locator('.resonant-haiku>span').count()==3
   assert not errors,errors
-  print(json.dumps({'viewport':[width,height],'poemPreserved':True,'waterAfterPigment':True,'errors':errors}),flush=True)
+  print(json.dumps({'viewport':[width,height],'haikuRevealedAfterPainting':True,'waterAfterPigment':True,'errors':errors}),flush=True)
   page.close()
  browser.close()

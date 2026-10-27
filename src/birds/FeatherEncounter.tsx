@@ -14,5 +14,5 @@ export function FeatherEncounter({onChoose}:{onChoose:(bird:Bird)=>void}){
     <div className={`feather-path gust-${i}`} key={bird.id} style={{'--flight':`${23+i*1.7}s`,'--delay':`${delay}s`,'--sway':`${3.4+i*.37}s`} as CSSProperties}>
       <div className="feather-position"><button className="feather-choice" data-bird={bird.id} aria-label={`Choisir la plume ${i+1}`} onClick={()=>onChoose(bird)}><FeatherGlyph bird={bird}/></button></div>
     </div>
-  )}</div><button className="feather-motion" aria-pressed={paused} onClick={()=>setPaused(value=>!value)}>{paused?'Laisser virevolter':'Suspendre les plumes'}</button><p className="encounter-result">Attrape une plume au passage.<br/>Elle te révélera son haïku.</p></div>;
+  )}</div><button className="feather-motion" aria-pressed={paused} onClick={()=>setPaused(value=>!value)}>{paused?'Laisser virevolter':'Suspendre les plumes'}</button><p className="encounter-result">Attrape une plume au passage.<br/>Elle te confiera ses couleurs.</p></div>;
 }

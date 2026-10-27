@@ -1,20 +1,17 @@
-import {APP_NAME} from '../brand';
-/** Add the original verses below the real GPU painting, at its export resolution. */
-export async function exportSignatureCard(painting:Blob,verses:readonly string[],paper:string,seed:number,dedication='',title=''):Promise<Blob>{
-  const image=await createImageBitmap(painting);
-  const output=document.createElement('canvas'),footer=Math.round(image.width*.28),header=title?Math.round(image.width*.16):0;
-  output.width=image.width;output.height=image.height+footer+header;
-  const ctx=output.getContext('2d');
-  if(!ctx){image.close();throw new Error('Export indisponible.');}
-  try{
-  ctx.fillStyle=paper;ctx.fillRect(0,0,output.width,output.height);ctx.drawImage(image,0,header);
-  if(title){ctx.fillStyle='#46554d';ctx.textAlign='center';ctx.font=`${output.width*.045}px Georgia`;ctx.fillText(title,output.width/2,header*.62,output.width*.86);}
-  ctx.fillStyle='#46554d';ctx.textAlign='center';ctx.font=`${output.width*.038}px Georgia`;
-  verses.forEach((line,index)=>ctx.fillText(line,output.width/2,output.height-footer+output.width*(.065+index*.057)));
-  ctx.fillStyle='#909785';ctx.font=`${output.width*.009}px sans-serif`;
-  ctx.fillText(`${dedication.trim()?`Pour ${dedication.trim()} · `:''}${APP_NAME}  ·  ${seed.toString(16).toUpperCase()}`,output.width/2,output.height-footer*.12);
-  ctx.fillStyle='rgba(163,68,61,.72)';ctx.textAlign='right';ctx.font=`${image.width*.028}px Georgia`;
-  ctx.fillText('•°○',image.width*.97,output.height-image.width*.025);
-  return await new Promise<Blob>((resolve,reject)=>output.toBlob(value=>value?resolve(value):reject(new Error('Export impossible.')),'image/png'));
-  }finally{image.close();}
+import {POEM_LINE_HEIGHT,type PoemPlacement} from './poemPlacement';
+/** Composite the whole paper at its current resolution: no added title/bands. */
+export async function exportResonantArtwork(painting:Blob,verses:readonly string[],placement:PoemPlacement):Promise<Blob>{
+ await document.fonts?.ready;
+ const image=await createImageBitmap(painting),output=document.createElement('canvas');output.width=image.width;output.height=image.height;
+ const ctx=output.getContext('2d');if(!ctx){image.close();throw new Error('Export indisponible.');}
+ try{
+  ctx.drawImage(image,0,0);
+  const size=placement.size*output.width;ctx.fillStyle='#35483e';ctx.font=`${size}px Georgia`;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  const metrics=ctx.measureText('Égj'),ascent=metrics.fontBoundingBoxAscent??size*.9,descent=metrics.fontBoundingBoxDescent??size*.2;
+  const baseline=(size*POEM_LINE_HEIGHT-ascent-descent)/2+ascent;
+  verses.forEach((line,i)=>ctx.fillText(line,placement.x*output.width,placement.y*output.height+baseline+i*size*POEM_LINE_HEIGHT));
+  ctx.fillStyle='rgba(163,68,61,.72)';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.font=`${output.width*.026}px Georgia`;
+  ctx.fillText('•°○',output.width*.97,output.height-output.width*.025);
+  return await new Promise<Blob>((resolve,reject)=>output.toBlob(v=>v?resolve(v):reject(new Error('Export impossible.')),'image/png'));
+ }finally{image.close();}
 }

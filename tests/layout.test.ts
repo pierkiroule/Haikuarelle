@@ -3,11 +3,11 @@ import {SHEETS,PIGMENT_RESOLUTION,paintingQuality,displaySize,exportSize,frameCo
 import {compose} from '../src/engine/composition';
 const settings={palette:'estuaire',granulation:.72,wetness:.64,complexity:.52};
 describe('portrait and HD presentation',()=>{
-  it('keeps the complete A4 paper at 210:297 including protected text bands',()=>{
+  it('keeps the complete A4 paper at 210:297 without reserved text bands',()=>{
     const sheet=SHEETS.a4;
-    expect(sheet.width/(sheet.height+sheet.width*.44)).toBeCloseTo(210/297,10);
+    expect(sheet.width/sheet.height).toBeCloseTo(210/297,10);
     const size=exportSize('a4');
-    const fullHeight=size.height+Math.round(size.width*.16)+Math.round(size.width*.28);
+    const fullHeight=size.height;
     expect(fullHeight).toBeLessThanOrEqual(4097);
     expect(Math.abs(size.width/fullHeight-210/297)).toBeLessThan(.001);
   });
