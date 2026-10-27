@@ -53,7 +53,9 @@ with sync_playwright() as p:
  for(let i=0;i<Math.floor(shot.height*.52)*shot.width*4;i+=4){const r=shot.pixels[i],g=shot.pixels[i+1],b=shot.pixels[i+2];if(Math.abs(r-g)<13&&Math.abs(g-b)<13&&r<220)mesangeGrey++;}
  return {mesangeGrey,error:e.paint.gl.getError()};}''')
  print(json.dumps({'dry':dry}),flush=True)
- assert dry['mesangeGrey']>30 and dry['error']==0,dry
+ # A smoother, lighter water footprint changes the painted area of this scene.
+ # Retain a visible proportion of the actual wet grey, rather than 31 fixed pixels.
+ assert dry['mesangeGrey']>max(12,colours['mesangeGrey']*.15) and dry['error']==0,(dry,colours)
  page.screenshot(path='/tmp/smooth-plumage-dry.png')
  print('PASS: connected smooth diffusion, visible bird colours, wet and dry render, no browser errors',flush=True)
  b.close()

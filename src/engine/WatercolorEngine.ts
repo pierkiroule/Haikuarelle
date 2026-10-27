@@ -36,15 +36,28 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private fineInk:FineInkRenderer;
   private audio:AudioAnalysis|null=null;
   private readonly requireAudio:boolean;
+  readonly exhibition:boolean;
+  private lifeOrigin=performance.now();
+  private lastLifeSync=-Infinity;
+  private landscapeVoices=new Map<string,{analysis:AudioAnalysis;clock:()=>number;level:()=>number;point:Point;response:ResonantWater}>();
+  /** Audio is already playing; this only excites existing connected water. */
+  hearLandscape(id:string,analysis:AudioAnalysis,clock:()=>number,level:()=>number,point:Point):void{
+    this.landscapeVoices.set(id,{analysis:{...analysis,frames:soundImprint(analysis)},clock,level,point:{...point},response:new ResonantWater(analysis.seed)});
+    while(this.landscapeVoices.size>2)this.landscapeVoices.delete(this.landscapeVoices.keys().next().value!);
+  }
+  forgetLandscape(id:string):void{this.landscapeVoices.delete(id);}
+  get livingSeconds():number{return Math.max(0,(performance.now()-this.lifeOrigin)/1000);}
+
   private active=false;
   private performance=false;
   private drying=false;
   private resonantWater=new ResonantWater(0);
+  private resonantOrigin:Point={x:.5,y:.5};
   private pigmentColours:string[]=PLUMAGE_PIGMENTS;
   private voice:{gestures:Gesture[];ink:InkStroke[];analysis:AudioAnalysis;start:number}|null=null;
   private brushVoice:{brush:ResonantBrush;analysis:AudioAnalysis;start:number;clock?:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
   private waterVoice:{analysis:AudioAnalysis;clock:()=>number;level:()=>number}|null=null;
-  private stainVoice:{stain:SoundStain;analysis:AudioAnalysis;start:number;clock:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
+  private stainVoice:{stain:SoundStain;analysis:AudioAnalysis;start:number;clock:()=>number;level:()=>number;marked:boolean;onMark?:(p:Point)=>void}|null=null;
   private wetPaper=new WetPaper();
   private waterPending:BrushSegment[]=[];
   private waterLast:Point|null=null;
@@ -72,13 +85,14 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private lastDisplay=[0,0];
   private contextLost=(e:Event)=>{e.preventDefault();this.pause();this.onError?.('Le contexte graphique a été interrompu. Touchez Réessayer pour reprendre.');};
 
-  constructor(canvas:HTMLCanvasElement,settings:Partial<EngineSettings>={},onChange?:(s:EngineStatus)=>void,onError?:(s:string)=>void,options:{requireAudio?:boolean}={}) {
+  constructor(canvas:HTMLCanvasElement,settings:Partial<EngineSettings>={},onChange?:(s:EngineStatus)=>void,onError?:(s:string)=>void,options:{requireAudio?:boolean;exhibition?:boolean}={}) {
     this.settings={...DEFAULTS,...settings};this.onChange=onChange;this.onError=onError;
-    this.requireAudio=options.requireAudio??false;
+    this.requireAudio=options.requireAudio??false;this.exhibition=options.exhibition??false;
     const coarse=matchMedia('(pointer:coarse)').matches;
     const device=typeof navigator==='undefined'?undefined:navigator as Navigator&{deviceMemory?:number};
     this.quality=paintingQuality({coarse,memory:device?.deviceMemory,cores:device?.hardwareConcurrency});
-    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:this.quality.pixels,fieldScale:this.quality.scale,maxDimension:this.quality.maxDimension,detailBudget:this.quality.detailPixels});
+    this.paint=new PaintEngine(canvas,{coarse:true,fieldBudget:this.exhibition?(coarse?480000:900000):this.quality.pixels,fieldScale:this.quality.scale,maxDimension:this.quality.maxDimension,detailBudget:this.exhibition?1440*1080:this.quality.detailPixels});
+    if(this.exhibition)this.paint.enableExhibition();
     this.fineInk=new FineInkRenderer(this.paint.gl);
     this.paint.afterRender=()=>this.fineInk.draw(this.tick/TICK_RATE,[.11,.16,.15]);
     this.observer=new ResizeObserver(()=>this.resize());
@@ -112,14 +126,15 @@ export class HaikuarelleEngine implements WatercolorEngine {
   clear():void {
     if(this.destroyed)return;
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
-    this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;
+    this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;this.landscapeVoices.clear();
     this.breath.reset();this.breathPending=null;this.breathMoved=false;this.breathTicks=0;this.breathReleased=false;this.lastBreathSync=-Infinity;
     this.waterPending=[];this.waterLast=null;this.waterBlooms=[];this.hasPigment=false;
     this.drying=false;this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper=new WetPaper(this.settings.format,this.performance?Infinity:dryingTime(this.settings.wetness));
+    if(this.exhibition){this.lifeOrigin=performance.now();this.lastLifeSync=-Infinity;this.active=true;this.paused=false;}
     this.tick=0;this.accumulator=0;this.last=0;this.queued=[];this.notifyAt=-1;
     this.composition={title:this.audio?'Le papier écoute le silence':'Le papier attend votre son',gestures:[],ink:[],duration:DURATION,seed:this.seed};
-    this.prepareSheet();this.emit();
+    this.prepareSheet();this.emit();if(this.exhibition)this.request();
   }
   private prepareSheet():void {
     const sheet=sheetFor(this.settings.format);
@@ -142,7 +157,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   }
   /** Only switch the optical table on a blank sheet; deposited colour is immutable. */
   setBirdPalette(id:Bird['id']):void{
-    if(this.hasPigment)throw new Error('La palette de l’oiseau reste fixe pendant l’œuvre.');
+    if(this.hasPigment&&!this.exhibition)throw new Error('La palette de l’oiseau reste fixe pendant l’œuvre.');
     this.pigmentColours=[...PLUMAGE_PIGMENTS,...(BIRD_COLOURS[id]??[]).map(c=>c.hex)];
     this.paint.setLook(this.look());
   }
@@ -160,6 +175,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       this.waterBlooms=this.waterBlooms.filter(b=>time<b.start+b.duration).slice(-3);
       this.waterBlooms.push({point:{...p},start:time,duration:.65+.6*clamp(amount),radius:radius*(.24+.40*Math.sqrt(clamp(amount)))});
     }
+    if(this.exhibition)this.resonantOrigin={...p};
     this.wetPaper.add(a,p,radius,.45*clamp(amount),time);
     this.waterPending.push({a,b:p,radius,load:0,slot:0,water:true,waterAmount:clamp(amount),strength:.45,coupling:0});
     if(this.waterPending.length>96)this.waterPending=this.waterPending.filter((_,i)=>i%2===0||i===this.waterPending.length-1);
@@ -172,10 +188,10 @@ export class HaikuarelleEngine implements WatercolorEngine {
     if(this.destroyed)return;
     this.liftWaterBrush();
     while(this.waterPending.length&&this.active)this.stepOnce();
-    this.paint.render(0);if(pause)this.pause();
+    this.paint.render(0);if(pause&&!this.exhibition)this.pause();
   }
   setDrying(enabled:boolean):void{
-    if(!this.performance||this.destroyed)return;
+    if(!this.performance||this.destroyed||this.exhibition)return;
     this.liftBreath(true);this.drying=enabled;if(enabled)this.resonantWater=new ResonantWater(this.seed);
     this.wetPaper.retime(this.tick/TICK_RATE,enabled?RITUAL_DRYING_SECONDS/5.6:Infinity);
     this.paint.setLook(this.look());
@@ -209,13 +225,13 @@ export class HaikuarelleEngine implements WatercolorEngine {
   waterAt(point:Point):number{return this.wetPaper.at(point,this.tick/TICK_RATE);}
   private dryingDuration():number{return this.drying?RITUAL_DRYING_SECONDS:dryingTime(this.settings.wetness)*5.6;}
   /** Drop one real sample onto dry or prepared wet paper. No live pointer path. */
-  startSoundStain(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0,clock?:()=>number,onMark?:(p:Point)=>void,opacity=1):boolean{
+  startSoundStain(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0,clock?:()=>number,onMark?:(p:Point)=>void,opacity=1,level:()=>number=()=>1):boolean{
     if(this.destroyed||!this.performance||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
-    this.stopBird();
+    this.stopBird();if(this.exhibition)this.resonantOrigin={...point};
     const start=this.tick/TICK_RATE;
     const frames=soundImprint(analysis);
     this.stainVoice={stain:new SoundStain(bird,seed,{...point},{...this.settings,...(bird.pigmentSlot!==undefined?{ink:0}:{})},this.wetPaper,size,layer,start,frames.filter(f=>f.active&&f.energy>0).map(f=>f.time),opacity),
-      analysis:{...analysis,frames},start,clock:clock??(()=>this.tick/TICK_RATE-start),marked:false,onMark};
+      analysis:{...analysis,frames},start,level,clock:clock??(()=>this.tick/TICK_RATE-start),marked:false,onMark};
     this.audio=analysis;this.composition.title=bird.gesture;
     this.composition.duration=start+analysis.duration+this.dryingDuration();
     this.active=true;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();this.request();return true;
@@ -229,7 +245,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   stopWaterSong():void{this.waterVoice=null;}
   moveSoundStain(point:Point,connect=true):void{
     if(!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
-    this.stainVoice?.stain.move(point,this.tick/TICK_RATE,connect);
+    this.stainVoice?.stain.move(point,this.tick/TICK_RATE,connect);if(this.exhibition)this.resonantOrigin={...point};
   }
   playBird(analysis:AudioAnalysis,bird:Bird,point:Point,seed:number,size=.55,layer=0):boolean {
     if(this.destroyed||!analysis.frames.some(f=>f.active&&f.energy>0))return false;
@@ -293,15 +309,22 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.last=now;
     // Never discard a physical tick. Slow devices take longer, but paint the same image.
     let budget=2;
-    while(this.accumulator>=1/TICK_RATE&&budget-->0&&this.tick<this.composition.duration*TICK_RATE){
+    while(this.accumulator>=1/TICK_RATE&&budget-->0&&(this.exhibition||this.tick<this.composition.duration*TICK_RATE)){
       this.stepOnce();this.accumulator-=1/TICK_RATE;
     }
     this.paint.render(0);
     if(this.tick%6===0)this.emit();
-    if(this.tick<this.composition.duration*TICK_RATE)this.request();else{this.accumulator=0;this.emit();}
+    if(this.exhibition||this.tick<this.composition.duration*TICK_RATE)this.request();else{this.accumulator=0;this.emit();}
   };
   private stepOnce():void {
     const time=this.tick/TICK_RATE,segs:Segment[]=[],drops:Drop[]=[];
+    if(this.exhibition){
+      this.paint.setLifeTime(this.livingSeconds);
+      if(this.livingSeconds-this.lastLifeSync>.6){
+        const snapshot=this.paint.captureMoisture();if(snapshot)this.wetPaper.replaceMoisture(snapshot,time);
+        this.lastLifeSync=this.livingSeconds;
+      }
+    }
     const sheet=sheetFor(this.settings.format),unit=Math.min(sheet.width,sheet.height);
     const feature=this.voice?.analysis.frames[Math.max(0,Math.floor((time-this.voice.start)*TICK_RATE))];
     const audible=!this.performance||!!(feature?.active&&feature.energy>0);
@@ -326,7 +349,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     if(this.stainVoice){
       const live=this.stainVoice,elapsed=live.clock();
       const f=Number.isFinite(elapsed)&&elapsed>=0&&elapsed<live.analysis.duration?live.analysis.frames[Math.floor(elapsed*TICK_RATE)]:undefined;
-      waterFeature=f;
+      waterFeature=f?{...f,energy:f.energy*clamp(live.level()),flux:f.flux*clamp(live.level())}:undefined;
       const frame=live.stain.step(f,time);appendFrame(frame);stainPoint=frame.point;
       if(elapsed>=live.analysis.duration){this.stainVoice=null;}
     }
@@ -347,18 +370,31 @@ export class HaikuarelleEngine implements WatercolorEngine {
         kind:Kind.Water,slot:0,breath:true,fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:c.coupling*pressure});
     }
     if(this.performance&&!this.drying&&!this.voice){
-      const response=this.resonantWater.step(waterFeature,time,this.wetPaper);
+      const response=this.resonantWater.step(waterFeature,time,this.wetPaper,1/TICK_RATE,this.exhibition?this.resonantOrigin:undefined);
       // Preserve slots for fresh hand-placed water, including during a phrase.
       const forceBudget=Math.max(0,16-segs.length-Math.min(4,this.waterPending.length));
-      for(const c of response.currents.slice(0,forceBudget)){
+      for(const c of response.currents.slice(0,this.exhibition?Math.min(1,forceBudget):forceBudget)){
         const x=c.point.x*sheet.width*this.paint.k,y=(1-c.point.y)*sheet.height*this.paint.k;
         // Zero-strength, zero-water force: it cannot paint, wet or lift anything.
         segs.push({ax:x,ay:y,bx:x,by:y,radius:c.radius*unit*this.paint.k,target:0,strength:0,waterAmount:0,
-          kind:Kind.Water,slot:0,fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:c.coupling});
+          kind:Kind.Water,slot:0,resonant:this.exhibition,fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:c.coupling});
       }
-      if(response.pulse){
+      if(response.pulse&&!this.exhibition){
         this.waterBlooms=this.waterBlooms.filter(b=>time<b.start+b.duration).slice(-3);
         this.waterBlooms.push({...response.pulse,start:time});
+      }
+    }
+    if(this.exhibition){
+      for(const [id,v] of this.landscapeVoices){
+        const elapsed=v.clock();if(elapsed>=v.analysis.duration){this.landscapeVoices.delete(id);continue;}
+        const f=elapsed>=0?v.analysis.frames[Math.floor(elapsed*TICK_RATE)]:undefined;
+        const gain=clamp(v.level());
+        const response=v.response.step(f?{...f,energy:f.energy*gain,flux:f.flux*gain}:undefined,time,this.wetPaper,1/TICK_RATE,v.point);
+        for(const c of response.currents.slice(0,Math.min(1,Math.max(0,12-segs.length)))){
+          const x=c.point.x*sheet.width*this.paint.k,y=(1-c.point.y)*sheet.height*this.paint.k;
+          segs.push({ax:x,ay:y,bx:x,by:y,radius:c.radius*unit*this.paint.k,target:0,strength:0,waterAmount:0,kind:Kind.Water,slot:0,resonant:true,
+            fx:c.vx*unit*this.paint.k,fy:-c.vy*unit*this.paint.k,coupling:Math.min(.18,c.coupling)});
+        }
       }
     }
     const water=this.waterPending.splice(0,Math.max(0,Math.min(4,16-segs.length)));
@@ -411,7 +447,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   get status():EngineStatus {
     const progress=clamp(this.tick/(this.composition?.duration*TICK_RATE||1));
     const phase=!this.active?'idle':progress===1?'complete':this.performance?(this.voice||this.brushVoice||this.stainVoice?'wash':!this.hasPigment&&this.wetPaper.count?'wetting':'drying'):this.audio&&this.tick/TICK_RATE>=15.7&&this.tick/TICK_RATE<20?'ink':phases.find(([until])=>this.tick/TICK_RATE<until)?.[1]??'drying';
-    return {seed:this.seed,progress,phase,paused:this.paused,fps:Math.round(1000/this.frameMs),ticks:this.tick,wetStrokes:this.wetPaper.count,hasPigment:this.hasPigment};
+    return {seed:this.seed,progress,phase,paused:this.paused,fps:Math.round(1000/this.frameMs),ticks:this.tick,wetStrokes:this.wetPaper.count,hasPigment:this.exhibition?this.paint.hasLivingPigment:this.hasPigment};
   }
   update(settings:Partial<EngineSettings>):void {
     const before=this.settings;
@@ -456,7 +492,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   resume():void{if(this.destroyed||!this.active)return;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();if(this.status.progress<1)this.request();}
   /** Export the current format with a 4096 px long edge. */
   async exportPNG():Promise<Blob> {
-    const {width,height,pixels}=this.paint.capture(4096/Math.max(this.paint.viewW,this.paint.viewH),0);
+    const {width,height,pixels}=this.paint.capture(4096/(this.settings.format==='a4'?this.paint.viewH+this.paint.viewW*.44:Math.max(this.paint.viewW,this.paint.viewH)),0);
     const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
     const ctx=canvas.getContext('2d');if(!ctx)throw new Error('PNG export unavailable.');
     ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels),width,height),0,0);

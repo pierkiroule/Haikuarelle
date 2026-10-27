@@ -1,8 +1,8 @@
 import {APP_NAME} from '../brand';
 /** Add the original verses below the real GPU painting, at its export resolution. */
-export async function exportSignatureCard(painting:Blob,verses:readonly string[],paper:string,seed:number,dedication='',title=''):Promise<Blob>{
+export async function exportSignatureCard(painting:Blob,verses:readonly string[],paper:string,seed:number,dedication='',title='',reserveTitle=false):Promise<Blob>{
   const image=await createImageBitmap(painting);
-  const output=document.createElement('canvas'),footer=Math.round(image.width*.28),header=title?Math.round(image.width*.16):0;
+  const output=document.createElement('canvas'),footer=Math.round(image.width*.28),header=title||reserveTitle?Math.round(image.width*.16):0;
   output.width=image.width;output.height=image.height+footer+header;
   const ctx=output.getContext('2d');
   if(!ctx){image.close();throw new Error('Export indisponible.');}

@@ -4,7 +4,7 @@ import {BIRD_BRUSHES} from '../src/birds/catalog';
 import type {BirdAudioBank,BirdPlayback} from '../src/birds/BirdAudioBank';
 function setup(water=.45){
   let start:(s:BirdPlayback)=>void=()=>{},end=()=>{},resolve=()=>{},reject:(e:Error)=>void=()=>{};
-  const sound={analysis:{frames:[{active:true}]},elapsed:()=>.2} as unknown as BirdPlayback;
+  const sound={analysis:{frames:[{active:true}]},elapsed:()=>.2,audibility:()=>.4} as unknown as BirdPlayback;
   const sounds={stop:vi.fn(),play:vi.fn<BirdAudioBank['play']>((_id,onStart,onEnd)=>{start=onStart;end=onEnd;return new Promise<void>((ok,no)=>{resolve=ok;reject=no;});})};
   const painter={waterAt:vi.fn(()=>water),startSoundStain:vi.fn(()=>true),moveSoundStain:vi.fn(),stopBird:vi.fn()};
   const callbacks={preparing:vi.fn(),started:vi.fn(),stopped:vi.fn(),marked:vi.fn(),error:vi.fn()};
@@ -18,7 +18,8 @@ describe('a deposited phrase has its own lifetime',()=>{
     expect(t.deposit.busy).toBe(true);expect(t.painter.startSoundStain).not.toHaveBeenCalled();
     t.start();await pending;
     expect(t.sounds.play.mock.calls[0][3]).toBeUndefined();
-    expect(t.painter.startSoundStain.mock.calls[0]).toMatchObject([expect.anything(),bird,point,7,.6,2,expect.any(Function),expect.any(Function),.3]);
+    expect(t.painter.startSoundStain.mock.calls[0]).toMatchObject([expect.anything(),bird,point,7,.6,2,expect.any(Function),expect.any(Function),.3,expect.any(Function)]);
+    expect((t.painter.startSoundStain.mock.calls[0] as unknown as unknown[])[9]).toBeTypeOf('function');
     expect(t.deposit.busy).toBe(true);expect(t.sounds.stop).not.toHaveBeenCalled();
     t.end();expect(t.deposit.busy).toBe(false);expect(t.painter.stopBird).toHaveBeenCalledOnce();
   });
