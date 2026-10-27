@@ -31,6 +31,16 @@ describe('placed haiku and signature export',()=>{
   expect(ctx.fillText.mock.calls[0][1]).toBe(100);
   expect(ctx.fillText.mock.calls.at(-1)?.[0]).toBe('•°○');
  });
+ it('preserves independent fonts, colors and line alignment in the PNG',async()=>{
+  const calls:{font:string;color:string;align:string;x:number}[]=[],image={width:1000,height:1400,close:vi.fn()};
+  const ctx={drawImage:vi.fn(),fillText:vi.fn(),measureText:(line:string)=>({width:line.length*10,fontBoundingBoxAscent:20,fontBoundingBoxDescent:5}),font:'',fillStyle:'',textAlign:''};
+  ctx.fillText.mockImplementation((_line:string,x:number)=>{calls.push({font:ctx.font,color:ctx.fillStyle,align:ctx.textAlign,x});});
+  vi.stubGlobal('createImageBitmap',async()=>image);vi.stubGlobal('document',{createElement:()=>({getContext:()=>ctx,toBlob:(cb:BlobCallback)=>cb(new Blob(['png']))})});
+  await exportResonantArtwork(new Blob(),['aaaa','bb','ccc'],{x:.1,y:.7,size:.03},{text:'Titre',placement:{x:.2,y:.1,size:.04}},undefined,{title:{font:'sans',color:'#78504a',align:'right'},haiku:{font:'book',color:'#202b35',align:'center'}});
+  expect(calls[0]).toEqual({font:'italic bold 40px Arial',color:'#78504a',align:'right',x:250});
+  expect(calls[1].font).toContain('Palatino');expect(calls[1].color).toBe('#202b35');expect(calls[1].align).toBe('center');expect(calls.slice(1,4).map(c=>c.x)).toEqual([120,120,120]);
+  expect(calls.at(-1)?.color).toBe('rgba(163,68,61,.72)');
+ });
  it('releases the bitmap if encoding fails',async()=>{
   const image={width:100,height:160,close:vi.fn()},ctx={drawImage(){},fillText(){},measureText:()=>({})};
   vi.stubGlobal('createImageBitmap',async()=>image);vi.stubGlobal('document',{createElement:()=>({getContext:()=>ctx,toBlob:(cb:BlobCallback)=>cb(null)})});

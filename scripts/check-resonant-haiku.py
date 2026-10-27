@@ -46,10 +46,21 @@ with sync_playwright() as pw:
   poem_size=poem.evaluate('e=>getComputedStyle(e).fontSize');page.get_by_role('slider',name='Taille du titre',exact=True).fill('40')
   assert poem.evaluate('e=>getComputedStyle(e).fontSize')==poem_size
   assert page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
+  page.locator('.composition-tabs').get_by_role('button',name='Peinture',exact=True).click()
   page.get_by_role('slider',name='Taille de la peinture',exact=True).fill('60')
   handle=page.locator('.painting-handle');h=handle.bounding_box();assert abs(h['width']/paper.bounding_box()['width']-.6)<.01
   handle.focus();page.keyboard.press('ArrowRight');assert handle.bounding_box()['x']>h['x']
   assert 'scale(0.6)' in page.locator('canvas').get_attribute('style')
+  page.locator('.composition-tabs').get_by_role('button',name='Haïku',exact=True).click()
+  page.get_by_role('combobox',name='Typographie',exact=True).select_option('sans')
+  page.get_by_role('button',name='Couleur #78504a',exact=True).click()
+  page.get_by_role('button',name='Centré',exact=True).click()
+  assert poem.evaluate('e=>getComputedStyle(e).fontFamily').startswith('Arial')
+  assert poem.evaluate('e=>getComputedStyle(e).textAlign')=='center'
+  assert poem.evaluate('e=>getComputedStyle(e).color')=='rgb(120, 80, 74)'
+  assert title.evaluate('e=>getComputedStyle(e).fontFamily').startswith('Georgia')
+  page.get_by_role('button',name='Au centre',exact=True).click()
+  paper_box=paper.bounding_box();poem_box=poem.bounding_box();assert abs((poem_box['x']+poem_box['width']/2)-(paper_box['x']+paper_box['width']/2))<2
   poem.scroll_into_view_if_needed()
   before=poem.bounding_box();paper_box=paper.bounding_box();x=before['x']+before['width']*.4;y=before['y']+before['height']*.4
   page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+paper_box['width']*.1,y-paper_box['height']*.08,steps=5);page.mouse.up()
@@ -57,6 +68,7 @@ with sync_playwright() as pw:
   page.get_by_role('slider',name='Taille du haïku',exact=True).fill('42');poem.focus();page.keyboard.press('ArrowLeft')
   p=poem.bounding_box();assert p['x']>=paper_box['x'] and p['x']+p['width']<=paper_box['x']+paper_box['width']+1,(p,paper_box)
   assert p['y']>=paper_box['y'] and p['y']+p['height']<=paper_box['y']+paper_box['height']*.95,(p,paper_box)
+  page.screenshot(path=f'/tmp/composition-editor-{width}.png',full_page=True)
   page.get_by_role('button',name='Valider les placements').click();assert not page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
   assert page.locator('.resonant-haiku.is-editable').count()==0
   with page.expect_download() as info:page.get_by_role('button',name='Télécharger l’image',exact=False).click()
