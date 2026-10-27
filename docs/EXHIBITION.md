@@ -46,3 +46,9 @@ Le rendu matériel utilise maintenant une reconstruction cubique positive pour l
 Le contour de l’eau possède désormais sa propre géométrie : de larges ondulations de ménisque remplacent les hautes fréquences du bord de pinceau pigmentaire. Ce changement s’applique au geste d’eau et à l’humidité apportée par un dépôt sur papier sec. La reconstruction du canal d’eau reste cubique même lorsqu’un pigment est affiché à sa résolution native. Une loi continue d’épaisseur optique remplace le seuil et la puissance fractionnaire qui accentuaient les très petites différences d’humidité ; le voile humide est aussi plus transparent.
 
 `scripts/check-water-shore.py` compile le vrai shader du geste d’eau. Il mesure les petites dentelures de la frontière humide autour d’un dépôt, tout en vérifiant que l’outil ajoute de l’eau sans pigment. La scène de référence passe d’une rugosité fine normalisée de 0,0416 à 0,00066 ; les ondulations larges sont conservées. Ce chiffre décrit cette scène de contrôle et ne constitue pas une mesure de toutes les flaques possibles.
+
+## Empreinte du papier au premier dépôt
+
+Le grain minéral, la granulation et le relief étaient appliqués presque entièrement dès l’arrivée d’un pigment humide. Le rendu matériel atténue maintenant leur empreinte tant que le film est épais et la réintroduit progressivement à mesure qu’il se retire. La géométrie du pigment, ses couleurs et le papier sec sont conservés ; aucun flou global n’est ajouté.
+
+`scripts/check-wet-paper-imprint.py` compile les vrais shaders PAPER et RENDER et isole leur influence sur un aplat uniforme. Le rapport entre le contraste du grain humide et celui du grain sec passe d’environ 0,91 à 0,09 dans cette scène. Le test vérifie aussi une étape intermédiaire et conserve le contraste du coton sec et la couleur moyenne. Cette mesure isole le papier ; elle ne prétend pas mesurer toutes les causes possibles d’un artefact dans une peinture complète.

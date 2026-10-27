@@ -1019,6 +1019,9 @@ void main() {
   // Reconstruct moisture independently, even when pigment is sampled at 1:1.
   // Thin wet fronts must not expose individual cells of the physical mask.
   float wet=uDetail>0.5?max(0.0,materialSample(uField,at/uFieldSize).y):fv.y;
+  // Suspended pigment floats above the cotton. Its mineral imprint emerges
+  // as the film retreats, instead of embossing the first wet deposit.
+  float paperCapture=uDetail>0.5?mix(0.06,1.0,1.0-smoothstep(0.006,0.10,wet)):1.0;
   vec2 other = pv > 1e-4 ? clamp(fv.zw / pv, 0.0, 1.0) : vec2(0.0);
   inkShare = vec3(max(1.0 - other.x - other.y, 0.0), other);
 
@@ -1118,7 +1121,7 @@ void main() {
       // the source. Absorption is an approximation, not a spectral simulation.
       float mineral = (paperT.g * 0.4 - 0.15) * 5.0;
       float mottling = 0.88 + 0.36 * rag + 0.22 * f1.y;
-      float concentration = max(0.0, pv * mottling * (1.0 + uTexture * mineral * (0.25 + 0.75 * (1.0 - clamp(pv, 0.0, 1.0)))));
+      float concentration = max(0.0, pv * mottling * (1.0 + uTexture * paperCapture * mineral * (0.25 + 0.75 * (1.0 - clamp(pv, 0.0, 1.0)))));
       // Sharpen transported pigment only as it dries. Reuse the four gradient
       // samples; bounded local contrast cannot add paint outside the field.
       float crisp = uDrySharpness * uDryingDetail * (1.0-smoothstep(0.015,0.28,wet));
@@ -1185,9 +1188,9 @@ void main() {
   col *= 1.0 - damp * 0.16 * (1.0 - pig * 0.82);
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.
-  col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * tooth * gran;
-  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(0.06,0.65,pig) * light;
-  col *= 1.0 + 0.65 * uTexture * grain;
+  col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * paperCapture * tooth * gran;
+  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(1.0,paperCapture,pig) * mix(0.06,0.65,pig) * light;
+  col *= 1.0 + 0.65 * uTexture * mix(1.0,paperCapture,pig) * grain;
 
   vec3 outc = toSrgb(col) + (hash12(frag) - 0.5) / 255.0;
   fragColor = vec4(outc, 1.0);
