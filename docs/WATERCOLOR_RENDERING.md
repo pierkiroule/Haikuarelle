@@ -1,6 +1,6 @@
 # Atelier individuel et rendu aquarelle
 
-L’application propose un seul rituel : rencontre avec une plume, découverte du titre et du haïku, création sur papier A4, séchage volontaire de 12 secondes, puis partage ou téléchargement. L’eau reste disponible jusqu’au séchage choisi. L’œuvre ne disparaît pas automatiquement. Les paramètres historiques `?atelier` et `?exposition` ouvrent aussi cet atelier ; `?validation` et `?mp3` restent des outils spécialisés.
+L’application propose un seul rituel : rencontre avec une plume, création sur toute la feuille A4, séchage volontaire de 12 secondes, révélation et placement du titre et des trois vers, puis partage ou téléchargement. L’eau reste disponible jusqu’au séchage choisi. L’œuvre ne disparaît pas automatiquement. Les paramètres historiques `?atelier` et `?exposition` ouvrent aussi cet atelier ; `?validation` et `?mp3` restent des outils spécialisés.
 
 Les contrôleurs de relais, les couches temporelles, la dégradation par âge et les réponses sonores des anciens visiteurs ont été supprimés. Le chant complet de l’oiseau accompagne les pigments ; le geste d’eau garde son chant immergé. La simulation utilise le profil de qualité individuel complet, sans budget réservé aux cohortes.
 
@@ -10,7 +10,7 @@ Les contrôleurs de relais, les couches temporelles, la dégradation par âge et
 - Bruits de matière sur un support simplex tourné, sans support carré apparent.
 - Géométrie indépendante pour le contour de l’eau : grandes ondulations plutôt que les petites dentelures du pinceau pigmentaire. Le voile humide utilise une épaisseur optique continue et transparente.
 - Empreinte du papier atténuée dans la peinture fraîche, puis révélée progressivement lorsque l’eau se retire. Les textures sèches et la couleur moyenne sont conservées, sans flou global.
-- Export PNG aux proportions A4 incluant les bandes protégées du titre et du haïku et la signature •°○.
+- Export PNG de toute la feuille A4, avec le titre et les trois vers placés sur la peinture et la signature •°○.
 
 ## Contrôles de rendu
 
@@ -23,3 +23,26 @@ Les mesures portent sur des scènes déterminées, parfois avec un champ réduit
 L’entrée dans l’atelier ouvre automatiquement une présentation immersive dans la page : feuille A4 entière et centrée, palette flottante repliée et commandes de sortie/actions en haut. Un outil ouvre ses réglages ; reprendre le geste les referme. Le panneau flotte au-dessus de la palette sans redimensionner la feuille ni recréer le moteur. Échap ou la croix permettent de revenir à la présentation classique ; « Toile immersive » permet d’y retourner. Les commandes de partage réapparaissent après le séchage. Le plein écran natif reste facultatif via « Grand écran » ou la touche F, avec repli dans la page si le navigateur ne le propose pas.
 
 `scripts/check-immersive-atelier.py` vérifie le centrage, les proportions, l’occupation de l’espace, la stabilité de la feuille pendant les réglages, le maintien du même canvas et la sortie au clavier/bouton sur ordinateur et mobiles portrait/paysage.
+
+## Haïku résonant placé sur l’œuvre
+
+Le choix d’une plume ouvre directement la création, avec un aperçu sonore. Aucun titre ni haïku initial ne réserve de place sur la feuille : l’A4 entière est peignable. Après le séchage, « Révéler le haïku résonant » lit les pixels de la peinture et compose un titre contenant le nom de l’oiseau et trois vers. Une grammaire locale croise l’univers de l’oiseau avec les îlots, la complexité des contours, les espaces blancs, la verticalité et la densité de matière. Il s’agit d’une interprétation poétique déterministe, sans service distant.
+
+Le titre et le bloc de trois lignes se déplacent indépendamment au toucher, à la souris ou avec les flèches du clavier (Maj pour un pas plus grand). Deux curseurs règlent séparément la taille du titre et celle des vers. Le titre utilise la même police Georgia que les vers, en gras italique. Le placement est limité à la feuille et préserve la zone de signature. « Valider le placement » active le partage et le téléchargement ; « Modifier le placement » permet de revenir à l’édition. Reprendre la peinture retire le haïku afin de produire une nouvelle lecture après séchage.
+
+Le PNG conserve la feuille entière, les coordonnées et les tailles relatives des deux blocs, et la signature rouge •°○. Aucun nom d’utilisateur ou dédicace n’est ajouté. L’interface indique que la participation n’attribue pas de propriété exclusive ; ce texte d’interface ne remplace pas des conditions juridiques de diffusion.
+
+`scripts/check-resonant-haiku.py` vérifie le parcours avec un vrai chant, le déplacement, la taille, la confirmation et le PNG signé sur ordinateur et mobile. Les tests unitaires contrôlent aussi la dépendance des vers aux familles de formes et le dessin du texte à ses coordonnées exportées.
+
+
+### Séchage et composition de la peinture
+
+Le séchage affiche un halo bleu pulsant autour de la feuille et une barre en bas avec soleil tournant. La progression suit les ticks physiques, sans minuterie cosmétique indépendante ; la durée simulée reste de 12 secondes. Le halo et le soleil restent fixes si la réduction des animations est demandée. Les anciennes particules de séchage sont retirées.
+
+Après révélation du haïku, la peinture entière peut être réduite entre 25 et 100 % puis déplacée au toucher, à la souris ou au clavier. Ses proportions restent intactes et elle reste dans le papier. Le bouton de recentrage restitue la taille originale. Titre, vers et signature restent indépendants. Le PNG applique la même transformation à l’image à pleine résolution ; reprendre la plume restitue la composition originale sans altérer la simulation des pigments. Les observateurs de taille des textes ne sont plus recréés à chaque déplacement.
+
+### Inspecteur de composition
+
+La mise en page propose trois sélections : Peinture, Titre et Haïku. Toucher ou mettre au focus un élément sur la feuille sélectionne ses commandes. Un seul jeu de réglages apparaît à la fois : taille et position pour la peinture ; taille, typographie, couleur et alignement des lignes pour les textes. Les trois familles typographiques sont Georgia (Poétique), Palatino et ses équivalents système (Littéraire), Arial (Épurée), sans requête de police distante. Le titre conserve le gras italique. Les polices exactes dépendent de celles installées sur l’appareil.
+
+L’alignement des lignes est indépendant de la position du bloc sur la feuille : les commandes À gauche / Au centre / À droite placent l’élément complet. Chaque élément possède une réinitialisation indépendante. Des nuanciers et une couleur personnalisée sont disponibles pour chaque texte ; les couleurs des pigments restent intactes. Seul l’élément sélectionné porte un contour de manipulation. La validation retire les guides, puis permet l’export. Le compositeur PNG mesure les lignes dans la police choisie et applique le même alignement, la même couleur et les placements à pleine résolution. Reprendre la peinture remet les réglages de composition à leur état initial.

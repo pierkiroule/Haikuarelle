@@ -456,7 +456,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   resume():void{if(this.destroyed||!this.active)return;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();if(this.status.progress<1)this.request();}
   /** Export the current format with a 4096 px long edge. */
   async exportPNG():Promise<Blob> {
-    const {width,height,pixels}=this.paint.capture(4096/(this.settings.format==='a4'?this.paint.viewH+this.paint.viewW*.44:Math.max(this.paint.viewW,this.paint.viewH)),0);
+    const {width,height,pixels}=this.paint.capture(4096/Math.max(this.paint.viewW,this.paint.viewH),0);
     const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
     const ctx=canvas.getContext('2d');if(!ctx)throw new Error('PNG export unavailable.');
     ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels),width,height),0,0);

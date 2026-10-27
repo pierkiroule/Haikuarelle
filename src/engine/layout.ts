@@ -3,8 +3,8 @@ import type {Composition,Point} from './types';
 export type ArtworkFormat='portrait'|'landscape'|'a4';
 export interface SheetSize{width:number;height:number}
 export const SHEETS:Record<ArtworkFormat,SheetSize>={
-  // Full A4 page: 1400 × 1980, including header/footer (44% of width).
-  a4:{width:1400,height:1364},
+  // Whole A4 page; the optional haiku is an overlay on the finished painting.
+  a4:{width:1400,height:1980},
   portrait:{width:1080,height:1920},
   landscape:{width:1920,height:1080},
 };
@@ -25,7 +25,7 @@ export function paintingQuality({coarse=false,memory,cores}:{coarse?:boolean;mem
 }
 export function sheetFor(format:ArtworkFormat='landscape'):SheetSize{return SHEETS[format]??SHEETS.landscape;}
 export function exportSize(format:ArtworkFormat='landscape'):SheetSize{
-  const sheet=sheetFor(format),scale=4096/(format==='a4'?1980:Math.max(sheet.width,sheet.height));
+  const sheet=sheetFor(format),scale=4096/Math.max(sheet.width,sheet.height);
   return {width:Math.round(sheet.width*scale),height:Math.round(sheet.height*scale)};
 }
 /** Keep the same score and margins, turning its dominant gesture along the page. */

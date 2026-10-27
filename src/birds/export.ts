@@ -1,20 +1,25 @@
-import {APP_NAME} from '../brand';
-/** Add the original verses below the real GPU painting, at its export resolution. */
-export async function exportSignatureCard(painting:Blob,verses:readonly string[],paper:string,seed:number,dedication='',title=''):Promise<Blob>{
-  const image=await createImageBitmap(painting);
-  const output=document.createElement('canvas'),footer=Math.round(image.width*.28),header=title?Math.round(image.width*.16):0;
-  output.width=image.width;output.height=image.height+footer+header;
-  const ctx=output.getContext('2d');
-  if(!ctx){image.close();throw new Error('Export indisponible.');}
-  try{
-  ctx.fillStyle=paper;ctx.fillRect(0,0,output.width,output.height);ctx.drawImage(image,0,header);
-  if(title){ctx.fillStyle='#46554d';ctx.textAlign='center';ctx.font=`${output.width*.045}px Georgia`;ctx.fillText(title,output.width/2,header*.62,output.width*.86);}
-  ctx.fillStyle='#46554d';ctx.textAlign='center';ctx.font=`${output.width*.038}px Georgia`;
-  verses.forEach((line,index)=>ctx.fillText(line,output.width/2,output.height-footer+output.width*(.065+index*.057)));
-  ctx.fillStyle='#909785';ctx.font=`${output.width*.009}px sans-serif`;
-  ctx.fillText(`${dedication.trim()?`Pour ${dedication.trim()} · `:''}${APP_NAME}  ·  ${seed.toString(16).toUpperCase()}`,output.width/2,output.height-footer*.12);
-  ctx.fillStyle='rgba(163,68,61,.72)';ctx.textAlign='right';ctx.font=`${image.width*.028}px Georgia`;
-  ctx.fillText('•°○',image.width*.97,output.height-image.width*.025);
-  return await new Promise<Blob>((resolve,reject)=>output.toBlob(value=>value?resolve(value):reject(new Error('Export impossible.')),'image/png'));
-  }finally{image.close();}
+import {COMPOSITION_FONTS,DEFAULT_TEXT,type TextAppearance} from './compositionStyle';
+import {fitPainting,type PaintingPlacement} from './PaintingPlacement';
+import {POEM_LINE_HEIGHT,type PoemPlacement} from './poemPlacement';
+/** Composite the whole paper at its current resolution: independent title and verses, without added bands. */
+export async function exportResonantArtwork(painting:Blob,verses:readonly string[],placement:PoemPlacement,title?:{text:string;placement:PoemPlacement},paintingPlacement?:PaintingPlacement,appearance?:{title:TextAppearance;haiku:TextAppearance}):Promise<Blob>{
+ await document.fonts?.ready;
+ const image=await createImageBitmap(painting),output=document.createElement('canvas');output.width=image.width;output.height=image.height;
+ const ctx=output.getContext('2d');if(!ctx){image.close();throw new Error('Export indisponible.');}
+ try{
+  if(paintingPlacement){const p=fitPainting(paintingPlacement);ctx.fillStyle='#f7f5ed';ctx.fillRect(0,0,output.width,output.height);ctx.drawImage(image,p.x*output.width,p.y*output.height,p.scale*output.width,p.scale*output.height);}else ctx.drawImage(image,0,0);
+  const drawBlock=(lines:readonly string[],p:PoemPlacement,boldItalic=false,style=DEFAULT_TEXT)=>{
+   const size=p.size*output.width;ctx.fillStyle=style.color;ctx.font=`${boldItalic?'italic bold ':''}${size}px ${COMPOSITION_FONTS[style.font].canvas}`;ctx.textAlign=style.align;ctx.textBaseline='alphabetic';
+   const metrics=ctx.measureText('Égj'),ascent=metrics.fontBoundingBoxAscent??size*.9,descent=metrics.fontBoundingBoxDescent??size*.2;
+   const baseline=(size*POEM_LINE_HEIGHT-ascent-descent)/2+ascent;
+   const width=Math.max(...lines.map(line=>ctx.measureText(line).width||0));
+   const anchor=p.x*output.width+(style.align==='center'?width/2:style.align==='right'?width:0);
+   lines.forEach((line,i)=>ctx.fillText(line,anchor,p.y*output.height+baseline+i*size*POEM_LINE_HEIGHT));
+  };
+  if(title)drawBlock([title.text],title.placement,true,appearance?.title);
+  drawBlock(verses,placement,false,appearance?.haiku);
+  ctx.fillStyle='rgba(163,68,61,.72)';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.font=`${output.width*.026}px Georgia`;
+  ctx.fillText('•°○',output.width*.97,output.height-output.width*.025);
+  return await new Promise<Blob>((resolve,reject)=>output.toBlob(v=>v?resolve(v):reject(new Error('Export impossible.')),'image/png'));
+ }finally{image.close();}
 }

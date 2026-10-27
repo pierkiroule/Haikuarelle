@@ -1,0 +1,27 @@
+/* A full paintable sheet. The three verses appear only after the painting dries. */
+.bird-studio.direct-studio .artwork-paper>.bird-paper.stable-sheet{aspect-ratio:var(--art-ratio);container-type:inline-size}
+.resonant-haiku,.resonant-title{position:absolute;z-index:4;width:max-content;max-width:none;padding:0;margin:0;color:#35483e;font-family:Georgia,serif;font-weight:normal;white-space:pre;user-select:none;touch-action:none;cursor:default}
+.resonant-haiku>span,.resonant-title>span{display:block}.resonant-haiku.is-editable,.resonant-title.is-editable{cursor:grab;outline:1px dashed #607e6b88;outline-offset:7px}.resonant-haiku.is-editable:active,.resonant-title.is-editable:active{cursor:grabbing}.resonant-haiku:focus-visible,.resonant-title:focus-visible{outline:2px solid #607e6b;outline-offset:7px}
+.bird-studio.direct-studio .bird-paper>.paper-signature{font-size:2.6cqw;right:3cqw;bottom:2.5cqw}
+.resonant-actions{display:flex;flex-direction:column;gap:12px;width:250px;max-width:calc(100vw - 24px);padding:16px;border:1px solid #d0d7c7;border-radius:16px;background:#f7f5ed;color:#52694c;box-sizing:border-box}
+.resonant-actions>p{font-size:12px;line-height:1.7;margin:0}.resonant-actions .shared-attribution{font-size:10px;color:#839078}.resonant-actions button{min-height:44px;cursor:pointer}.resonant-actions .continue-art{margin:0;background:transparent;border:1px solid #c8d1bf;border-radius:10px;padding:9px;color:#52694c}
+.haiku-size{display:block;font-size:12px}.haiku-size input{display:block;width:100%;min-height:40px;accent-color:#748a62}
+.bird-studio.direct-studio.flow-finished .bird-workbench{padding-right:290px}
+@media(max-width:760px){.bird-studio.direct-studio.flow-finished{padding-bottom:0}.bird-studio.direct-studio.flow-finished .bird-workbench{padding:12px 0}.bird-studio.direct-studio.flow-finished .bird-instrument{position:static;display:block;padding:14px 0;border:0;background:transparent;box-shadow:none}.resonant-actions{width:100%;max-width:none}.bird-studio.direct-studio.flow-finished .bird-pad-board{position:static}.resonant-actions .finalize-art{max-width:none!important;width:100%}}
+
+.resonant-title{font-style:italic;font-weight:700}
+/* Composition changes only presentation: original pigment simulation stays intact. */
+.bird-studio.direct-studio.flow-finished .bird-paper{background:#f7f5ed;overflow:hidden}
+.painting-handle{position:absolute;z-index:2;box-sizing:border-box;outline:1px dashed #607e6b66;outline-offset:-2px;touch-action:none;cursor:grab}
+.painting-handle:active{cursor:grabbing}.painting-handle:focus-visible{outline:2px solid #607e6b;outline-offset:-3px}
+/* A small inspector: one element selected, one set of controls. */
+.composition-editor{display:grid;gap:14px}.composition-editor header>span{font:10px sans-serif;letter-spacing:.14em;color:#7a887c}.composition-editor header p{font:italic 16px Georgia,serif;margin:7px 0 0}
+.composition-tabs,.composition-segments{display:flex;gap:3px;padding:3px;border:1px solid #d8ddd2;border-radius:10px;background:#eeeee5}
+.resonant-actions .composition-tabs button,.resonant-actions .composition-segments button{flex:1;min-width:0;padding:8px 3px;border:0;border-radius:7px;color:#596c5e;background:transparent;font:11px sans-serif}
+.resonant-actions .composition-tabs button[aria-pressed=true],.resonant-actions .composition-segments button[aria-pressed=true]{background:#fffdf6;color:#344d40;box-shadow:0 1px 4px #263b2715}
+.composition-hint{font:11px/1.6 sans-serif;color:#7a887c;margin:0}.composition-editor fieldset{padding:0;margin:0;border:0;min-width:0}.composition-editor legend,.composition-font,.composition-editor .haiku-size{font:12px/1.5 sans-serif;color:#596c5e}.composition-editor legend{margin-bottom:7px}.composition-editor .haiku-size>span{display:flex;justify-content:space-between}.composition-editor output{font-variant-numeric:tabular-nums;color:#86917e}
+.composition-font select{display:block;width:100%;min-height:44px;margin-top:6px;padding:8px;border:1px solid #cbd3c3;border-radius:9px;background:#fffdf6;color:#35483e;font-size:14px}
+.composition-colors>div{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.resonant-actions .composition-colors button{min-height:28px;width:28px;height:28px;border:1px solid #78836f55;border-radius:50%;padding:0}.composition-colors button[aria-pressed=true]{outline:2px solid #647a66;outline-offset:2px}.composition-colors input{width:40px;min-height:40px;padding:3px;border:1px solid #cbd3c3;border-radius:8px;background:transparent}
+.composition-editor button:focus-visible,.composition-editor select:focus-visible,.composition-editor input:focus-visible{outline:2px solid #4c7861;outline-offset:2px}
+.resonant-haiku.is-editable,.resonant-title.is-editable,.painting-handle{outline-color:transparent}.resonant-haiku.is-selected,.resonant-title.is-selected,.painting-handle.is-selected{outline:1px dashed #607e6b99}.resonant-haiku.is-selected,.resonant-title.is-selected{outline-offset:7px}.painting-handle.is-selected{outline-offset:-2px}
+@media(min-width:761px){.bird-studio.direct-studio.flow-finished .bird-instrument{max-height:calc(100dvh - 100px);overflow-y:auto;overscroll-behavior:contain}.resonant-actions{width:270px}.bird-studio.direct-studio.flow-finished .bird-workbench{padding-right:310px}}

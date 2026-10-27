@@ -7,7 +7,7 @@ with sync_playwright() as pw:
   page=browser.new_page(viewport={'width':width,'height':height},reduced_motion='reduce');page.set_default_timeout(90000);errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.add_init_script('''for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(128,get.call(this,p)):get.call(this,p)}}''')
   page.goto(os.getenv('HAIKUARELLE_URL','http://127.0.0.1:5173/'),wait_until='domcontentloaded')
-  page.locator('.feather-choice[data-bird=mesange]').click();page.get_by_role('button',name='Entrer dans l’atelier').click()
+  page.locator('.feather-choice[data-bird=mesange]').click()
   page.locator('.is-immersive').wait_for();assert not page.locator('.bird-header').is_visible();assert not page.locator('.ritual-heading').is_visible()
   assert page.get_by_role('button',name='Laisser sécher',exact=False).is_visible()
   paper=page.locator('.artwork-paper');box=paper.bounding_box();dock=page.locator('.creation-palette').bounding_box();surface=page.locator('.bird-paper')
@@ -29,7 +29,7 @@ with sync_playwright() as pw:
   page.get_by_role('button',name='Toile immersive',exact=True).click();page.locator('.is-immersive').wait_for()
   if width==1200:
    surface.focus();page.keyboard.press('f');page.locator('.bird-viewing').wait_for()
-   assert page.locator('.creation-palette').is_visible() and page.locator('.paper-footer .poem-lines').is_visible()
+   assert page.locator('.creation-palette').is_visible() and page.locator('.paper-signature').is_visible()
   page.get_by_role('button',name='Quitter le mode immersif',exact=True).click();assert not page.locator('.is-immersive').count()
   assert not errors,errors
   print(json.dumps({'viewport':[width,height],'paper':box,'dock':dock,'stablePaperWithSettings':True,'sameCanvas':True,'escapeAndButton':True,'errors':errors}),flush=True);page.close()

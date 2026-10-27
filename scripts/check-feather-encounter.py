@@ -17,11 +17,11 @@ with sync_playwright() as p:
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
   page.screenshot(path=f'/tmp/feather-gusts-{width}.png')
   feather=page.locator('.feather-choice[data-bird=pie]');feather.focus();page.keyboard.press('Enter')
-  page.locator('.poem-invitation').wait_for()
-  assert page.locator('.poem-invitation .poem-lines>span').count()==3
-  assert 'Pie' in page.locator('.poem-invitation .bird-eyebrow').inner_text()
+  page.locator('.flow-paint').wait_for()
+  assert page.locator('.resonant-haiku').count()==0
+  assert page.locator('.artwork-title').count()==0
   assert page.locator('.feather-circle').count()==0
-  page.get_by_role('button',name='Entrer dans l’atelier').click();assert 'Pie' in page.locator('.bird-pad').get_attribute('aria-label')
+  assert 'Pie' in page.locator('.bird-pad').get_attribute('aria-label')
   assert not errors,errors
-  print(json.dumps({'viewport':[width,height],'reducedMotion':reduced,'immediatePoem':True,'errors':errors}),flush=True);page.close()
+  print(json.dumps({'viewport':[width,height],'reducedMotion':reduced,'immediateAtelier':True,'errors':errors}),flush=True);page.close()
  b.close()
