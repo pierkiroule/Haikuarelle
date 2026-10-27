@@ -59,7 +59,7 @@ with sync_playwright() as pw:
  assert abs(result['after']['volume']/result['before']['volume']-1)<.02,result
  assert result['after']['area']>result['before']['area']*1.3,result
  assert result['after']['meanThickness']<result['before']['meanThickness']*.75,result
- assert result['after']['pigment']==0 and result['thinRoots']>10,result
+ assert result['after']['pigment']==0 and result['thinRoots']>150,result
  assert result['guideAt']>=.006 and result['reachableSites']>0,result
  assert result['nonWetSegments']==0 and result['pigmentOnRoots']>.01,result
  assert 0<result['colouredArea']<result['after']['area']*.3,result

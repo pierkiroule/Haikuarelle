@@ -37,7 +37,7 @@ with sync_playwright() as pw:
     const end={x:start.x+dir.x*unit*.03/w,y:start.y-dir.y*unit*.03/h};
     e.blow(start,0,1);e.blow(end,16,1);e.liftBreath();
     // Same real facade as pointer input: release happens before any physical tick.
-    for(let i=0;i<9;i++)e.stepOnce();e.pause();
+    for(let i=0;i<18;i++)e.stepOnce();e.pause();
    }else{
    for(let i=0;i<30;i++){
     const x=center.x+dir.x*unit*(-.07+i*.002),y=center.y+dir.y*unit*(-.07+i*.002);

@@ -49,8 +49,8 @@ with sync_playwright() as p:
   paper.focus();page.keyboard.down('Space');page.keyboard.press('ArrowRight');page.keyboard.up('Space')
   assert page.evaluate('window.__forces')==0
   page.evaluate('()=>{window.requestAnimationFrame=window.__originalRAF;window.__p.pause();window.__p.resume()}')
-  page.wait_for_function('window.__forces>=9')
-  assert page.evaluate('window.__forces')==9
+  page.wait_for_function('window.__forces>=18')
+  assert page.evaluate('window.__forces')==18
   assert page.evaluate('window.__captures')>=1
   assert page.evaluate('window.__p.paint.gl.getError()')==0
   assert page.evaluate('window.__blows')>=2
@@ -58,6 +58,6 @@ with sync_playwright() as p:
   assert page.locator('.breath-cursor').is_visible()
   page.screenshot(path=f'/tmp/living-breath-{width}.png')
   assert not errors,errors
-  print(json.dumps({'viewport':[width,height],'quickReleaseBeforeRAF':True,'burstTicks':9,'noNewMarks':True,'errors':errors}),flush=True)
+  print(json.dumps({'viewport':[width,height],'quickReleaseBeforeRAF':True,'burstTicks':18,'noNewMarks':True,'errors':errors}),flush=True)
   page.close()
  browser.close()

@@ -367,7 +367,7 @@ float breathEnvelope(vec2 position){
   vec2 direction=uBreath.zw/max(length(uBreath.zw),0.0001);
   vec2 rel=(position-uBreath.xy)/max(uBreathShape.x,1.0);
   float forward=dot(rel,direction),across=dot(rel,vec2(-direction.y,direction.x));
-  float reach=length(vec2(forward/(forward>0.0?4.5:1.0),across/0.8));
+  float reach=length(vec2(forward/(forward>0.0?7.0:1.0),across/0.8));
   return 1.0-smoothstep(0.35,1.0,reach);
 }
 
@@ -381,7 +381,7 @@ vec2 breathDisplacement(vec2 position){
   float envelope=breathEnvelope(position);
   if(envelope<=0.0)return vec2(0.0);
   vec2 fan=normalize(direction+side*clamp(dot(rel,side)/max(uBreathShape.x,1.0),-1.0,1.0)*0.12);
-  float extension=min(speed*uDt*30.0,min(uUnit*0.045,24.0));
+  float extension=min(speed*uDt*52.0,min(uUnit*0.075,40.0));
   float forward=dot(rel,direction)/uUnit;
   float fringe=smoothstep(0.02,0.18,forward);
   if(fringe<=0.0)return fan*extension*envelope*uBreathShape.y;
@@ -459,7 +459,7 @@ void main() {
     // Fractional, sheet-scaled steps keep the gesture visible at high density.
     // Short exchanges keep the root connected; longer, fractional exchanges
     // pull its wet tip outward without widening the entire stain.
-    float longStep=max(1.0,uUnit*0.0292);
+    float longStep=max(1.0,uUnit*0.045);
     for(int link=0;link<12;link++){
       int axis=link%4,group=link/4;
       // Every exchange has an exact opposite on the donor cell: interpolation

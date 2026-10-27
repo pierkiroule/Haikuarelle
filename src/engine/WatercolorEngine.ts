@@ -188,7 +188,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     const sheet=sheetFor(this.settings.format),unit=Math.min(sheet.width,sheet.height);
     const current=this.breath.move(point,time,size,this.waterAt(point),{x:sheet.width/unit,y:sheet.height/unit});
     if(!current)return;
-    this.breathPending=current;this.breathTicks=9;this.breathReleased=false;
+    this.breathPending=current;this.breathTicks=18;this.breathReleased=false;
     if(!this.active||this.paused)this.last=0;
     this.active=true;this.paused=false;
     this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+this.dryingDuration());this.request();
@@ -340,7 +340,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
       brushPoint=frame.point;this.composition.duration=time+this.dryingDuration();
     }
     if(this.breathPending&&this.performance&&!this.drying&&segs.length<16){
-      const c=this.breathPending,pressure=.35+.65*this.breathTicks/9;
+      const c=this.breathPending,pressure=.55+.45*this.breathTicks/18;
       if(--this.breathTicks<=0)this.breathPending=null;
       const x=c.point.x*sheet.width*this.paint.k,y=(1-c.point.y)*sheet.height*this.paint.k;
       segs.push({ax:x,ay:y,bx:x,by:y,radius:c.radius*unit*this.paint.k,target:0,strength:0,waterAmount:0,
