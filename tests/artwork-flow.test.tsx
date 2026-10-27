@@ -117,6 +117,21 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     expect(children.findIndex(el=>el.classList.contains('paper-footer'))).toBeGreaterThan(children.findIndex(el=>el.classList.contains('bird-paper')));
     await click(host.querySelector('.resume-art')!);expect(host.querySelector('.artwork-title')).not.toBeNull();expect(host.querySelector('.flow-paint')).not.toBeNull();
   });
+  it('enters an immersive atelier, reopens tool settings and leaves with Escape without recreating the painting',async()=>{
+    await encounter();await click(host.querySelector('.enter-atelier')!);
+    const canvas=host.querySelector('canvas'),painter=h.painter;
+    expect(host.querySelector('.is-immersive')).not.toBeNull();expect(document.body.style.overflow).toBe('hidden');
+    expect(host.querySelector('.palette-settings')).toBeNull();
+    await click(button('Choisir l’eau résonante'));expect(host.querySelector('[aria-label="Quantité d’eau"]')).not.toBeNull();
+    const paper=host.querySelector<HTMLElement>('.bird-paper')!;
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));
+    expect(host.querySelector('.palette-settings')).toBeNull();
+    await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+    await act(async()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+    expect(host.querySelector('.is-immersive')).toBeNull();expect(document.body.style.overflow).not.toBe('hidden');
+    expect(host.querySelector('canvas')).toBe(canvas);expect(h.painter).toBe(painter);
+    expect(h.starts).toBe(0);
+  });
   it('keeps the artwork and trio when hiding tools and restores commands with Escape',async()=>{
     await paint();
     const sheet=host.querySelector('.bird-paper'),painter=h.painter;

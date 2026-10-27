@@ -17,3 +17,9 @@ Les contrôleurs de relais, les couches temporelles, la dégradation par âge et
 Les scripts `check-material-seams.py`, `check-water-shore.py`, `check-wet-paper-imprint.py` et `check-paper-grain.py` compilent les vrais shaders pour contrôler respectivement les raccords de cellules, le contour d’un dépôt d’eau, l’empreinte du papier humide/sec et le relief du coton. `check-plumage-render.py` et `check-breath-transport.py` vérifient les couleurs et le transport eau/pigments dans Chromium.
 
 Les mesures portent sur des scènes déterminées, parfois avec un champ réduit et un GPU logiciel. Les performances sur téléphone physique restent à mesurer. L’export haute définition ne reconstruit pas des détails absents du champ physique.
+
+## Toile immersive
+
+L’entrée dans l’atelier ouvre automatiquement une présentation immersive dans la page : feuille A4 entière et centrée, palette flottante repliée et commandes de sortie/actions en haut. Un outil ouvre ses réglages ; reprendre le geste les referme. Le panneau flotte au-dessus de la palette sans redimensionner la feuille ni recréer le moteur. Échap ou la croix permettent de revenir à la présentation classique ; « Toile immersive » permet d’y retourner. Les commandes de partage réapparaissent après le séchage. Le plein écran natif reste facultatif via « Grand écran » ou la touche F, avec repli dans la page si le navigateur ne le propose pas.
+
+`scripts/check-immersive-atelier.py` vérifie le centrage, les proportions, l’occupation de l’espace, la stabilité de la feuille pendant les réglages, le maintien du même canvas et la sortie au clavier/bouton sur ordinateur et mobiles portrait/paysage.

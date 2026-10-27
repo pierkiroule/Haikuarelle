@@ -1,0 +1,38 @@
+/* The entire paper stays visible; controls never resize the physical sheet. */
+.bird-studio.direct-studio.is-immersive{position:fixed;inset:0;z-index:90;min-height:0;height:100dvh;padding:0;overflow:hidden;--sheet-height:calc(100dvh - 154px);background:#e9eae2}
+.bird-studio.direct-studio.is-immersive .bird-header,.is-immersive .ritual-progress,.is-immersive .ritual-heading,.is-immersive .bird-footer,.is-immersive .bird-sheet-meta,.is-immersive .bird-art-caption,.is-immersive .bird-live{display:none}
+.bird-studio.direct-studio.is-immersive .bird-workbench{position:absolute;inset:0;width:100%;height:100%;max-width:none;margin:0;padding:60px 12px 94px;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);place-items:center;gap:0;min-height:0}
+.bird-studio.direct-studio.is-immersive .bird-stage{width:100%;min-height:0;max-width:none;align-self:center}
+.bird-studio.direct-studio.is-immersive .artwork-paper{width:min(100%,calc(var(--sheet-height)*var(--paper-ratio)));min-width:0;margin:0 auto}
+.bird-studio.direct-studio.is-immersive .paper-footer .bird-poem{display:flex}
+.immersive-controls{position:fixed;z-index:80;top:max(10px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));display:flex;gap:8px;align-items:center}
+.immersive-exit{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid #b8c3ad99;border-radius:50%;background:#f7f6eedb;color:#63765a;cursor:pointer}
+.is-immersive .immersive-controls .atelier-more{border-radius:22px;background:#f7f6eedb}
+.is-immersive .immersive-controls .atelier-more>summary{width:44px;min-height:44px;padding:3px 0;text-align:center}
+.is-immersive .immersive-controls .bird-actions{top:calc(100% + 8px);bottom:auto;margin:0;max-height:calc(100dvh - 90px);overflow:auto}
+.bird-studio.direct-studio.is-immersive .bird-instrument{position:absolute;inset:auto;left:0;bottom:0;display:block;width:0;height:0;padding:0;margin:0;border:0;background:none;box-shadow:none;pointer-events:none}
+.is-immersive .bird-pad-board{padding:0!important;margin:0!important;min-height:0!important}
+.bird-studio.direct-studio.is-immersive .creation-palette.accessible-palette{position:fixed;display:block;left:50%;right:auto;bottom:max(12px,env(safe-area-inset-bottom));top:auto;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);padding:7px 10px;border-radius:32px;pointer-events:auto;transition:opacity .25s;z-index:70}
+.is-immersive .palette-toolbar{gap:6px}.is-immersive .palette-tool-name{display:none}
+.bird-studio.direct-studio.is-immersive .accessible-palette .water-pad,.bird-studio.direct-studio.is-immersive .accessible-palette .bird-pad{width:44px;height:44px;min-height:44px}
+.is-immersive .accessible-palette .palette-collapse{width:44px;min-height:44px}
+.bird-studio.direct-studio.is-immersive .accessible-palette .finalize-art{position:static;min-height:44px;max-width:none;margin:0;font-size:11px;padding:8px 10px}
+.is-immersive .accessible-palette .palette-settings{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 24px));box-sizing:border-box;max-height:calc(100dvh - 170px);overflow:auto;padding:12px 14px;background:#f8f6eef5;border:1px solid #c7d1bc;border-radius:18px;box-shadow:0 8px 35px #39442c20;pointer-events:auto}
+.is-immersive.is-painting .creation-palette.accessible-palette{opacity:.28}.is-immersive .creation-palette.accessible-palette:focus-within,.is-immersive .creation-palette.accessible-palette:hover{opacity:1}
+.is-immersive.is-painting .immersive-controls{opacity:.65}.is-immersive .immersive-controls:focus-within,.is-immersive .immersive-controls:hover{opacity:1}
+.is-immersive .immersive-exit:focus-visible{outline:2px solid #628b82;outline-offset:3px}
+.is-immersive .artwork-drying,.is-immersive .artwork-finished-actions,.is-immersive .final-dedication{position:fixed;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;background:#f8f6eef2;border:1px solid #c7d1bc;border-radius:16px;padding:10px 14px;pointer-events:auto}
+.is-immersive .artwork-drying{display:flex;flex-direction:row;align-items:center;gap:12px}.is-immersive .artwork-drying progress{width:80px}.is-immersive .artwork-drying>svg{width:26px;height:26px}
+.is-immersive .artwork-finished-actions{display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;justify-content:center;gap:8px}.is-immersive .final-dedication{bottom:100px;font-size:10px;padding:6px 12px}
+.is-immersive .brush-cursor{display:block}
+@media(max-width:400px){.bird-studio.direct-studio.is-immersive .creation-palette.accessible-palette{padding:6px}.is-immersive .palette-toolbar{gap:3px}.bird-studio.direct-studio.is-immersive .accessible-palette .finalize-art{font-size:10px;padding-inline:6px}.is-immersive .artwork-drying{gap:7px;font-size:9px}.is-immersive .artwork-drying progress{width:50px}}
+@media(prefers-reduced-motion:reduce){.is-immersive .creation-palette{transition:none}}
+
+@media(max-height:480px){.bird-studio.direct-studio.is-immersive .paper-footer .poem-lines{line-height:1.3}}
+
+.bird-studio.direct-studio.is-immersive.flow-paint,.bird-studio.direct-studio.is-immersive.flow-drying{--sheet-height:calc(100dvh - 154px)}
+.is-immersive .toast{display:block;bottom:max(88px,calc(env(safe-area-inset-bottom) + 78px));z-index:120}
+
+.is-immersive .bird-finish-screen,.is-immersive .bird-finalize-screen,.is-immersive .bird-exit{display:none}
+.bird-studio.direct-studio.is-immersive .bird-paper:focus-visible{outline:2px solid #688d9366;outline-offset:-3px}
+.bird-studio.direct-studio.is-immersive .accessible-palette .bird-pad{border-radius:50%}
