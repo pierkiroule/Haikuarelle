@@ -11,10 +11,10 @@ export function replaySample(frames:readonly ProcessFrame[],time:number):ReplayS
  return {from,to,mix:span>0?Math.max(0,Math.min(1,(target-frames[from].time)/span)):0};
 }
 export class ProcessRecording {
- private frames:ProcessFrame[]=[];private interval=250;private last=-Infinity;private generation=0;private pending:Promise<void>|null=null;private failed=false;
+ private frames:ProcessFrame[]=[];private interval=125;private last=-Infinity;private generation=0;private pending:Promise<void>|null=null;private failed=false;
  private canvas:HTMLCanvasElement|null=null;
  constructor(private unavailable:()=>void=()=>{}){}
- reset(){this.generation++;this.frames=[];this.interval=250;this.last=-Infinity;this.failed=false;}
+ reset(){this.generation++;this.frames=[];this.interval=125;this.last=-Infinity;this.failed=false;}
  get available(){return this.frames.length>1;}
  async capture(read:()=>{width:number;height:number;pixels:Uint8Array},time:number,force=false){
   if(this.failed)return;
@@ -25,12 +25,12 @@ export class ProcessRecording {
    const {width,height,pixels}=read();const canvas=this.canvas??=document.createElement('canvas');canvas.width=width;canvas.height=height;
    const ctx=canvas.getContext('2d');if(!ctx)throw Error('Capture indisponible');
    ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels),width,height),0,0);
-   const image=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Capture indisponible')),'image/jpeg',.9));
+   const image=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Capture indisponible')),'image/jpeg',.96));
    if(generation!==this.generation)return;
    // Replace a forced capture at the same instant rather than duplicating it.
    if(this.frames.at(-1)?.time===time)this.frames.pop();
    this.frames.push({time,image});this.last=time;
-   while(this.frames.length>240||this.frames.length>2&&this.frames.reduce((s,f)=>s+f.image.size,0)>24*1024*1024){this.frames=thinFrames(this.frames);this.interval*=2;}
+   while(this.frames.length>360||this.frames.length>2&&this.frames.reduce((s,f)=>s+f.image.size,0)>32*1024*1024){this.frames=thinFrames(this.frames);this.interval*=2;}
   }catch{if(generation===this.generation){this.failed=true;this.unavailable();}}})();
   this.pending=task;try{await task;}finally{if(this.pending===task)this.pending=null;}
  }

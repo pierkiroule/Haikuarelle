@@ -458,8 +458,8 @@ export class HaikuarelleEngine implements WatercolorEngine {
   pause():void{this.paused=true;cancelAnimationFrame(this.raf);this.raf=0;this.last=0;this.notifyAt=-1;this.emit();}
   resume():void{if(this.destroyed||!this.active)return;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();if(this.status.progress<1)this.request();}
   /** Export the current format with a 4096 px long edge. */
-  async exportPNG():Promise<Blob> {
-    const {width,height,pixels}=this.paint.capture(4096/Math.max(this.paint.viewW,this.paint.viewH),0);
+  async exportPNG(showClearWater=true):Promise<Blob> {
+    const {width,height,pixels}=this.paint.capture(4096/Math.max(this.paint.viewW,this.paint.viewH),0,showClearWater);
     const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
     const ctx=canvas.getContext('2d');if(!ctx)throw new Error('PNG export unavailable.');
     ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels),width,height),0,0);
@@ -473,7 +473,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.paint.render(0);this.notifyAt=-1;this.emit();
   }
   /** A bounded readback for the creation film, independent of display resolution. */
-  captureProcessFrame():{width:number;height:number;pixels:Uint8Array} {return this.paint.capture(1280/Math.max(this.paint.viewW,this.paint.viewH),0);}
+  captureProcessFrame():{width:number;height:number;pixels:Uint8Array} {const mobile=typeof matchMedia!=='undefined'&&matchMedia('(pointer:coarse)').matches;return this.paint.capture((mobile?1600:1920)/Math.max(this.paint.viewW,this.paint.viewH),0,false);}
   capturePreview():{width:number;height:number;pixels:Uint8Array} {return this.paint.capture(1,0);}
   destroy():void {
     this.destroyed=true;cancelAnimationFrame(this.raf);this.observer.disconnect();

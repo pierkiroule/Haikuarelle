@@ -21,7 +21,7 @@ async function recordRealtimeDance(canvas:HTMLCanvasElement,draw:(time:number)=>
  const destination=audio.context.createMediaStreamDestination(),stream=canvas.captureStream(30);destination.stream.getAudioTracks().forEach(track=>stream.addTrack(track));
  let recorder:MediaRecorder|undefined,frame=0,timer:ReturnType<typeof setTimeout>|undefined;
  try{
-  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:canvas.width>=1080?8_000_000:4_500_000,audioBitsPerSecond:128000});const chunks:BlobPart[]=[];
+  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:canvas.width>=1080?12_000_000:6_500_000,audioBitsPerSecond:128000});const chunks:BlobPart[]=[];
   return await new Promise<DanceVideo>((resolve,reject)=>{
    const recording=recorder!;let ended=false;
    const fail=(error:Error)=>{if(ended)return;ended=true;reject(error);};

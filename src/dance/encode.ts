@@ -9,7 +9,7 @@ export async function encodeDance(canvas:HTMLCanvasElement,draw:(time:number)=>v
  const videoCodec=mp4?avc:await getFirstEncodableVideoCodec(['vp9','vp8'],videoOptions),audioCodec=mp4?aac:await getFirstEncodableAudioCodec(['opus'],{sampleRate:48000,numberOfChannels:2});
  if(!videoCodec||!audioCodec)throw new Error('L’encodage vidéo et audio est indisponible sur ce navigateur. La danse et le PNG restent disponibles.');
  const target=new BufferTarget(),output=new Output({target,format:mp4?new Mp4OutputFormat({fastStart:'in-memory'}):new WebMOutputFormat()});
- const video=new CanvasSource(canvas,{codec:videoCodec,bitrate:canvas.width>=1080?8_000_000:4_500_000,keyFrameInterval:1}),audio=new AudioBufferSource({codec:audioCodec,bitrate:128000});
+ const video=new CanvasSource(canvas,{codec:videoCodec,bitrate:canvas.width>=1080?12_000_000:6_500_000,keyFrameInterval:1}),audio=new AudioBufferSource({codec:audioCodec,bitrate:128000});
  output.addVideoTrack(video,{frameRate:30});output.addAudioTrack(audio);
  const check=()=>{if(signal.aborted)throw new DOMException('Annulé','AbortError');};
  let audioWriting:Promise<void>|undefined;

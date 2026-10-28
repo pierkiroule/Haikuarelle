@@ -27,6 +27,7 @@ export class DanceRenderer {
   // Only the current pair and two neighbours remain decoded, even for long creations.
   for(const [index,promise]of this.cache)if(Math.abs(index-sample.from)>1&&Math.abs(index-sample.to)>1){this.cache.delete(index);void promise.then(image=>image.close()).catch(()=>{});}
   const ctx=this.canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Le film ne peut pas être affiché.');
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const w=this.canvas.width,h=this.canvas.height,ratio=first.width/first.height;
   ctx.globalAlpha=1;ctx.fillStyle='#fafbf9';ctx.fillRect(0,0,w,h);
   const height=Math.min(h*.67,w*.90/ratio),width=height*ratio,x=(w-width)/2,y=h*.48-height/2;
@@ -39,7 +40,11 @@ export class DanceRenderer {
   text(this.poetry.title,.10,.05,'#35483e',poemAlpha);
   this.poetry.verses.forEach((verse,i)=>text(verse,.805+i*.027,.037,'#35483e',poemAlpha));
   ctx.save();ctx.fillStyle='rgba(163,68,61,.72)';ctx.textAlign='right';ctx.font=`${width*.032}px Georgia`;ctx.fillText('•°○',x+width*.97,y+height-height*.018);ctx.restore();
-  text(APP_NAME+' · •°',.915,.029,'#8a6258',.72);text(publicSiteAddress(location.href),.943,.019,'#6f7b74',.65);
+  // Persistent promotional watermark is burned into every frame, including downloads.
+  ctx.save();const label='CRÉEZ AVEC LE CHANT DES OISEAUX';
+  ctx.fillStyle='rgba(250,251,249,.82)';ctx.fillRect(w*.06,h*.897,w*.88,h*.059);ctx.restore();
+  text(APP_NAME+' · •°○',.912,.029,'#725d55',.65);
+  text(label,.933,.016,'#6f7b74',.58);text(publicSiteAddress(location.href),.950,.016,'#6f7b74',.58);
   text(this.credit.author+' · '+this.credit.license,.966,.017,'#6f7b74',.6);text(this.credit.source.replace(/^https?:\/\//,''),.985,.014,'#6f7b74',.55);
  }
  dispose(){this.disposed=true;for(const promise of this.cache.values())void promise.then(image=>image.close()).catch(()=>{});this.cache.clear();this.frames=[];}

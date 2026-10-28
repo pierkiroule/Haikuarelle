@@ -912,6 +912,7 @@ uniform vec3 uPaper;        // linear rgb
 uniform vec3 uLab[15];      // three inks, each five OKLab colors, deepest -> palest
 uniform float uOptical;
 uniform int uLayers;
+uniform float uShowClearWater;
 uniform float uEdge, uTexture, uHueDrift, uMist, uRidge, uFeather, uDensity, uDetail, uDryingDetail, uDrySharpness, uDryThreshold;
 out vec4 fragColor;
 
@@ -1159,7 +1160,7 @@ void main() {
   // actual wetness channel and evaporates with it; it is never baked into paper.
   // Continuous optical thickness: the old fractional power exaggerated tiny
   // moisture differences and turned wet-mask cells into a hard grey shoreline.
-  float damp=(wet/(wet+0.035))*smoothstep(0.0,0.012,wet)*uDetail;
+  float damp=(wet/(wet+0.035))*smoothstep(0.0,0.012,wet)*uDetail*uShowClearWater;
   col *= 1.0 - damp * 0.16 * (1.0 - pig * 0.82);
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.

@@ -33,7 +33,7 @@ it('captures real pixel readbacks and keeps storage bounded over a long creation
  fakeCanvas(200000);const recorder=new ProcessRecording(),read=vi.fn(()=>({width:1,height:1,pixels:new Uint8Array(4)}));
  for(let i=0;i<1000;i++)await recorder.capture(read,i*300);
  await recorder.capture(read,300000,true);const captured=await recorder.snapshot();
- expect(captured.length).toBeLessThanOrEqual(240);expect(captured.reduce((s,f)=>s+f.image.size,0)).toBeLessThanOrEqual(24*1024*1024);
+ expect(captured.length).toBeLessThanOrEqual(360);expect(captured.reduce((s,f)=>s+f.image.size,0)).toBeLessThanOrEqual(32*1024*1024);
  expect(captured[0].time).toBe(0);expect(captured.at(-1)?.time).toBe(300000);expect(read.mock.calls.length).toBeLessThan(1000);
  recorder.reset();expect(await recorder.snapshot()).toEqual([]);recorder.dispose();
 });
