@@ -30,7 +30,7 @@ export class DanceRenderer {
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const w=this.canvas.width,h=this.canvas.height,ratio=first.width/first.height;
   ctx.globalAlpha=1;ctx.fillStyle='#fafbf9';ctx.fillRect(0,0,w,h);
-  const height=Math.min(h*.67,w*.90/ratio),width=height*ratio,x=(w-width)/2,y=h*.48-height/2;
+  const height=Math.min(h*.62,w*.90/ratio),width=height*ratio,x=(w-width)/2,y=h*.46-height/2;
   ctx.fillStyle=this.paper;ctx.fillRect(x,y,width,height);
   const p=this.placement;
   const paint=(image:ImageBitmap,alpha:number)=>{ctx.save();ctx.beginPath();ctx.rect(x,y,width,height);ctx.clip();ctx.globalAlpha=alpha;ctx.drawImage(image,x+p.x*width,y+p.y*height,width*p.scale,height*p.scale);ctx.restore();};
@@ -38,7 +38,7 @@ export class DanceRenderer {
   const text=(value:string,at:number,size:number,color='#35483e',alpha=.8)=>{ctx.save();ctx.fillStyle=color;ctx.globalAlpha=alpha;ctx.textAlign='center';ctx.textBaseline='middle';const unit=Math.min(w,h*9/16);ctx.font=`${size*unit}px ${POETRY_FONT}`;const measured=ctx.measureText(value).width;if(measured>w*.88)ctx.font=`${size*unit*w*.88/measured}px ${POETRY_FONT}`;ctx.fillText(value,w/2,h*at);ctx.restore();};
   const poemAlpha=.8*Math.max(0,Math.min(1,(replayTime(time)-.72)/.24));
   text(this.poetry.title,.10,.05,'#35483e',poemAlpha);
-  this.poetry.verses.forEach((verse,i)=>text(verse,.805+i*.027,.037,'#35483e',poemAlpha));
+  this.poetry.verses.forEach((verse,i)=>text(verse,.795+i*.030,.037,'#35483e',poemAlpha));
   ctx.save();ctx.fillStyle='rgba(163,68,61,.72)';ctx.textAlign='right';ctx.font=`${width*.032}px Georgia`;ctx.fillText('•°○',x+width*.97,y+height-height*.018);ctx.restore();
   // Persistent promotional watermark is burned into every frame, including downloads.
   ctx.save();const label='CRÉEZ AVEC LE CHANT DES OISEAUX';

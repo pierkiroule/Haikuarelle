@@ -12,7 +12,7 @@ Le stockage est limité à 360 images et environ 32 Mio de données compressées
 
 ## Film final
 
-Le film reprend le placement et l’échelle validés de la peinture. Le titre et les trois vers apparaissent à l’approche de l’œuvre terminée, puis s’effacent pendant le retour. La signature •°○, le nom de l’application, son adresse et les crédits sonores sont conservés.
+Le film reprend le placement et l’échelle validés de la peinture. La peinture, les trois lignes du haïku et le filigrane occupent des zones séparées. Dans le lecteur, les commandes sont placées sous l’image afin de ne jamais masquer le dernier vers. Le titre et les trois vers apparaissent à l’approche de l’œuvre terminée, puis s’effacent pendant le retour. La signature •°○, le nom de l’application, son adresse et les crédits sonores sont conservés.
 
 Le chant de l’oiseau accompagne le film à l’endroit, avec des respirations et des fondus ; ce n’est pas la bande sonore exacte enregistrée pendant les gestes. Les vocaux de guidance ne sont pas inclus. Un filigrane promotionnel permanent en bas du film porte « Plume d’Haïkuarelle · •°○ », « Créez avec le chant des oiseaux » et l’adresse de l’application.
 
