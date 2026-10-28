@@ -1,7 +1,7 @@
 import {Output,BufferTarget,Mp4OutputFormat,WebMOutputFormat,CanvasSource,AudioBufferSource,getFirstEncodableAudioCodec,getFirstEncodableVideoCodec} from 'mediabunny';
 import {VIDEO_SECONDS} from './score';
 import type {DanceVideo} from './media';
-/** Fixed timestamps preserve all 450 frames even on a slow GPU. */
+/** Fixed timestamps preserve all 900 frames even on a slow GPU. */
 export async function encodeDance(canvas:HTMLCanvasElement,draw:(time:number)=>void,buffer:AudioBuffer,signal:AbortSignal,onProgress:(n:number)=>void):Promise<DanceVideo>{
  const videoOptions={width:canvas.width,height:canvas.height,frameRate:30};
  const [avc,aac]=await Promise.all([getFirstEncodableVideoCodec(['avc'],videoOptions),getFirstEncodableAudioCodec(['aac'],{sampleRate:48000,numberOfChannels:2})]);
@@ -14,8 +14,8 @@ export async function encodeDance(canvas:HTMLCanvasElement,draw:(time:number)=>v
  const check=()=>{if(signal.aborted)throw new DOMException('Annulé','AbortError');};
  let audioWriting:Promise<void>|undefined;
  try{
-  check();const context=new OfflineAudioContext(2,48000*VIDEO_SECONDS,48000),gain=context.createGain();gain.connect(context.destination);gain.gain.setValueAtTime(.7,0);gain.gain.setValueAtTime(.7,8.8);gain.gain.linearRampToValueAtTime(0,9);
-  for(let t=0;t<9;t+=buffer.duration+.5){const source=context.createBufferSource();source.buffer=buffer;source.connect(gain);source.start(t);source.stop(Math.min(9,t+buffer.duration));}
+  check();const context=new OfflineAudioContext(2,48000*VIDEO_SECONDS,48000),gain=context.createGain();gain.connect(context.destination);gain.gain.setValueAtTime(0,0);gain.gain.linearRampToValueAtTime(.7,.35);gain.gain.setValueAtTime(.7,VIDEO_SECONDS-.6);gain.gain.linearRampToValueAtTime(0,VIDEO_SECONDS);
+  for(let t=0;t<VIDEO_SECONDS;t+=buffer.duration+.5){const source=context.createBufferSource();source.buffer=buffer;source.connect(gain);source.start(t);source.stop(Math.min(VIDEO_SECONDS,t+buffer.duration));}
   const soundtrack=await context.startRendering();check();await output.start();audioWriting=audio.add(soundtrack);void audioWriting.catch(()=>{});
   for(let frame=0;frame<VIDEO_SECONDS*30;frame++){
    check();draw(frame/30);await video.add(frame/30,1/30);onProgress((frame+1)/(VIDEO_SECONDS*30));

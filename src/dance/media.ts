@@ -5,8 +5,8 @@ export class DanceAudio{
  async unlock(){await this.context.resume();if(this.context.state!=='running')throw new Error('Touche à nouveau pour autoriser le chant.');}
  play(buffer:AudioBuffer,destination:AudioNode=this.context.destination){
   this.stop();const ctx=this.context,start=ctx.currentTime,gain=ctx.createGain();this.gain=gain;gain.connect(destination);if(destination!==ctx.destination)gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(.7,start);gain.gain.setValueAtTime(.7,start+8.8);gain.gain.linearRampToValueAtTime(0,start+9);
-  for(let t=0;t<9;t+=buffer.duration+.5){const source=ctx.createBufferSource();source.buffer=buffer;source.connect(gain);source.start(start+t);source.stop(start+Math.min(9,t+buffer.duration));this.sources.push(source);}
+  gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.7,start+.35);gain.gain.setValueAtTime(.7,start+VIDEO_SECONDS-.6);gain.gain.linearRampToValueAtTime(0,start+VIDEO_SECONDS);
+  for(let t=0;t<VIDEO_SECONDS;t+=buffer.duration+.5){const source=ctx.createBufferSource();source.buffer=buffer;source.connect(gain);source.start(start+t);source.stop(start+Math.min(VIDEO_SECONDS,t+buffer.duration));this.sources.push(source);}
  }
  stop(){for(const source of this.sources){try{source.stop();}catch{/* Already ended. */}source.disconnect();}this.sources=[];this.gain?.disconnect();this.gain=null;}
  async dispose(){this.stop();if(this.context.state!=='closed')await this.context.close();}
@@ -32,7 +32,7 @@ async function recordRealtimeDance(canvas:HTMLCanvasElement,draw:(time:number)=>
    draw(0);recording.start(250);audio.play(buffer,destination);const start=audio.context.currentTime;
    let lastFrame=-1;
    const step=()=>{if(ended)return;try{const time=Math.min(VIDEO_SECONDS,audio.context.currentTime-start);if(time-lastFrame<1/30&&time<VIDEO_SECONDS){frame=requestAnimationFrame(step);return;}lastFrame=time;draw(time);onProgress(time/VIDEO_SECONDS);if(time>=VIDEO_SECONDS){recording.stop();return;}frame=requestAnimationFrame(step);}catch(error){fail(error instanceof Error?error:new Error('Le rendu a été interrompu.'));}};
-   frame=requestAnimationFrame(step);timer=setTimeout(()=>fail(new Error('L’export a été interrompu. Garde cet écran ouvert puis réessaie.')),22000);
+   frame=requestAnimationFrame(step);timer=setTimeout(()=>fail(new Error('L’export a été interrompu. Garde cet écran ouvert puis réessaie.')),(VIDEO_SECONDS+7)*1000);
   });
  }finally{cancelAnimationFrame(frame);clearTimeout(timer);if(recorder&&recorder.state!=='inactive')recorder.stop();stream.getTracks().forEach(track=>track.stop());destination.disconnect();audio.stop();}
 }

@@ -1,4 +1,4 @@
-"""Actual bird → composition → automatic FPV flight → video → unchanged original.
+"""Actual bird → composition → thirty-second mirrored FPV loop → video → unchanged original.
 Set HAIKUARELLE_DANCE_DESKTOP=1 to also check the full-HD desktop export.
 """
 from playwright.sync_api import sync_playwright
@@ -69,10 +69,10 @@ with sync_playwright() as pw:
   assert page.locator('.flight-dialog').evaluate('e=>e.matches(":modal")')
   page.wait_for_timeout(1800);page.screenshot(path=f'/tmp/flight-approach-{width}.png')
   page.wait_for_timeout(2200);page.screenshot(path=f'/tmp/flight-close-{width}.png')
-  page.get_by_role('button',name='Garder le film · 15 s',exact=True).wait_for(timeout=15000)
-  page.get_by_role('button',name='Garder le film · 15 s',exact=True).click()
+  page.get_by_role('button',name='Garder la boucle · 30 s',exact=True).wait_for(timeout=15000)
+  page.get_by_role('button',name='Garder la boucle · 30 s',exact=True).click()
   download=page.get_by_role('button',name='Télécharger ·',exact=False)
-  for attempt in range(60):
+  for attempt in range(120):
    if download.is_visible():break
    if page.locator('.dance-error').count():raise AssertionError(page.locator('.dance-error').inner_text())
    if attempt%6==0:print('export progress',width,page.locator('.flight-controls').inner_text(),flush=True)
@@ -82,7 +82,7 @@ with sync_playwright() as pw:
   file=info.value;path=f'/tmp/haikuarelle-flight-{width}.'+file.suggested_filename.split('.')[-1];file.save_as(path)
   video=page.locator('.flight-video');video.wait_for();page.wait_for_function('document.querySelector(".flight-video").readyState>=1')
   metadata=video.evaluate('e=>({duration:e.duration,width:e.videoWidth,height:e.videoHeight})')
-  assert abs(metadata['duration']-15)<.1 and metadata['width']==(720 if width<700 else 1080),metadata
+  assert abs(metadata['duration']-30)<.1 and metadata['width']==(720 if width<700 else 1080),metadata
   page.get_by_role('button',name='Revenir à mon œuvre',exact=True).click()
   assert page.locator('canvas[data-witness=same-paper]').count()==1
   assert page.evaluate('Array.from(window.__p.capturePreview().pixels).reduce((s,v)=>s+v,0)')==before

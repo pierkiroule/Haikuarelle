@@ -1,5 +1,5 @@
 import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest';
-const h=vi.hoisted(()=>({frames:[] as number[],cancel:vi.fn(),finalize:vi.fn(),codec:'avc' as string|null,onFrame:()=>{}}));
+const h=vi.hoisted(()=>({frames:[] as number[],cancel:vi.fn(),finalize:vi.fn(),codec:'avc' as string|null,onFrame:()=>{},offline:[] as number[]}));
 vi.mock('mediabunny',()=>({
  BufferTarget:class{buffer=new ArrayBuffer(12);},
  Mp4OutputFormat:class{},WebMOutputFormat:class{},
@@ -11,15 +11,16 @@ import {encodeDance} from '../src/dance/encode';
 beforeEach(()=>{
  h.frames=[];h.cancel.mockClear();h.finalize.mockClear();h.codec='avc';h.onFrame=()=>{};
  vi.stubGlobal('OfflineAudioContext',class{
+  constructor(...args:number[]){h.offline=args;}
   destination={};createGain(){return {connect(){},gain:{setValueAtTime(){},linearRampToValueAtTime(){}}};}
-  createBufferSource(){return {buffer:null,connect(){},start(){},stop(){}};}async startRendering(){return {duration:15};}
+  createBufferSource(){return {buffer:null,connect(){},start(){},stop(){}};}async startRendering(){return {duration:30};}
  });
 });
 afterEach(()=>vi.unstubAllGlobals());
 describe('fixed-timestamp dance video',()=>{
- it('encodes 450 frames for exactly fifteen seconds, keeping the promotion after nine',async()=>{
+ it('encodes 900 frames for the full thirty-second loop',async()=>{
   const draw=vi.fn(),progress=vi.fn();const result=await encodeDance({width:1080,height:1920} as HTMLCanvasElement,draw,{duration:3} as AudioBuffer,new AbortController().signal,progress);
-  expect(h.frames).toHaveLength(450);expect(h.frames[0]).toBe(0);expect(h.frames.at(-1)).toBe(449/30);expect(draw).toHaveBeenCalledWith(9);expect(progress).toHaveBeenLastCalledWith(1);expect(result.extension).toBe('mp4');expect(result.blob.type).toBe('video/mp4');expect(h.finalize).toHaveBeenCalledOnce();expect(h.cancel).not.toHaveBeenCalled();
+  expect(h.offline).toEqual([2,48000*30,48000]);expect(h.frames).toHaveLength(900);expect(h.frames[0]).toBe(0);expect(h.frames.at(-1)).toBe(899/30);expect(draw).toHaveBeenCalledWith(15);expect(progress).toHaveBeenLastCalledWith(1);expect(result.extension).toBe('mp4');expect(result.blob.type).toBe('video/mp4');expect(h.finalize).toHaveBeenCalledOnce();expect(h.cancel).not.toHaveBeenCalled();
  });
  it('uses a real WebM container if H264/AAC are unavailable',async()=>{
   h.codec=null;const result=await encodeDance({width:720,height:1280} as HTMLCanvasElement,()=>{},{duration:4} as AudioBuffer,new AbortController().signal,()=>{});
