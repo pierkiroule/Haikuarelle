@@ -315,6 +315,14 @@ export class PaintEngine {
 
   // ------------------------------------------------------------- history
 
+  /** Lossless live gesture state: unlike legacy history, retain the water channel. */
+  captureWetState(){
+    if(!this.ready)return null;
+    const snapshot=this.makeTarget(this.fieldW,this.fieldH,this.rgba,false);
+    this.copyTarget(this.field[0],snapshot);let disposed=false;
+    return {bytes:this.fieldW*this.fieldH*8,restore:()=>{if(disposed)return;this.copyTarget(snapshot,this.field[0]);this.stopFlow();this.settleLeft=0;this.wetUntil=0;},dispose:()=>{if(!disposed){disposed=true;this.deleteTarget(snapshot);}}};
+  }
+
   /** Remembers the sheet as it is now; call when a gesture starts. */
   checkpoint(): void {
     if (!this.ready) return;
@@ -489,12 +497,12 @@ export class PaintEngine {
   // ------------------------------------------------------------- drawing
 
   /** Draws the sheet to the canvas (or to an offscreen target for export). */
-  render(timeS: number, target: Target | null = null): void {
+  render(timeS: number, target: Target | null = null, showClearWater = true): void {
     const w = target ? target.w : this.canvas.width;
     const h = target ? target.h : this.canvas.height;
     if (target) {
       const aux = this.makeAux(w, h);
-      this.drawLook(timeS, target, aux);
+      this.drawLook(timeS, target, aux, showClearWater);
       this.afterRender?.(w, h);
       this.deleteAux(aux);
       return;
@@ -503,11 +511,11 @@ export class PaintEngine {
       if (this.aux) this.deleteAux(this.aux);
       this.aux = this.makeAux(w, h);
     }
-    this.drawLook(timeS, null, this.aux);
+    this.drawLook(timeS, null, this.aux, showClearWater);
     this.afterRender?.(w, h);
   }
 
-  private drawLook(timeS: number, target: Target | null, aux: Aux): void {
+  private drawLook(timeS: number, target: Target | null, aux: Aux, showClearWater: boolean): void {
     const gl = this.gl;
     const { w, h } = aux;
     const map = [this.k / (w / this.viewW), this.k / (h / this.viewH),
@@ -570,6 +578,7 @@ export class PaintEngine {
       gl.uniform1f(u.uFeather, look.feather);
       gl.uniform1f(u.uDensity, look.density);
       gl.uniform1f(u.uDetail, look.detail??0);
+      gl.uniform1f(u.uShowClearWater, showClearWater?1:0);
       gl.uniform1f(u.uDryingDetail, look.dryingDetail??0);
       gl.uniform1f(u.uDrySharpness, look.dryingSharpness??0);
       gl.uniform1f(u.uDryThreshold, look.dryingThreshold??0);
@@ -630,14 +639,14 @@ export class PaintEngine {
   }
 
   /** Renders what the viewport shows at `scale` × CSS size; rows top-down, RGBA. */
-  capture(scale: number, timeS: number): { width: number; height: number; pixels: Uint8Array } {
+  capture(scale: number, timeS: number, showClearWater = true): { width: number; height: number; pixels: Uint8Array } {
     const gl = this.gl;
     const maxDim = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number);
     const s = Math.min(scale, maxDim / this.viewW, maxDim / this.viewH);
     const width = Math.round(this.viewW * s);
     const height = Math.round(this.viewH * s);
     const t = this.makeTarget(width, height, { internal: gl.RGBA8, format: gl.RGBA }, false, gl.UNSIGNED_BYTE);
-    this.render(timeS, t);
+    this.render(timeS, t, showClearWater);
     const raw = new Uint8Array(width * height * 4);
     gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, raw);

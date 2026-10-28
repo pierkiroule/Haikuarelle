@@ -1,6 +1,6 @@
 # Plume d’Haïkuarelle
 
-Un rituel poétique en cinq temps : choisir une plume virevoltante, accueillir son haïku, créer avec l’eau et le chant, laisser sécher sous le soleil du silence, puis partager son haïkuarelle. Les titres et les trois vers puisent dans la vie de l’oiseau rencontré : milieux, nourriture, nidification, gestes, saisons et voyages. Le haïku précède la peinture ; ses vers restent les mêmes pendant la création et au partage. Le titre et le haïku restent lisibles sur le papier pendant toute la création.
+Une création artistique où le chant des oiseaux devient matière picturale. Douze plumes proposent leurs enregistrements locaux et les couleurs de leurs plumages. L’eau et le geste composent l’aquarelle ; après séchage, un titre et trois vers résonnent avec la peinture. L’œuvre peut ensuite devenir un oiseau d’aquarelle en trois dimensions et un film vertical.
 
 React + Vite + TypeScript. Simulation et rendu WebGL2 fondés sur Paint Studio / Pigment Drift (MIT). Sans backend, service payant ni appel à une IA.
 
@@ -25,34 +25,11 @@ npm run preview
 
 ## Le rituel
 
-1. **Une plume sonore qui t’attire.** Huit plumes virevoltent dans un cercle. Toucher une plume révèle immédiatement le haïku de son oiseau et joue son chant, sans confirmation ni possibilité de comparer les oiseaux au préalable. Les identités sont mélangées à chaque rencontre ; seules les plumes sont visibles. Les trajectoires irrégulières évoquent une soufflerie lente et se suspendent au clavier pour faciliter la sélection ; un bouton permet aussi de les immobiliser. La réduction des animations affiche les plumes immobiles. Le titre (« La mémoire du geai », « La veille du rouge-gorge »…) et les trois vers explorent l’univers de cet oiseau.
-2. **Un haïku pour ouvrir le voyage.** Trois vers liés à la vie et à l’univers de l’oiseau apparaissent avant tout dépôt. Le titre accompagne le haïku dès l’entrée dans l’atelier. « Entrer dans l’atelier » ouvre la toile.
-3. **Fais dialoguer l’eau et le chant.** Une palette de deux pastilles — goutte et plume — reste accessible pendant toute la création. La goutte propose taille et quantité d’eau ; la plume propose taille et opacité. On peut peindre à sec, mouiller avant, revenir humidifier les pigments et alterner les outils sur la même toile. Changer d’outil et déposer de l’eau ne coupent pas un sample en cours ; l’eau persiste jusqu’au séchage volontaire. Le bandeau garde nuancier et curseurs accessibles ; sa flèche permet de le réduire pour agrandir la toile. Le titre et le haïku restent directement sur le papier, au-dessus et au-dessous de la peinture. Les pigments conservent la palette du plumage en zones voisines, sans changement des couleurs déjà déposées.
-4. **Laisse sécher sous le soleil du silence.** « Laisser sécher » devient disponible après la fin du chant. La progression suit le séchage réel, sans minuterie artificielle. Le titre et le haïku restent à leur place pendant le séchage. « Reprendre la plume » permet de continuer.
-5. **Partager ton haïkuarelle.** Partager le PNG avec le titre, l’œuvre, les trois vers et la dédicace facultative via le menu natif du navigateur. Si le partage de fichiers n’est pas disponible, l’image est téléchargée. « Garder l’image · PNG » permet toujours de télécharger directement. Annuler le partage ne déclenche pas de téléchargement.
-
-La goutte de la palette permet de réhumidifier le papier sans effacer les pigments. « Effacer tout » conserve l’oiseau et revient à la création avec la goutte active. « Nouvelle œuvre » recommence le rituel avec une nouvelle graine. La plume animée suit le contact au pixel près ; les animations respectent la préférence de réduction des mouvements. Le logo aquarellé est servi en WebP sans perte. Six particules de plumes légères restent derrière l’interface, dans les marges ; elles sont absentes de l’œuvre exportée et désactivées en mode Toile seule ou avec la réduction des mouvements.
-
-Le bandeau de création garde le nuancier, la taille et l’opacité à portée de main. Avec la goutte active, les curseurs règlent la taille et la quantité d’eau. Un bouton réduit le bandeau aux outils et au séchage, et agrandit la surface affichée de la toile ; le déployer restitue les réglages. Les nouveaux réglages n’altèrent pas les traces existantes.
-
-Les attaques ouvrent des lobes humides irréguliers plutôt que des filaments. Les contours combinent plusieurs échelles de festons ; les auréoles de séchage varient en largeur, continuité et espacement. La Pie projette des points séparés, jamais de ligne continue, avec au plus huit gouttelettes par salve. Elle utilise un cri réel de Pie bavarde (*Pica pica*) enregistré par naturenotesuk (Freesound 555096, copie publique CC0 conservée localement). Cet extrait bref de 0,853 s est joué entier, sans répétition artificielle.
-
-L’oiseau reste fixe pendant les dépôts. Avant le premier geste, **Retrouver les plumes** permet une nouvelle rencontre. Le parcours complet et sa vérification sont dans [Trois oiseaux, une œuvre](docs/TROIS-OISEAUX-UNE-OEUVRE.md).
-
-Choisir une brosse ne joue rien. Aucun pigment n’est créé avant le démarrage réussi de la source audio, dans ses silences ou si la lecture est bloquée. Lever la main ne coupe plus le dépôt sonore. Le dépôt attend le démarrage réel du sample ; le relâchement ne l’annule pas pendant son décodage. Échap, le bouton d’interruption ou le masquage de l’onglet peuvent arrêter explicitement le chant.
-
-| Sample | Signature |
-| --- | --- |
-| Corneille | Noir de carbone, encre et éclats denses. |
-| Rouge-gorge | Orange chaud, lavis gris et blanc préservé. |
-| Geai | Bleu minéral, projections et nervures vives. |
-| Mésange bleue | Céruléum, jaune doux, dentelles et ponctuation noire. |
-| Bouvreuil | Rose pivoine, gris perle et ardoise, lavis de velours. |
-| Sittelle | Gris bleuté, ocre roux, ramures et accents fins. |
-| Pic vert | Vert mousse, jaune lichen, vagues et rares points carmin. |
-| Pie | Projections de petites gouttelettes noires de tailles variées ; cri réel de Pie bavarde, naturenotesuk, CC0. |
-
-Chants réels intégrés localement : trois sous CC0, quatre sous CC BY-SA 3.0/4.0 avec leurs attributions et conditions. Sources et adaptations dans `public/birds/credits.html` et `credits.json`. Aucun appel distant pendant la peinture, aucune clé externe. La mésange provient de Xeno-canto XC125793, via son dépôt libre sur Wikimedia Commons.
+1. **Rencontrer une plume.** Douze plumes anonymes virevoltent ; une sélection révèle l’oiseau et joue son chant. Les animations peuvent être suspendues.
+2. **Composer avec l’eau et le chant.** Eau, Plume, Souffle et Inkbird partagent une palette accessible. Les chants jouent entièrement ; l’eau persiste jusqu’au séchage volontaire. Inkbird vole seul ou se laisse attirer par le geste.
+3. **Laisser sécher.** Un halo bleu et une progression accompagnent les douze secondes simulées de séchage.
+4. **Révéler le haïku et partager.** Le titre et les trois vers naissent de l’oiseau et de la peinture. Les textes en Caveat à 80 % restent centrés ; seule la peinture se déplace et se redimensionne. Le PNG inclut la signature •°○.
+5. **Revoir la naissance de mon Haïkuarelle.** Le vrai processus est capturé pendant la peinture et le séchage, puis rejoué progressivement en avant, jusqu’à la composition PNG finale. Un sample, trois échos décroissants, puis le silence accompagnent les trente secondes. Film vertical MP4 si compatible, sinon WebM. Voir [les captures, l’export et leurs limites](docs/DANCE.md).
 
 ## Pigments et signatures
 
@@ -198,3 +175,9 @@ Le souffle étire la pellicule en racines d’eau : l’écoulement diverge à l
 Les films à partir de 0,006 d’humidité participent aux chemins de peinture. Le guide des flaques est plus fin après transport, et une petite épaisseur ne déclenche plus automatiquement un dépôt de peinture sèche. Sur ces filaments minces, les lavis restent limités au chemin humide et les projections sèches satellites sont supprimées ; les dépôts sur papier réellement sec restent disponibles. La diffusion et la visibilité de l’eau tiennent aussi compte des films fins. La fin du chant immergé ne suspend pas une rafale de souffle active sur de l’eau sans pigment.
 
 `scripts/check-water-roots.py` vérifie le scénario complet : eau claire, souffle, puis dépôt sonore local. Dans la scène contrôlée, la surface humide augmente d’environ 67 % et l’épaisseur moyenne diminue d’environ 40 % à volume pratiquement constant. La peinture colore un filament nouvellement étiré sans changer l’eau ni toucher la flaque séparée ; ces chiffres décrivent cette scène, pas tous les gestes.
+
+### Film de création et annulation
+
+Le film final montre les captures réelles de la toile, du dépôt d’eau au séchage, en lecture uniquement en avant jusqu’au PNG final. Les images compressées restent locales et leur nombre est limité pour le mobile ; les longues créations sont davantage échantillonnées. Le chant est joué une fois, suivi de trois échos décroissants puis du silence. Voir [le film de création](docs/DANCE.md).
+
+Le parcours ne contient aucune guidance vocale. Seuls les chants des oiseaux et leurs résonances accompagnent la création. Le bouton « Annuler » (Ctrl/Cmd Z) restaure l’eau, les pigments et les tracés d’Inkbird avant le dernier geste. L’historique est limité selon la mémoire disponible, jusqu’à six gestes. Les gestes annulés sont également retirés du film.

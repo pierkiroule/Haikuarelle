@@ -2,7 +2,7 @@ import {APP_NAME} from '../brand';
 export type ArtworkDelivery='shared'|'saved'|'cancelled';
 /** Sharing requires a user gesture and file support; downloading is the fallback. */
 export async function deliverArtwork(png:Blob,filename:string,title:string,mode:'download'|'share'):Promise<ArtworkDelivery>{
-  const file=new File([png],filename,{type:'image/png'});
+  const file=new File([png],filename,{type:png.type||'image/png'});
   if(mode==='share'&&navigator.share){
     let supported=false;
     try{supported=navigator.canShare?.({files:[file]})??false;}catch{/* Browser policy can disallow file sharing. */}
