@@ -15,7 +15,9 @@ export class SignatureInk{
  flight:InkbirdFlight|null=null;
  constructor(readonly bird:Bird,readonly seed:number,readonly origin:Point,settings:EngineSettings,size=.55,private opacity=1){
   const s=sheetFor(settings.format);this.sx=Math.min(s.width,s.height)/s.width;this.sy=Math.min(s.width,s.height)/s.height;
-  this.radius=.05+.38*Math.max(0,Math.min(1,size));this.rng=createRng(seed^0x1b17d);this.heading=this.rng()*Math.PI*2;
+  // Keep small gestures precise; the upper half opens up to a paper-wide flight.
+  const extent=Math.max(0,Math.min(1,size));
+  this.radius=.05+.38*extent+.52*Math.pow(Math.max(0,extent-.5)*2,2);this.rng=createRng(seed^0x1b17d);this.heading=this.rng()*Math.PI*2;
   this.center={...origin};
   this.point={...origin};
  }

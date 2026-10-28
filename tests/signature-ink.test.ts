@@ -23,6 +23,8 @@ describe('Ink sound calligraphy',()=>{
   const small=make(0),large=make(1);let sm=0,lg=0;
   for(let i=0;i<240;i++){const a=small.step(f(i),i/30),b=large.step(f(i),i/30);expect(a.ink[0].width).toBe(b.ink[0].width);sm=Math.max(sm,Math.abs(a.point!.x-.5));lg=Math.max(lg,Math.abs(b.point!.x-.5));}
   expect(lg).toBeGreaterThan(sm*3);
+  // At maximum extent a centred flight can reach the outer paper, not just a small disc.
+  expect(lg).toBeGreaterThan(.45);
   const corner=new SignatureInk(bird,7,{x:.025,y:.025},{palette:'plumages',format:'a4',wetness:.5,granulation:.8,complexity:.5},1);
   for(let i=0;i<240;i++){const p=corner.step(f(i),i/30).point!;expect(p.x).toBeGreaterThanOrEqual(.025);expect(p.y).toBeGreaterThanOrEqual(.025);expect(p.x).toBeLessThanOrEqual(.975);expect(p.y).toBeLessThanOrEqual(.975);}
  });
