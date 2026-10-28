@@ -290,3 +290,12 @@ it('explicit interruption cancels a pending breath burst before any force is app
  frame(1);frame(101);
  expect(vi.mocked(e.paint.step).mock.calls.flatMap(c=>c[2]).some(s=>s.breath)).toBe(false);
 });
+
+it('routes Ink through the full sound clock and preserves colors in the stored ink strokes',()=>{
+ const e=open();e.beginSignature(8);e.setBirdPalette('pie');let elapsed=0;
+ expect(e.startSoundStain(music,{...BIRDS[0],inkTool:true,pigmentSlot:11,color:'#202426'},{x:.5,y:.5},7,.6,0,()=>elapsed)).toBe(true);
+ for(let i=0;i<20;i++){elapsed=i/30;frame(i*40+1);}
+ const ink=e.composition.ink??[];expect(ink.length).toBeGreaterThan(0);expect(ink.every(s=>s.color?.[0]===32/255)).toBe(true);
+ const retained=ink[0];e.startSoundStain(music,{...BIRDS[0],inkTool:true,pigmentSlot:14,color:'#294C86'},{x:.6,y:.5},9,.6,0,()=>0);
+ expect(retained.color).toEqual([32/255,36/255,38/255]);expect(e.paint.setLook).toHaveBeenCalled();
+});

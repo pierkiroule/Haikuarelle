@@ -86,7 +86,7 @@ describe('gesture and live audio create the brush together',()=>{
     expect(robin.some(s=>s.slot===0&&s.load<.2)).toBe(true);expect(robin.some(s=>s.slot===1)).toBe(true);
     expect(crow.find(s=>s.slot===0)!.strength).toBeGreaterThan(robin.find(s=>s.slot===1)!.strength);
   });
-  it('projects separate black magpie droplets with varied sizes, no connecting stroke and a fixed budget',()=>{
+  it('paints connected magpie washes with its plumage instead of a special droplet path',()=>{
     const pie=BIRD_BRUSHES.find(b=>b.id==='pie')!;
     const run=(size=.6)=>{
       const brush=new ResonantBrush(pie,75,settings,size),frames=[];
@@ -98,13 +98,13 @@ describe('gesture and live audio create the brush together',()=>{
     };
     const frames=run(),drops=frames.flatMap(f=>f.segments.filter(s=>!s.water));
     expect(frames).toEqual(run());expect(drops.length).toBeGreaterThan(20);
-    expect(drops.every(s=>s.slot===0&&s.effect==='splash'&&s.a.x===s.b.x&&s.a.y===s.b.y)).toBe(true);
-    expect(frames.every(f=>f.ink.length===0&&f.segments.length<=16)).toBe(true);
+    expect(drops.some(s=>s.a.x!==s.b.x||s.a.y!==s.b.y)).toBe(true);expect(drops.some(s=>s.slot===7)).toBe(true);expect(drops.every(s=>[0,7,6].includes(s.slot))).toBe(true);
+    expect(frames.every(f=>f.segments.length<=24)).toBe(true);
     expect(Math.max(...drops.map(s=>s.radius))).toBeGreaterThan(Math.min(...drops.map(s=>s.radius))*3);
     const radius=(size:number)=>run(size).flatMap(f=>f.segments.filter(s=>!s.water)).reduce((n,s)=>n+s.radius,0);
     expect(radius(1)).toBeGreaterThan(radius(0)*3);
   });
-  it('scales only new pigment and ink opacity, including magpie droplets, and deposits nothing at zero',()=>{
+  it('scales only new pigment and ink opacity, including the magpie, and deposits nothing at zero',()=>{
     for(const bird of BIRD_BRUSHES){
       const draw=(opacity:number)=>{
         const b=new ResonantBrush(bird,58,settings,.7,0,opacity);

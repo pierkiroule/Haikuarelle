@@ -113,6 +113,14 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     expect(title.classList.contains('fixed-poetry')).toBe(true);expect(poem.children).toHaveLength(3);expect(parseFloat(title.style.top)).toBeLessThan(10);expect(parseFloat(poem.style.top)).toBeGreaterThan(70);
     await click(host.querySelector('.place-haiku')!);expect(host.querySelector('.painting-handle')).toBeNull();expect(host.querySelector('.fixed-poetry')).not.toBeNull();
   });
+  it('places Ink directly after Souffle and uses the current bird song with independent ink settings',async()=>{
+    await encounter();const breath=button('Choisir le souffle du vivant'),ink=button('Choisir Inkbird');expect(breath.nextElementSibling).toBe(ink);
+    await click(ink);expect(ink.getAttribute('aria-pressed')).toBe('true');expect(host.querySelector('input[type=color]')).toBeNull();expect(host.querySelector('.feather-colours')).not.toBeNull();expect(host.querySelector('[aria-label="Étendue du vol Inkbird"]')).not.toBeNull();expect(host.querySelector('[aria-label="Opacité de l’encre"]')).not.toBeNull();
+    const paper=host.querySelector<HTMLElement>('.bird-paper')!;await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
+    expect(host.querySelector('.inkbird-flight')).not.toBeNull();expect(h.placed.at(-1)?.inkTool).toBe(true);expect(h.placed.at(-1)?.id).toBe('geai');expect(h.placed.at(-1)?.pigmentSlot).toBeUndefined();
+    const moves=h.moves;await act(async()=>{paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}));});expect(h.moves).toBe(moves);
+    const stops=h.stops;await click(host.querySelector('.bird-pad')!);expect(h.stops).toBe(stops);expect(ink.getAttribute('aria-pressed')).toBe('false');await act(async()=>h.finish());expect(host.querySelector('.inkbird-flight')).toBeNull();
+  });
   it('enters an immersive atelier, reopens tool settings and leaves with Escape without recreating the painting',async()=>{
     await encounter();
     const canvas=host.querySelector('canvas'),painter=h.painter;

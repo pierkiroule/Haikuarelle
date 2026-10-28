@@ -88,25 +88,6 @@ export class ResonantBrush{
     const normalized=(p:Point):Point=>({x:clamp(p.x*unit/sheet.width,.015,.985),y:clamp(p.y*unit/sheet.height,.015,.985)});
     const energy=clamp(feature.energy),light=Math.max(.5,1-this.layer*.018);
     let from=this.painted??samples[0].point,travel=0;
-    if(this.bird.id==='pie'){
-      // Isolated droplets follow the sampled gesture, never connecting its points.
-      // Time-gated bursts make density independent of pointer event frequency.
-      if(time-this.lastJet<.085){this.painted=null;return empty();}
-      this.lastJet=time;
-      const end=samples[samples.length-1],center=physical(end.point);
-      const count=3+Math.floor(energy*3+clamp(feature.flux)*2);
-      for(let i=0;i<count;i++){
-        const angle=this.rng()*Math.PI*2;
-        const spread=(.012+.075*this.size)*Math.sqrt(this.rng())*(.55+.65*energy);
-        const p=normalized({x:center.x+Math.cos(angle)*spread,y:center.y+Math.sin(angle)*spread});
-        const radius=(.0009+.006*Math.pow(this.rng(),2))*(.45+1.1*this.size)*(.7+.5*energy);
-        segments.push({a:p,b:p,radius:radius*1.18,load:.2+.12*settings.wetness,slot:0,water:true,strength:.2,coupling:0});
-        segments.push({a:p,b:p,radius,load:(.65+.3*this.rng())*clamp(this.opacity),slot:0,water:false,strength:.6,coupling:0,effect:'splash'});
-      }
-      this.feedback={speed:end.speed,radius:(.012+.075*this.size),splashes:this.feedback.splashes+count,filaments:0};
-      this.painted=null;if(this.released)this.lift();
-      return {segments,ink:[],point:end.point,feedback:{...this.feedback}};
-    }
     for(const sample of samples){
       const distance=this.distance(from,sample.point);
       if(distance<.00015&&segments.length)continue;

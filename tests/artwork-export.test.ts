@@ -14,9 +14,9 @@ describe('fixed handwritten poetry export',()=>{
  it('centers the title at the top and three lines at the bottom, independently of the painting',async()=>{
   const {image,ctx,calls,fonts}=fixture();
   await exportResonantArtwork(new Blob(),['a','b','c'],'Le silence de la mésange bleue',{x:.2,y:.1,scale:.6});
-  expect(fonts.load).toHaveBeenCalledWith('20px "Patrick Hand"');expect(ctx.drawImage).toHaveBeenCalledWith(image,200,141.4,600,848.4);
+  expect(fonts.load).toHaveBeenCalledWith('20px "Special Elite"');expect(ctx.drawImage).toHaveBeenCalledWith(image,200,141.4,600,848.4);
   expect(calls.map(c=>c.text)).toEqual(['Le silence de la mésange bleue','a','b','c','•°○']);
-  for(const c of calls.slice(0,4)){expect(c.x).toBe(500);expect(c.align).toBe('center');expect(c.font).toContain('Patrick Hand');expect(c.color).toBe('#35483e');}
+  for(const c of calls.slice(0,4)){expect(c.x).toBe(500);expect(c.align).toBe('center');expect(c.font).toContain('Special Elite');expect(c.color).toBe('#35483e');}
   expect(calls[0].y).toBeLessThan(150);expect(calls[1].y).toBeGreaterThan(1100);expect(calls[3].y).toBeLessThan(1414*.94);expect(calls[4].color).toBe('rgba(163,68,61,.72)');expect(image.close).toHaveBeenCalledOnce();
  });
  it('fits long lines within the same reserved text width without wrapping',()=>{

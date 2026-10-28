@@ -9,10 +9,13 @@ layout(location=2) in float aBorn;
 layout(location=3) in float aOpacity;
 layout(location=4) in float aAlong;
 layout(location=5) in float aSeed;
+layout(location=6) in vec3 aColor;
+out vec3 vColor;
 uniform vec2 uSheet;
 out float vSide,vBorn,vOpacity,vAlong,vSeed;
 out vec2 vPaper;
 void main(){
+  vColor=aColor;
   vPaper=aPosition*uSheet*(768.0/min(uSheet.x,uSheet.y));
   vSide=aSide;vBorn=aBorn;vOpacity=aOpacity;vAlong=aAlong;vSeed=aSeed;
   gl_Position=vec4(aPosition.x*2.0-1.0,1.0-aPosition.y*2.0,0.0,1.0);
@@ -21,6 +24,7 @@ const FRAGMENT=`#version 300 es
 precision highp float;
 uniform float uTime;
 uniform vec3 uColor;
+in vec3 vColor;
 in float vSide,vBorn,vOpacity,vAlong,vSeed;
 in vec2 vPaper;
 out vec4 fragColor;
@@ -35,7 +39,7 @@ void main(){
   float coverage=1.0-smoothstep(rag-aa,rag+aa,abs(vSide));
   float dryBreak=smoothstep(.12,.28,noise(vec2(vAlong*47.0,vSeed*.071)));
   float alpha=coverage*reveal*vOpacity*(.66+.34*fiber)*dryBreak;
-  fragColor=vec4(uColor,alpha);
+  fragColor=vec4(vColor.r<0.0?uColor:vColor,alpha);
 }`;
 
 /** Dry fine ink is drawn on the existing paint FBO, including export FBOs. */
@@ -64,9 +68,9 @@ export class FineInkRenderer {
     this.sheetUniform=gl.getUniformLocation(program,'uSheet');
     this.timeUniform=gl.getUniformLocation(program,'uTime');this.colorUniform=gl.getUniformLocation(program,'uColor');
     gl.bindVertexArray(this.vao);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
-    const sizes=[2,1,1,1,1,1];let offset=0;
+    const sizes=[2,1,1,1,1,1,3];let offset=0;
     for(let i=0;i<sizes.length;i++){
-      gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,sizes[i],gl.FLOAT,false,7*4,offset*4);offset+=sizes[i];
+      gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,sizes[i],gl.FLOAT,false,10*4,offset*4);offset+=sizes[i];
     }
   }
   setStrokes(strokes:InkStroke[],sheet:SheetSize=SHEETS.landscape):void{
@@ -88,7 +92,7 @@ export class FineInkRenderer {
     }else{
       this.vertices.set(added,this.used);gl.bufferSubData(gl.ARRAY_BUFFER,this.used*4,added);
     }
-    this.used=required;this.count=required/7;
+    this.used=required;this.count=required/10;
   }
   private geometry(strokes:InkStroke[]):Float32Array{
     const sheet=this.sheet;
@@ -103,7 +107,7 @@ export class FineInkRenderer {
         const pressure=(stroke.continuous?1:.30+.70*Math.sin(Math.PI*u)**.55)*(1+.13*Math.sin(i*.71+stroke.seed));
         const half=stroke.width*.5*pressure*Math.min(sheet.width,sheet.height)/768;
         return [ps[i].x+sign*(-dy/l)*half/sheet.width,ps[i].y+sign*(dx/l)*half/sheet.height,
-          sign,stroke.start+u*stroke.duration,stroke.opacity,u,stroke.seed];
+          sign,stroke.start+u*stroke.duration,stroke.opacity,u,stroke.seed,...(stroke.color??[-1,-1,-1])];
       };
       for(let i=0;i<n-1&&(i+1)/(n-1)<=visible;i++)for(const [j,s] of [[i,-1],[i,1],[i+1,-1],[i+1,-1],[i,1],[i+1,1]])vertices.push(...side(j,s));
     }
