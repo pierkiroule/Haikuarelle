@@ -1,3 +1,4 @@
+import {BIRD_BRUSHES} from '../src/birds/catalog';
 import {describe,it,expect} from 'vitest';
 import {readArtwork,makeResonantHaiku,morphicFamily,MORPHIC_LINES,BIRD_TITLE_REFERENCE,type ArtworkReading} from '../src/birds/artworkPoetry';
 import {RESONANT_STANZAS,SENSORY_OPENINGS} from '../src/birds/resonantLexicon';
@@ -40,6 +41,25 @@ describe('a response from actual morphology and bird ecology',()=>{
    }
    expect(seen.size).toBe(templates.length);
   }
+ });
+ it('offers a broad, reachable repertoire even for sparse paintings of the same bird',()=>{
+  for(const bird of BIRD_BRUSHES){
+   const poems=new Set<string>(),openings=new Set<string>(),titles=new Set<string>();
+   expect(SENSORY_OPENINGS[bird.id]).toHaveLength(12);
+   for(let seed=0;seed<256;seed++){
+    const poem=makeResonantHaiku(marks,seed,{...reading,coverage:.03},bird.id)!;
+    poems.add(poem.verses.join(' / '));openings.add(poem.verses[0]);titles.add(poem.title);
+   }
+   expect(poems.size).toBeGreaterThan(100);expect(openings.size).toBe(12);expect(titles.size).toBe(12);
+  }
+ });
+ it('keeps authored variants unique, compact and substantial in all seven morphic families',()=>{
+  for(const stanzas of Object.values(RESONANT_STANZAS)){
+   expect(stanzas).toHaveLength(12);expect(new Set(stanzas.map(s=>s.title)).size).toBe(12);
+   expect(new Set(stanzas.map(s=>s.image+' / '+s.echo)).size).toBe(12);
+   expect(stanzas.every(s=>s.image.length<=48&&s.echo.length<=48)).toBe(true);
+  }
+  for(const lines of Object.values(SENSORY_OPENINGS)){expect(new Set(lines).size).toBe(lines.length);expect(lines.every(line=>line.length<=48)).toBe(true);}
  });
  it('does not generate words without a real painting',()=>{expect(makeResonantHaiku([],7,reading,'mesange')).toBeNull();expect(makeResonantHaiku(marks,7,{...reading,coverage:0},'mesange')).toBeNull();});
 });

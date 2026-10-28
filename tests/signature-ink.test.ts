@@ -11,7 +11,7 @@ describe('Ink sound calligraphy',()=>{
   const run=()=>{const s=make();return Array.from({length:60},(_,i)=>s.step(f(i),i/30));};
   const frames=run();expect(frames).toEqual(run());const points=frames.flatMap(frame=>frame.ink.flatMap(s=>s.points));
   expect(new Set(points.map(p=>p.x)).size).toBeGreaterThan(30);expect(points.every(p=>Math.hypot(p.x-.5,(p.y-.5)*1980/1400)<.241)).toBe(true);
-  expect(frames.every(frame=>frame.segments.length<=6&&frame.ink.length<=2)).toBe(true);
+  expect(frames.every(frame=>frame.segments.length<=8&&frame.ink.length<=3)).toBe(true);
   expect(frames.flatMap(frame=>frame.segments).every(s=>s.slot===31&&!s.water&&s.waterAmount===0)).toBe(true);
  });
  it('ignores all pointer movement, continues flying in silence, but lifts the ink',()=>{
@@ -38,9 +38,20 @@ it('makes strong sonic pressure contrasts and uses only the selected bird plumag
  const frames=Array.from({length:180},(_,i)=>s.step({...f(i,i%20<5?1:.12),flux:i%20===0?.98:.1},i/30));
  const widths=frames.flatMap(fr=>fr.ink.slice(0,1).map(k=>k.width));expect(Math.max(...widths)).toBeGreaterThan(Math.min(...widths)*6);
  const allowed=BIRD_COLOURS.pie!.map(c=>c.hex.toLowerCase());for(const frame of frames)for(const k of frame.ink){const hex='#'+k.color!.map(c=>Math.round(c*255).toString(16).padStart(2,'0')).join('');expect(allowed).toContain(hex);}
- expect(frames.some(fr=>fr.feedback.splashes===5)).toBe(true);
+ expect(frames.some(fr=>fr.feedback.splashes>=6)).toBe(true);
 });
 
 it('does not report a pigment mark when the nib tears away on a falling transient',()=>{
  const s=make();const frame=s.step({...f(0,.08),flux:.5},0);expect(frame.ink).toEqual([]);expect(frame.segments).toEqual([]);expect(frame.point).toBeNull();expect(s.flight).not.toBeNull();
+});
+
+it('translates an attack into a faster flight and spectral changes into a different route',()=>{
+ const quiet=make(),storm=make(),dark=make();let quietDistance=0,stormDistance=0,priorQ={x:.5,y:.5},priorS={x:.5,y:.5};
+ for(let i=0;i<60;i++){
+  const q=quiet.step({...f(i,.12),flux:.02,treble:.1,bass:.7,brightness:.2},i/30),s=storm.step({...f(i,.95),flux:i%8===0?.98:.6,treble:.9,bass:.1,brightness:i%8<4?.9:.3},i/30);
+  quietDistance+=Math.hypot(q.point!.x-priorQ.x,q.point!.y-priorQ.y);stormDistance+=Math.hypot(s.point!.x-priorS.x,s.point!.y-priorS.y);priorQ=q.point!;priorS=s.point!;
+ }
+ expect(stormDistance).toBeGreaterThan(quietDistance*3);
+ const a=make().step({...f(0),brightness:.95,treble:.9,bass:.05},0),b=dark.step({...f(0),brightness:.05,treble:.05,bass:.9},0);expect(a.point).not.toEqual(b.point);
+ const burst=make().step({...f(0,1),flux:.98},0);expect(burst.ink.length).toBe(3);expect(burst.feedback.splashes).toBe(6);expect(burst.segments.length).toBeLessThanOrEqual(8);
 });

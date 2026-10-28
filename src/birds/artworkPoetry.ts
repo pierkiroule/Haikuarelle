@@ -1,3 +1,4 @@
+import {createRng} from '../vendor/pigment-drift/engine/params';
 import {RESONANT_STANZAS,SENSORY_OPENINGS} from './resonantLexicon';
 import {composeBirdPoem} from './ornithopoetry';
 import type {BirdId} from './catalog';
@@ -107,7 +108,11 @@ export function makeResonantHaiku(marks:readonly BirdMark[],seed:number,reading:
  const family=morphicFamily(reading);
  let hash=marks.reduce((h,m)=>Math.imul(h^m.seed,16777619)>>>0,seed>>>0);
  hash=(hash^Math.round(reading.coverage*10000)^Math.round(reading.centerY*1000)^Math.round((reading.complexity??0)*10))>>>0;
- const stanza=RESONANT_STANZAS[family][(hash>>>3)%RESONANT_STANZAS[family].length];
- const opening=SENSORY_OPENINGS[bird][hash%SENSORY_OPENINGS[bird].length];
+ // Mix all observed structure and the reference bird, then draw the opening
+ // and coherent couplet independently (shift/modulo picks correlated before).
+ for(const c of bird)hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;
+ for(const n of [reading.islands,Math.round((reading.centerX??.5)*1000),Math.round((reading.density??0)*1000),Number(!!reading.diffuse),Number(reading.vertical)])hash=Math.imul(hash^n,16777619)>>>0;
+ const rng=createRng(hash),stanzas=RESONANT_STANZAS[family],openings=SENSORY_OPENINGS[bird];
+ const stanza=stanzas[Math.floor(rng()*stanzas.length)],opening=openings[Math.floor(rng()*openings.length)];
  return {title:`${stanza.title} ${BIRD_TITLE_REFERENCE[bird]}`,verses:[opening,stanza.image,stanza.echo],reading:{...reading,tones:[...reading.tones]}};
 }
