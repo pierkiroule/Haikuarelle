@@ -22,7 +22,7 @@ export default function DanceStudio({frames,placement,painting,sound,poetry,pape
   const tick=async(now:number)=>{
    if(!alive.current)return;
    if(now-lastFrame>=1000/30){lastFrame=now;try{
-    if(phaseRef.current==='flying'){let t=Math.max(0,audio.context.currentTime-startTime.current);if(t>=VIDEO_SECONDS){startTime.current=audio.context.currentTime;audio.play(sound.document.buffer);t=0;}liveDraw.current=Promise.resolve(renderer.current?.draw(t));await liveDraw.current;if(!alive.current||generation.current!==currentGeneration)return;const tenth=Math.floor(t*10);if(tenth!==lastSecond){setSeconds(t);lastSecond=tenth;}}
+    if(phaseRef.current==='flying'){let t=Math.max(0,audio.context.currentTime-startTime.current);if(t>=VIDEO_SECONDS){t=VIDEO_SECONDS;audio.stop();change('ready');}liveDraw.current=Promise.resolve(renderer.current?.draw(t));await liveDraw.current;if(!alive.current||generation.current!==currentGeneration)return;const tenth=Math.floor(t*10);if(tenth!==lastSecond){setSeconds(t);lastSecond=tenth;}}
    }catch(e){audio.stop();setError(e instanceof Error?e.message:'Le film a été interrompu.');change('error');}}
    if(alive.current)frame=requestAnimationFrame(tick);
   };frame=requestAnimationFrame(tick);
@@ -42,11 +42,11 @@ export default function DanceStudio({frames,placement,painting,sound,poetry,pape
  const deliver=async(mode:'share'|'download')=>{if(!video)return;try{const result=await deliverArtwork(video.blob,`haikuarelle-creation-${seed}.${video.extension}`,poetry.title,mode);setNotice(result==='saved'?'Le film est téléchargé.':result==='shared'?'Le film de ta création est partagé.':'');}catch{setNotice('Le partage est indisponible. Essaie le téléchargement.');}};
  return <dialog ref={dialog} className="dance-dialog flight-dialog" aria-labelledby="flight-title" onCancel={e=>{e.preventDefault();onClose();}}>
   <header><h2 id="flight-title">La naissance de mon haïkuarelle</h2><button className="dance-close" onClick={onClose} aria-label="Revenir à mon œuvre">×</button></header>
-  <canvas ref={canvas} hidden={phase==='done'} className="flight-canvas" aria-label="Film du vrai processus de création, en avant puis en arrière"/>
-  {phase==='done'&&<video className="flight-video" src={videoURL} controls playsInline loop aria-label="La création de ton haïkuarelle, trente secondes aller-retour"/>}
+  <canvas ref={canvas} hidden={phase==='done'} className="flight-canvas" aria-label="Film du vrai processus de création, en avant jusqu’à l’œuvre finale"/>
+  {phase==='done'&&<video className="flight-video" src={videoURL} controls playsInline loop aria-label="La création de ton haïkuarelle, trente secondes"/>}
   {phase==='loading'&&<p className="flight-loading" role="status">Les images de ta création se rassemblent…</p>}
   <div className="flight-controls">
-   {phase==='flying'&&<><span className="flight-status">La création en avant · puis en arrière</span><button onClick={()=>{audio.stop();change('ready');}}>Suspendre</button><button onClick={()=>void exportVideo()}>Garder le film · 30 s</button></>}
+   {phase==='flying'&&<><span className="flight-status">Le chant · trois échos · le silence</span><button onClick={()=>{audio.stop();change('ready');}}>Suspendre</button><button onClick={()=>void exportVideo()}>Garder le film · 30 s</button></>}
    {phase==='ready'&&<><button className="dance-primary" onClick={()=>void play()}>Revoir la création</button><button onClick={()=>void exportVideo()}>Garder le film · 30 s</button></>}
    {phase==='exporting'&&<><p role="status">Création du film · {Math.round(seconds/VIDEO_SECONDS*100)} %</p><progress max={VIDEO_SECONDS} value={seconds} aria-label="Création du film"/><button onClick={()=>{abort.current?.abort();audio.stop();liveSize();void renderer.current?.draw(0).catch(()=>{});change('ready');}}>Annuler</button></>}
    {phase==='done'&&<><button className="dance-primary" onClick={()=>void deliver('share')}>Partager le film ↗</button><button onClick={()=>void deliver('download')}>Télécharger · {video?.extension.toUpperCase()}</button><button onClick={()=>{setVideo(null);setVideoURL('');if(url.current)URL.revokeObjectURL(url.current);url.current='';void play();}}>Revoir la création</button>{video?.extension==='webm'&&<p className="flight-note">WebM sur ce navigateur. Pour Instagram, convertis le film en MP4 ou utilise un navigateur proposant le MP4.</p>}</>}

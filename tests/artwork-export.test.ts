@@ -4,7 +4,7 @@ import {fixedPoetryLayout} from '../src/birds/FixedPoetry';
 afterEach(()=>vi.unstubAllGlobals());
 function fixture(fail=false){
  const image={width:1000,height:1414,close:vi.fn()},calls:{text:string;x:number;y:number;font:string;align:string;color:string;alpha:number}[]=[];
- const ctx={drawImage:vi.fn(),fillRect:vi.fn(),fillText:vi.fn(),measureText:(line:string)=>({width:line.length*15,fontBoundingBoxAscent:30,fontBoundingBoxDescent:8}),globalAlpha:1,font:'',textAlign:'',fillStyle:''};
+ const ctx={save:vi.fn(),restore:vi.fn(),drawImage:vi.fn(),fillRect:vi.fn(),fillText:vi.fn(),measureText:(line:string)=>({width:line.length*15,fontBoundingBoxAscent:30,fontBoundingBoxDescent:8}),globalAlpha:1,font:'',textAlign:'',fillStyle:''};
  ctx.fillText.mockImplementation((text:string,x:number,y:number)=>calls.push({text,x,y,font:ctx.font,align:ctx.textAlign,color:ctx.fillStyle,alpha:ctx.globalAlpha}));
  const fonts={load:vi.fn(async()=>[]),ready:Promise.resolve()};
  vi.stubGlobal('createImageBitmap',async()=>image);vi.stubGlobal('document',{fonts,createElement:()=>({width:0,height:0,getContext:()=>ctx,toBlob:(cb:BlobCallback)=>cb(fail?null:new Blob(['png'],{type:'image/png'}))})});

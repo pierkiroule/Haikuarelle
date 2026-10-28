@@ -1,14 +1,15 @@
+import {scheduleSoundtrack} from './soundtrack';
 import {VIDEO_SECONDS,videoMime} from './score';
 /** Whole bird phrases, separated by silence; never reverse the recording. */
 export class DanceAudio{
- readonly context=new AudioContext();private sources:AudioBufferSourceNode[]=[];private gain:GainNode|null=null;
+ readonly context=new AudioContext();private sources:AudioBufferSourceNode[]=[];private gain:GainNode|null=null;private phraseGains:GainNode[]=[];
  async unlock(){await this.context.resume();if(this.context.state!=='running')throw new Error('Touche à nouveau pour autoriser le chant.');}
  play(buffer:AudioBuffer,destination:AudioNode=this.context.destination){
   this.stop();const ctx=this.context,start=ctx.currentTime,gain=ctx.createGain();this.gain=gain;gain.connect(destination);if(destination!==ctx.destination)gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.7,start+.35);gain.gain.setValueAtTime(.7,start+VIDEO_SECONDS-.6);gain.gain.linearRampToValueAtTime(0,start+VIDEO_SECONDS);
-  for(let t=0;t<VIDEO_SECONDS;t+=buffer.duration+.5){const source=ctx.createBufferSource();source.buffer=buffer;source.connect(gain);source.start(start+t);source.stop(start+Math.min(VIDEO_SECONDS,t+buffer.duration));this.sources.push(source);}
+  const phrases=scheduleSoundtrack(ctx,buffer,gain,start);this.sources=phrases.map(p=>p.source);this.phraseGains=phrases.map(p=>p.gain);
+
  }
- stop(){for(const source of this.sources){try{source.stop();}catch{/* Already ended. */}source.disconnect();}this.sources=[];this.gain?.disconnect();this.gain=null;}
+ stop(){for(const source of this.sources){try{source.stop();}catch{/* Already ended. */}source.disconnect();}this.sources=[];for(const gain of this.phraseGains)gain.disconnect();this.phraseGains=[];this.gain?.disconnect();this.gain=null;}
  async dispose(){this.stop();if(this.context.state!=='closed')await this.context.close();}
 }
 export interface DanceVideo{blob:Blob;extension:'mp4'|'webm'}

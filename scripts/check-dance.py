@@ -1,4 +1,4 @@
-"""Actual bird → composition → thirty-second forward/reverse creation film → video → unchanged original.
+"""Actual bird → composition → thirty-second forward creation film → video → unchanged original.
 Set HAIKUARELLE_DANCE_DESKTOP=1 to also check the full-HD desktop export.
 """
 from playwright.sync_api import sync_playwright

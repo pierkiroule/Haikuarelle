@@ -2,15 +2,15 @@ import {describe,it,expect} from 'vitest';
 import {replayTime,replaySample,thinFrames,type ProcessFrame} from '../src/dance/ProcessRecording';
 const frames=(n:number)=>Array.from({length:n},(_,i)=>({time:i*100,image:new Blob([String(i)])}));
 describe('real process replay',()=>{
- it('travels through the complete creation and retraces exactly the same images',()=>{
-  expect(replayTime(0)).toBe(0);expect(replayTime(15)).toBe(1);expect(replayTime(30)).toBe(0);
-  const captured=frames(100);
-  for(let i=0;i<=450;i++){const time=i/30;const forward=replaySample(captured,time),reverse=replaySample(captured,30-time);expect(reverse.from+reverse.mix*(reverse.to-reverse.from)).toBeCloseTo(forward.from+forward.mix*(forward.to-forward.from),10);}
+ it('moves forward smoothly and holds the final composition for four seconds',()=>{
+  expect(replayTime(0)).toBe(0);expect(replayTime(26)).toBe(1);expect(replayTime(30)).toBe(1);
+  let prior=0;for(let t=0;t<=30;t+=.1){const progress=replayTime(t);expect(progress).toBeGreaterThanOrEqual(prior);prior=progress;}
+  const captured=frames(100);expect(replaySample(captured,30)).toEqual({from:98,to:99,mix:1});
  });
- it('uses capture timestamps rather than image indices, preserving irregular capture intervals',()=>{
+ it('uses irregular capture timestamps and interpolation throughout the process',()=>{
   const captured=[{time:100,image:new Blob()},{time:200,image:new Blob()},{time:1100,image:new Blob()}];
-  expect(replaySample(captured,7.5)).toEqual({from:1,to:2,mix:400/900});
-  expect(replaySample(captured,0)).toEqual({from:0,to:0,mix:0});expect(replaySample(captured,15)).toEqual({from:1,to:2,mix:1});
+  expect(replaySample(captured,13)).toEqual({from:1,to:2,mix:400/900});
+  expect(replaySample(captured,0)).toEqual({from:0,to:0,mix:0});
  });
  it('bounds long recordings without losing their beginning or end',()=>{
   let captured=frames(1001);const first=captured[0],last=captured.at(-1);while(captured.length>240)captured=thinFrames(captured);

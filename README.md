@@ -29,7 +29,7 @@ npm run preview
 2. **Composer avec l’eau et le chant.** Eau, Plume, Souffle et Inkbird partagent une palette accessible. Les chants jouent entièrement ; l’eau persiste jusqu’au séchage volontaire. Inkbird vole seul ou se laisse attirer par le geste.
 3. **Laisser sécher.** Un halo bleu et une progression accompagnent les douze secondes simulées de séchage.
 4. **Révéler le haïku et partager.** Le titre et les trois vers naissent de l’oiseau et de la peinture. Les textes en Caveat à 80 % restent centrés ; seule la peinture se déplace et se redimensionne. Le PNG inclut la signature •°○.
-5. **Revoir la naissance de mon Haïkuarelle.** Le vrai processus est capturé pendant la peinture et le séchage, puis rejoué en accéléré : 15 secondes en avant, 15 secondes en arrière. Le chant reste à l’endroit. Film vertical MP4 si compatible, sinon WebM. Voir [les captures, l’export et leurs limites](docs/DANCE.md).
+5. **Revoir la naissance de mon Haïkuarelle.** Le vrai processus est capturé pendant la peinture et le séchage, puis rejoué progressivement en avant, jusqu’à la composition PNG finale. Un sample, trois échos décroissants, puis le silence accompagnent les trente secondes. Film vertical MP4 si compatible, sinon WebM. Voir [les captures, l’export et leurs limites](docs/DANCE.md).
 
 ## Pigments et signatures
 
@@ -178,6 +178,6 @@ Les films à partir de 0,006 d’humidité participent aux chemins de peinture. 
 
 ### Film de création et murmures poétiques
 
-Le film final montre les captures réelles de la toile, du dépôt d’eau au séchage, en lecture avant puis arrière. Les images compressées restent locales et leur nombre est limité pour le mobile ; les longues créations sont davantage échantillonnées. Le chant accompagne la vidéo à l’endroit. Voir [le film de création](docs/DANCE.md).
+Le film final montre les captures réelles de la toile, du dépôt d’eau au séchage, en lecture uniquement en avant jusqu’au PNG final. Les images compressées restent locales et leur nombre est limité pour le mobile ; les longues créations sont davantage échantillonnées. Le chant est joué une fois, suivi de trois échos décroissants puis du silence. Voir [le film de création](docs/DANCE.md).
 
 La guidance vocale optionnelle accompagne les dix moments du parcours, avec file séquentielle, fondus, atténuation puis remontée progressive du chant et bouton Voix. Elle attend une interaction et n'interrompt pas le dessin. Les dix MP3 originaux sont intégrés dans [`public/vocaux/`](public/vocaux/README.md), de `Vocal00.mp3` à `Vocal09.mp3`. Les fichiers absents sont ignorés sans bloquer l'atelier.

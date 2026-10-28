@@ -2,7 +2,9 @@ export interface ProcessFrame {time:number;image:Blob}
 export interface ReplaySample {from:number;to:number;mix:number}
 /** Preserve the whole chronology while bounding compressed storage on mobile. */
 export function thinFrames(frames:ProcessFrame[]){return frames.filter((_,i)=>i===0||i===frames.length-1||i%2===0);}
-export function replayTime(time:number,duration=30){const t=Math.max(0,Math.min(duration,time));return t<=duration/2?t/(duration/2):(duration-t)/(duration/2);}
+/** Progress only forwards, ease into a four-second final still. */
+export function replayTime(time:number,duration=30){const p=Math.max(0,Math.min(1,time/(duration-4)));return p*p*(3-2*p);}
+
 export function replaySample(frames:readonly ProcessFrame[],time:number):ReplaySample{
  if(frames.length<2)return {from:0,to:0,mix:0};
  const target=frames[0].time+replayTime(time)*(frames.at(-1)!.time-frames[0].time);
@@ -11,10 +13,10 @@ export function replaySample(frames:readonly ProcessFrame[],time:number):ReplayS
  return {from,to,mix:span>0?Math.max(0,Math.min(1,(target-frames[from].time)/span)):0};
 }
 export class ProcessRecording {
- private frames:ProcessFrame[]=[];private interval=125;private last=-Infinity;private generation=0;private pending:Promise<void>|null=null;private failed=false;
+ private frames:ProcessFrame[]=[];private interval=80;private last=-Infinity;private generation=0;private pending:Promise<void>|null=null;private failed=false;
  private canvas:HTMLCanvasElement|null=null;
  constructor(private unavailable:()=>void=()=>{}){}
- reset(){this.generation++;this.frames=[];this.interval=125;this.last=-Infinity;this.failed=false;}
+ reset(){this.generation++;this.frames=[];this.interval=80;this.last=-Infinity;this.failed=false;}
  get available(){return this.frames.length>1;}
  async capture(read:()=>{width:number;height:number;pixels:Uint8Array},time:number,force=false){
   if(this.failed)return;

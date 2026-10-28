@@ -8,8 +8,12 @@ with sync_playwright() as p:
  const painting=await new Promise(r=>source.toBlob(r));const canvas=document.createElement('canvas');canvas.width=720;canvas.height=1280;document.body.append(canvas);
  const renderer=await DanceRenderer.create(canvas,painting,{title:'Le souffle du rouge-gorge',verses:['Une eau en silence','La couleur dans la lumière','Le chant se dépose']},{},'#f7f4ec',{author:'Test',license:'CC0',source:'https://example.org'},frames);
  const checksum=()=>{let hash=2166136261;for(const value of canvas.getContext('2d').getImageData(0,0,720,1280).data)hash=Math.imul(hash^value,16777619);return hash>>>0;};
- await renderer.draw(6);const forward=checksum();await renderer.draw(24);const reverse=checksum();if(forward!==reverse)throw Error('Reverse mismatch');
- await renderer.draw(0);const start=checksum();await renderer.draw(15);const final=checksum();if(start===final)throw Error('No real evolution');
- let maxCache=0;for(let t=0;t<=30;t++){await renderer.draw(t);maxCache=Math.max(maxCache,renderer.cache.size);}if(maxCache>4)throw Error('Unbounded decoded cache');await renderer.draw(15);window.renderer=renderer;
- return {forwardReverseIdentical:forward===reverse,realEvolution:start!==final,maxDecodedImages:maxCache};}'''),flush=True)
+ await renderer.draw(6);const early=checksum();await renderer.draw(24);const late=checksum();if(early===late)throw Error('No forward evolution');
+ await renderer.draw(0);const start=checksum();await renderer.draw(30);const final=checksum();if(start===final)throw Error('No real evolution');
+ let maxCache=0;for(let t=0;t<=30;t++){await renderer.draw(t);maxCache=Math.max(maxCache,renderer.cache.size);}if(maxCache>4)throw Error('Unbounded decoded cache');await renderer.draw(30);
+ const {exportResonantArtwork}=await import('/src/birds/export.ts');const png=await createImageBitmap(await exportResonantArtwork(painting,['Une eau en silence','La couleur dans la lumière','Le chant se dépose'],'Le souffle du rouge-gorge'));
+ const expected=document.createElement('canvas');expected.width=720;expected.height=1280;const ec=expected.getContext('2d');ec.imageSmoothingQuality='high';const height=Math.min(1280*.74,720*.9/(720/1018)),width=height*720/1018,x=(720-width)/2,y=1280*.47-height/2;ec.drawImage(png,x,y,width,height);
+ const a=ec.getImageData(Math.ceil(x),Math.ceil(y),Math.floor(width)-2,Math.floor(height)-2).data,b=canvas.getContext('2d').getImageData(Math.ceil(x),Math.ceil(y),Math.floor(width)-2,Math.floor(height)-2).data;
+ let difference=0;for(let i=0;i<a.length;i++)difference=Math.max(difference,Math.abs(a[i]-b[i]));if(difference>1)throw Error('Final frame differs from PNG: '+difference);png.close();window.renderer=renderer;
+ return {forwardOnly:early!==late,finalMatchesPNG:true,realEvolution:start!==final,maxDecodedImages:maxCache};}'''),flush=True)
  page.screenshot(path='/tmp/process-replay-final.png');page.evaluate('window.renderer.dispose()');print({'errors':errors},flush=True);b.close()

@@ -1,3 +1,4 @@
+import {scheduleSoundtrack} from './soundtrack';
 import {Output,BufferTarget,Mp4OutputFormat,WebMOutputFormat,CanvasSource,AudioBufferSource,getFirstEncodableAudioCodec,getFirstEncodableVideoCodec} from 'mediabunny';
 import {VIDEO_SECONDS} from './score';
 import type {DanceVideo} from './media';
@@ -14,8 +15,8 @@ export async function encodeDance(canvas:HTMLCanvasElement,draw:(time:number)=>v
  const check=()=>{if(signal.aborted)throw new DOMException('Annulé','AbortError');};
  let audioWriting:Promise<void>|undefined;
  try{
-  check();const context=new OfflineAudioContext(2,48000*VIDEO_SECONDS,48000),gain=context.createGain();gain.connect(context.destination);gain.gain.setValueAtTime(0,0);gain.gain.linearRampToValueAtTime(.7,.35);gain.gain.setValueAtTime(.7,VIDEO_SECONDS-.6);gain.gain.linearRampToValueAtTime(0,VIDEO_SECONDS);
-  for(let t=0;t<VIDEO_SECONDS;t+=buffer.duration+.5){const source=context.createBufferSource();source.buffer=buffer;source.connect(gain);source.start(t);source.stop(Math.min(VIDEO_SECONDS,t+buffer.duration));}
+  check();const context=new OfflineAudioContext(2,48000*VIDEO_SECONDS,48000);
+  scheduleSoundtrack(context,buffer,context.destination);
   const soundtrack=await context.startRendering();check();await output.start();audioWriting=audio.add(soundtrack);void audioWriting.catch(()=>{});
   for(let frame=0;frame<VIDEO_SECONDS*30;frame++){
    check();await draw(frame/30);check();await video.add(frame/30,1/30);onProgress((frame+1)/(VIDEO_SECONDS*30));
