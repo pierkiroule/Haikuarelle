@@ -2,7 +2,7 @@ import type {HaikuarelleEngine} from '../engine/WatercolorEngine';
 import type {Bird} from './catalog';
 import type {BirdAudioBank} from './BirdAudioBank';
 import type {Point} from '../engine/types';
-type Painter=Pick<HaikuarelleEngine,'startSoundStain'|'moveSoundStain'|'stopBird'>;
+type Painter=Pick<HaikuarelleEngine,'startSoundStain'|'moveSoundStain'|'stopBird'>&Partial<Pick<HaikuarelleEngine,'liftSoundStainGuide'>>;
 type Sounds=Pick<BirdAudioBank,'play'|'stop'>;
 interface Callbacks{preparing:(bird:Bird)=>void;started:(bird:Bird)=>void;stopped:()=>void;marked:(bird:Bird,point:Point,seed:number)=>void;error:(message:string)=>void}
 /** A tap owns a complete phrase. Pointer movement and release do not own its lifetime. */
@@ -37,6 +37,7 @@ export class SoundDeposit{
     if(this.started)this.painter.moveSoundStain(point,connect);
     else this.pendingPoint={...point};
   }
+  releaseGuide():void{this.pendingPoint=null;this.painter.liftSoundStainGuide?.();}
   /** Explicit interruption only: reset, Escape, hidden tab or disposal. */
   cancel():void{this.token++;this.active=false;this.pendingPoint=null;this.started=false;this.sounds.stop();this.painter.stopBird();this.callbacks.stopped();}
 }

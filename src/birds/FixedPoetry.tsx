@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
-export const POETRY_FONT='"Special Elite"';
+export const POETRY_FONT='"Caveat"';
+export const POETRY_OPACITY=.8;
 export const POETRY_COLOR='#35483e';
 export const POETRY_LINE_HEIGHT=1.5;
 /** The same width-fitting rule is used on paper and in the full-resolution PNG. */
@@ -15,5 +16,5 @@ export function FixedPoetry({title,verses,ratio=1400/1980}:{title:string;verses:
   const ctx=document.createElement('canvas').getContext('2d');if(!ctx||!alive)return;
   setLayout(fixedPoetryLayout((text,size)=>{ctx.font=`${size*1000}px ${POETRY_FONT}`;return ctx.measureText(text).width/1000;},title,verses,ratio));
  }).catch(()=>{});return()=>{alive=false;};},[title,verses,ratio]);
- return <><div className="resonant-title fixed-poetry" style={{top:`${layout.titleY*100}%`,fontSize:`${layout.titleSize*100}cqw`}} aria-label="Titre du haïku">{title}</div><div className="resonant-haiku fixed-poetry" style={{top:`${layout.verseY*100}%`,fontSize:`${layout.verseSize*100}cqw`}} aria-label="Haïku résonant">{verses.map((line,i)=><span key={i}>{line}</span>)}</div></>;
+ return <><div className="resonant-title fixed-poetry" style={{opacity:POETRY_OPACITY,top:`${layout.titleY*100}%`,fontSize:`${layout.titleSize*100}cqw`}} aria-label="Titre du haïku">{title}</div><div className="resonant-haiku fixed-poetry" style={{opacity:POETRY_OPACITY,top:`${layout.verseY*100}%`,fontSize:`${layout.verseSize*100}cqw`}} aria-label="Haïku résonant">{verses.map((line,i)=><span key={i}>{line}</span>)}</div></>;
 }

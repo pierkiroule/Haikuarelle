@@ -229,6 +229,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition.duration=Math.max(this.composition.duration,this.tick/TICK_RATE+analysis.duration+this.dryingDuration());this.request();
   }
   stopWaterSong():void{this.waterVoice=null;}
+  liftSoundStainGuide():void{const stain=this.stainVoice?.stain;if(stain instanceof SignatureInk)stain.releaseGuide();}
   moveSoundStain(point:Point,connect=true):void{
     if(!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
     this.stainVoice?.stain.move(point,this.tick/TICK_RATE,connect);

@@ -16,7 +16,7 @@
 /* A compact inspector for the painting alone. */
 .composition-editor{display:grid;gap:14px}.composition-editor header>span{font:10px sans-serif;letter-spacing:.14em;color:#7a887c}.composition-editor header p{font:italic 16px Georgia,serif;margin:7px 0 0}
 .composition-hint{font:12px/1.6 sans-serif;color:#7a887c;margin:0}.composition-editor .haiku-size>span{display:flex;justify-content:space-between}.composition-editor output{font-variant-numeric:tabular-nums;color:#86917e}
-@font-face{font-family:'Special Elite';src:url('/fonts/SpecialElite-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
-.bird-studio .fixed-poetry{left:5%;width:90%;max-width:none;font-family:'Special Elite','Courier New',monospace;font-style:normal;font-weight:400;text-align:center;line-height:1.5;white-space:pre;pointer-events:none;user-select:text;outline:none}
+@font-face{font-family:'Caveat';src:url('/fonts/Caveat.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+.bird-studio .fixed-poetry{left:5%;width:90%;max-width:none;font-family:'Caveat',cursive;font-style:normal;font-weight:400;text-align:center;line-height:1.5;white-space:pre;pointer-events:none;user-select:text;outline:none}
 .bird-studio .fixed-poetry>span{display:block}
 .painting-handle.is-selected{outline:1px dashed #607e6b99;outline-offset:-2px}

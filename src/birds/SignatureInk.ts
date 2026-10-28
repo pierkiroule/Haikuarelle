@@ -8,31 +8,53 @@ import {sheetFor} from '../engine/layout';
 import {createRng} from '../vendor/pigment-drift/engine/params';
 export interface InkbirdFlight{point:Point;heading:number;color:string}
 /** A tap launches an autonomous, seeded flight. Size controls its territory,
- * never nib width. The hand cannot steer it after launch. */
+ * never nib width. The hand attracts the flight without replacing sonic steering. */
 export class SignatureInk{
- private last:Point|null=null;private point:Point;private phase=0;private energy=.3;private brightness=.5;private heading:number;private turn=0;private attackAt=-Infinity;private rng:()=>number;
- private sx:number;private sy:number;private radius:number;private center:Point;private pressure=.12;private lastEnergy=0;private paletteIndex=0;private strokes=0;
+ private last:Point|null=null;private point:Point;private energy=.3;private brightness=.5;private heading:number;private turn=0;private attackAt=-Infinity;private rng:()=>number;
+ private sx:number;private sy:number;private radius:number;private center:Point;private burst=0;private turnDirection=1;private spectralPrev=.5;private pressure=.12;private lastEnergy=0;private paletteIndex=0;private strokes=0;
+ private guide:Point|null=null;private guideTime=0;private impulse={x:0,y:0};
  flight:InkbirdFlight|null=null;
  constructor(readonly bird:Bird,readonly seed:number,readonly origin:Point,settings:EngineSettings,size=.55,private opacity=1){
   const s=sheetFor(settings.format);this.sx=Math.min(s.width,s.height)/s.width;this.sy=Math.min(s.width,s.height)/s.height;
-  this.radius=.05+.38*Math.max(0,Math.min(1,size));this.rng=createRng(seed^0x1b17d);this.heading=this.rng()*Math.PI*2;
+  // Keep small gestures precise; the upper half opens up to a paper-wide flight.
+  const extent=Math.max(0,Math.min(1,size));
+  this.radius=.05+.38*extent+.52*Math.pow(Math.max(0,extent-.5)*2,2);this.rng=createRng(seed^0x1b17d);this.heading=this.rng()*Math.PI*2;
   this.center={...origin};
   this.point={...origin};
  }
- /** Compatibility with the shared sound voice: pointer motion never steers. */
- move(_point:Point,_time:number,_connect=true){}
+ /** A fresh contact attracts without teleporting; quick gestures lend bounded momentum. */
+ move(point:Point,time:number,connect=true){
+  if(!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
+  const next={x:Math.max(.025,Math.min(.975,point.x)),y:Math.max(.025,Math.min(.975,point.y))};
+  if(this.guide&&connect){const dt=Math.max(1/60,time-this.guideTime);this.impulse={x:Math.max(-.08,Math.min(.08,(next.x-this.guide.x)/this.sx/dt*.025)),y:Math.max(-.08,Math.min(.08,(next.y-this.guide.y)/this.sy/dt*.025))};}
+  this.guide=next;this.guideTime=time;
+ }
+ releaseGuide(){this.guide=null;}
+
  step(f:AudioFrame|undefined,time:number):BrushFrame{
   const empty=():BrushFrame=>({segments:[],ink:[],point:null,feedback:{speed:0,radius:0,splashes:0}});
   if(!f){this.last=null;this.flight=null;return empty();}
-  this.energy+=(Math.max(0,Math.min(1,f.energy))-this.energy)*.28;this.brightness+=(f.brightness-this.brightness)*.15;this.phase+=.13;
-  const attack=f.active&&f.energy>0&&f.flux>.72&&time-this.attackAt>.2;
-  this.turn+=(this.rng()-.5)*.22;this.turn*=.9;
-  this.heading+=this.turn+(this.brightness-.5)*.16+Math.sin(this.phase*.73+this.seed)*.055+(attack?(this.rng()-.5)*1.1:0);
+  const energy=Math.max(0,Math.min(1,f.energy)),flux=Math.max(0,Math.min(1,f.flux));
+  const rise=Math.max(0,energy-this.lastEnergy),spectralChange=f.brightness-this.spectralPrev;this.spectralPrev=f.brightness;
+  this.energy+=(energy-this.energy)*(energy>this.energy?.65:.2);this.brightness+=(f.brightness-this.brightness)*.3;
+  const attack=f.active&&energy>0&&(flux>.62||rise>.24)&&time-this.attackAt>.16;
+  if(attack){this.burst=1;this.turnDirection=Math.sign(f.treble-f.bass)||Math.sign(f.brightness-.5)||1;this.heading+=this.turnDirection*(.65+1.4*flux);}
+  else this.burst*=.78;
+  // Sound dominates the steering: seeded wandering is only a small undertone.
+  this.turn=this.turn*.78+(this.rng()-.5)*.035;
+  this.heading+=this.turn+(this.brightness-.5)*(.06+.22*energy)+spectralChange*2.8+(f.treble-f.bass)*.16*energy+this.turnDirection*this.burst*.34;
+  this.heading+=Math.sin(f.time*(12+18*f.treble))*(.035+.14*flux)*energy;
+  if(this.guide){
+   const gx=(this.guide.x-this.point.x)/this.sx,gy=(this.guide.y-this.point.y)/this.sy;
+   const angle=Math.atan2(gy,gx)-this.heading;
+   this.heading+=Math.atan2(Math.sin(angle),Math.cos(angle))*.16*Math.min(1,Math.hypot(gx,gy)/.04);
+  }
   // A soft inward turn prevents clipped/bouncing squares at the territory edge.
   const dx=(this.point.x-this.center.x)/this.sx,dy=(this.point.y-this.center.y)/this.sy,d=Math.hypot(dx,dy);
-  if(d>this.radius*.55){const inward=Math.atan2(-dy,-dx),angle=Math.atan2(Math.sin(inward-this.heading),Math.cos(inward-this.heading));this.heading+=angle*Math.min(.32,(d/this.radius-.55)*.5);}
-  const stride=this.radius*(.025+.055*this.energy+.018*f.flux),from=this.last??this.point;
-  let x=dx+Math.cos(this.heading)*stride,y=dy+Math.sin(this.heading)*stride;const distance=Math.hypot(x,y);
+  if(d>this.radius*.72){const inward=Math.atan2(-dy,-dx),angle=Math.atan2(Math.sin(inward-this.heading),Math.cos(inward-this.heading));this.heading+=angle*Math.min(.5,(d/this.radius-.72)*1.5);}
+  const stride=this.radius*(.004+.09*Math.pow(energy,1.7)+.11*this.burst),from=this.last??this.point;
+  let x=dx+Math.cos(this.heading)*stride+this.impulse.x,y=dy+Math.sin(this.heading)*stride+this.impulse.y;
+  this.impulse.x*=.72;this.impulse.y*=.72;const distance=Math.hypot(x,y);
   if(distance>this.radius){x*=this.radius/distance;y*=this.radius/distance;}
   const point={x:Math.max(.025,Math.min(.975,this.center.x+x*this.sx)),y:Math.max(.025,Math.min(.975,this.center.y+y*this.sy))};
   if(point.x<=.026||point.x>=.974)this.heading=Math.atan2(Math.sin(this.heading),point.x<=.026?Math.abs(Math.cos(this.heading)):-Math.abs(Math.cos(this.heading)));
@@ -43,7 +65,8 @@ export class SignatureInk{
   const slot=this.bird.pigmentSlot??(palette.length?PLUMAGE_PIGMENTS.length+this.paletteIndex:this.bird.slot);
   this.flight={point:{...point},heading:this.heading,color:hex};
   if(!f.active||f.energy<=0||this.opacity<=0){this.last=null;this.lastEnergy=0;this.pressure*=.35;return empty();}
-  const points=Array.from({length:5},(_,i)=>{const t=i/4;return {x:from.x+(point.x-from.x)*t,y:from.y+(point.y-from.y)*t};});
+  const bounded=(x:number,y:number):Point=>{const px=(x-this.center.x)/this.sx,py=(y-this.center.y)/this.sy,l=Math.hypot(px,py),k=l>this.radius?this.radius/l:1;return {x:Math.max(.025,Math.min(.975,this.center.x+px*k*this.sx)),y:Math.max(.025,Math.min(.975,this.center.y+py*k*this.sy))};};
+  const points=Array.from({length:9},(_,i)=>{const t=i/8,bow=Math.sin(Math.PI*t)*this.radius*.035*this.burst*this.turnDirection;return bounded(from.x+(point.x-from.x)*t-Math.sin(this.heading)*bow*this.sx,from.y+(point.y-from.y)*t+Math.cos(this.heading)*bow*this.sy);});
   // Sonic pressure, independent of territory size: hairlines, full strokes, tears.
   const impulse=Math.max(0,f.energy-this.lastEnergy);this.lastEnergy=f.energy;
   const target=.035+Math.pow(Math.max(0,Math.min(1,f.energy)),2.2)*(.35+.9*f.flux)+impulse*1.7;
@@ -57,10 +80,14 @@ export class SignatureInk{
    const feather=points.map(p=>({x:Math.max(.025,Math.min(.975,p.x-Math.sin(this.heading)*radius*2*this.sx)),y:Math.max(.025,Math.min(.975,p.y+Math.cos(this.heading)*radius*2*this.sy))}));
    ink.push({...ink[0],points:feather,width:Math.max(.28,ink[0].width*.15),opacity:this.opacity*.4});
   }
+  if(attack&&energy>.35){
+   const length=this.radius*(.035+.1*flux),whip=Array.from({length:7},(_,i)=>{const t=i/6,a=this.heading+this.turnDirection*t*.9;return bounded(point.x+Math.cos(a)*length*t*this.sx,point.y+Math.sin(a)*length*t*this.sy);});
+   ink.push({...ink[0],points:whip,width:Math.max(.35,ink[0].width*.32),opacity:this.opacity*.65,continuous:false});
+  }
   let splashes=0;
-  if(attack){this.attackAt=time;for(let i=0;i<5;i++){
-   const angle=this.rng()*Math.PI*2,spread=.003+.032*this.rng(),tip={x:Math.max(.025,Math.min(.975,point.x+Math.cos(angle)*spread*this.sx)),y:Math.max(.025,Math.min(.975,point.y+Math.sin(angle)*spread*this.sy))};
-   segments.push({...segments[0],a:tip,b:tip,radius:.00035+.0028*Math.pow(this.rng(),2),load:this.opacity*(.3+.4*this.rng()),effect:'splash'});splashes++;
+  if(attack){this.attackAt=time;for(let i=0;i<3+Math.floor(4*flux);i++){
+   const angle=this.heading+(this.rng()-.5)*2.4+(this.rng()<.2?Math.PI:0),spread=.003+(.025+.035*this.burst)*Math.sqrt(this.rng()),tip={x:Math.max(.025,Math.min(.975,point.x+Math.cos(angle)*spread*this.sx)),y:Math.max(.025,Math.min(.975,point.y+Math.sin(angle)*spread*this.sy))};
+   segments.push({...segments[0],a:tip,b:tip,radius:.0003+.004*Math.pow(this.rng(),2),load:this.opacity*(.3+.4*this.rng()),effect:'splash'});splashes++;
   }}
   // A falling transient can lift the nib briefly instead of drawing an outline.
   const torn=f.energy<.12&&f.flux>.35;if(torn){this.last=null;return {segments:[],ink:[],point:null,feedback:{speed:this.energy,radius,splashes:0}};}

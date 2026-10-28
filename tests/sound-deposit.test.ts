@@ -6,7 +6,7 @@ function setup(water=.45){
   let start:(s:BirdPlayback)=>void=()=>{},end=()=>{},resolve=()=>{},reject:(e:Error)=>void=()=>{};
   const sound={analysis:{frames:[{active:true}]},elapsed:()=>.2} as unknown as BirdPlayback;
   const sounds={stop:vi.fn(),play:vi.fn<BirdAudioBank['play']>((_id,onStart,onEnd)=>{start=onStart;end=onEnd;return new Promise<void>((ok,no)=>{resolve=ok;reject=no;});})};
-  const painter={waterAt:vi.fn(()=>water),startSoundStain:vi.fn(()=>true),moveSoundStain:vi.fn(),stopBird:vi.fn()};
+  const painter={waterAt:vi.fn(()=>water),startSoundStain:vi.fn(()=>true),moveSoundStain:vi.fn(),stopBird:vi.fn(),liftSoundStainGuide:vi.fn()};
   const callbacks={preparing:vi.fn(),started:vi.fn(),stopped:vi.fn(),marked:vi.fn(),error:vi.fn()};
   const deposit=new SoundDeposit(sounds,painter,callbacks);
   return {deposit,sounds,painter,callbacks,start:()=>{start(sound);resolve();},end:()=>end(),fail:()=>reject(new Error('Lecture bloquée'))};
@@ -50,4 +50,13 @@ it('moves the source while loading or sounding without replaying or cutting the 
   t.deposit.move({x:.8,y:.5});expect(t.painter.moveSoundStain).toHaveBeenLastCalledWith({x:.8,y:.5},true);
   expect(t.sounds.play).toHaveBeenCalledOnce();expect(t.sounds.stop).not.toHaveBeenCalled();
   t.end();t.painter.moveSoundStain.mockClear();t.deposit.move(point);expect(t.painter.moveSoundStain).not.toHaveBeenCalled();
+});
+
+it('drops a guide released during decoding and never cuts playback on release',async()=>{
+ const t=setup(),pending=t.deposit.place(bird,point,7,.6,0);
+ t.deposit.move({x:.8,y:.2});t.deposit.releaseGuide();t.start();await pending;
+ expect(t.painter.moveSoundStain).not.toHaveBeenCalled();
+ t.deposit.move({x:.7,y:.3});t.deposit.releaseGuide();
+ expect(t.painter.liftSoundStainGuide).toHaveBeenCalledTimes(2);
+ expect(t.deposit.busy).toBe(true);expect(t.sounds.stop).not.toHaveBeenCalled();expect(t.painter.stopBird).not.toHaveBeenCalled();
 });

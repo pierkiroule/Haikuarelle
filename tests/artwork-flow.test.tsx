@@ -37,6 +37,7 @@ vi.mock('../src/birds/SoundDeposit',()=>({SoundDeposit:class{
   constructor(_sounds:unknown,_painter:unknown,private callbacks:{preparing:(b:Bird)=>void;started:(b:Bird)=>void;stopped:()=>void;marked:(b:Bird,p:Point,s:number)=>void}){}
   async place(bird:Bird,point:Point,seed:number){this.busy=true;h.placed.push(bird);h.starts++;this.callbacks.started(bird);h.painter!.mark();this.callbacks.marked(bird,point,seed);h.finish=()=>{this.busy=false;this.callbacks.stopped();};}
   move(){h.moves++;}
+  releaseGuide(){}
   cancel(){h.stops++;this.busy=false;this.callbacks.stopped();}
 }}));
 let root:Root,host:HTMLDivElement;
@@ -69,7 +70,7 @@ beforeEach(async()=>{
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.restoreAllMocks();vi.useRealTimers();});
 describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   it('reveals the touched feather’s haiku immediately with its song, without a confirmation',async()=>{
-    expect(host.querySelectorAll('.feather-choice')).toHaveLength(8);
+    expect(host.querySelectorAll('.feather-choice')).toHaveLength(12);
     expect(host.querySelector('.trio-start')).toBeNull();
     await click(host.querySelector('.feather-choice[data-bird=mesange]')!);
     expect(h.previews).toEqual(['mesange']);expect(host.querySelector('.flow-paint')).not.toBeNull();
@@ -118,7 +119,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     await click(ink);expect(ink.getAttribute('aria-pressed')).toBe('true');expect(host.querySelector('input[type=color]')).toBeNull();expect(host.querySelector('.feather-colours')).not.toBeNull();expect(host.querySelector('[aria-label="Étendue du vol Inkbird"]')).not.toBeNull();expect(host.querySelector('[aria-label="Opacité de l’encre"]')).not.toBeNull();
     const paper=host.querySelector<HTMLElement>('.bird-paper')!;await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
     expect(host.querySelector('.inkbird-flight')).not.toBeNull();expect(h.placed.at(-1)?.inkTool).toBe(true);expect(h.placed.at(-1)?.id).toBe('geai');expect(h.placed.at(-1)?.pigmentSlot).toBeUndefined();
-    const moves=h.moves;await act(async()=>{paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}));});expect(h.moves).toBe(moves);
+    const moves=h.moves;await act(async()=>{paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}));});expect(h.moves).toBeGreaterThan(moves);
     const stops=h.stops;await click(host.querySelector('.bird-pad')!);expect(h.stops).toBe(stops);expect(ink.getAttribute('aria-pressed')).toBe('false');await act(async()=>h.finish());expect(host.querySelector('.inkbird-flight')).toBeNull();
   });
   it('enters an immersive atelier, reopens tool settings and leaves with Escape without recreating the painting',async()=>{
@@ -169,7 +170,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   });
   it('keeps a feather tip at the keyboard drawing position and replaces all bird silhouettes',async()=>{
     expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Plume d’Haïkuarelle");
-    expect(host.querySelectorAll('.feather-choice .feather-glyph')).toHaveLength(8);
+    expect(host.querySelectorAll('.feather-choice .feather-glyph')).toHaveLength(12);
     expect(host.querySelector('.bird-glyph')).toBeNull();
     await paint();
     expect(host.querySelectorAll('.bird-pad .feather-glyph')).toHaveLength(1);

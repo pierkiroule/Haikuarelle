@@ -11,11 +11,11 @@ describe('Ink sound calligraphy',()=>{
   const run=()=>{const s=make();return Array.from({length:60},(_,i)=>s.step(f(i),i/30));};
   const frames=run();expect(frames).toEqual(run());const points=frames.flatMap(frame=>frame.ink.flatMap(s=>s.points));
   expect(new Set(points.map(p=>p.x)).size).toBeGreaterThan(30);expect(points.every(p=>Math.hypot(p.x-.5,(p.y-.5)*1980/1400)<.241)).toBe(true);
-  expect(frames.every(frame=>frame.segments.length<=6&&frame.ink.length<=2)).toBe(true);
+  expect(frames.every(frame=>frame.segments.length<=8&&frame.ink.length<=3)).toBe(true);
   expect(frames.flatMap(frame=>frame.segments).every(s=>s.slot===31&&!s.water&&s.waterAmount===0)).toBe(true);
  });
- it('ignores all pointer movement, continues flying in silence, but lifts the ink',()=>{
-  const a=make(),b=make();expect(a.step(f(0),0)).toEqual(b.step(f(0),0));a.move({x:.9,y:.1},.1,false);expect(a.step(f(1),.1)).toEqual(b.step(f(1),.1));
+ it('responds to guidance, continues flying in silence, but lifts the ink',()=>{
+  const a=make(),b=make();expect(a.step(f(0),0)).toEqual(b.step(f(0),0));a.move({x:.9,y:.1},.1,false);expect(a.step(f(1),.1).point).not.toEqual(b.step(f(1),.1).point);
   const before=a.flight!.point;expect(a.step({...f(2),active:false},.2).ink).toEqual([]);expect(a.flight!.point).not.toEqual(before);
   expect(a.step(undefined,1).ink).toEqual([]);expect(a.flight).toBeNull();expect(make(.5,0).step(f(0),0).ink).toEqual([]);
  });
@@ -23,6 +23,8 @@ describe('Ink sound calligraphy',()=>{
   const small=make(0),large=make(1);let sm=0,lg=0;
   for(let i=0;i<240;i++){const a=small.step(f(i),i/30),b=large.step(f(i),i/30);expect(a.ink[0].width).toBe(b.ink[0].width);sm=Math.max(sm,Math.abs(a.point!.x-.5));lg=Math.max(lg,Math.abs(b.point!.x-.5));}
   expect(lg).toBeGreaterThan(sm*3);
+  // At maximum extent a centred flight can reach the outer paper, not just a small disc.
+  expect(lg).toBeGreaterThan(.45);
   const corner=new SignatureInk(bird,7,{x:.025,y:.025},{palette:'plumages',format:'a4',wetness:.5,granulation:.8,complexity:.5},1);
   for(let i=0;i<240;i++){const p=corner.step(f(i),i/30).point!;expect(p.x).toBeGreaterThanOrEqual(.025);expect(p.y).toBeGreaterThanOrEqual(.025);expect(p.x).toBeLessThanOrEqual(.975);expect(p.y).toBeLessThanOrEqual(.975);}
  });
@@ -38,9 +40,32 @@ it('makes strong sonic pressure contrasts and uses only the selected bird plumag
  const frames=Array.from({length:180},(_,i)=>s.step({...f(i,i%20<5?1:.12),flux:i%20===0?.98:.1},i/30));
  const widths=frames.flatMap(fr=>fr.ink.slice(0,1).map(k=>k.width));expect(Math.max(...widths)).toBeGreaterThan(Math.min(...widths)*6);
  const allowed=BIRD_COLOURS.pie!.map(c=>c.hex.toLowerCase());for(const frame of frames)for(const k of frame.ink){const hex='#'+k.color!.map(c=>Math.round(c*255).toString(16).padStart(2,'0')).join('');expect(allowed).toContain(hex);}
- expect(frames.some(fr=>fr.feedback.splashes===5)).toBe(true);
+ expect(frames.some(fr=>fr.feedback.splashes>=6)).toBe(true);
 });
 
 it('does not report a pigment mark when the nib tears away on a falling transient',()=>{
  const s=make();const frame=s.step({...f(0,.08),flux:.5},0);expect(frame.ink).toEqual([]);expect(frame.segments).toEqual([]);expect(frame.point).toBeNull();expect(s.flight).not.toBeNull();
+});
+
+it('translates an attack into a faster flight and spectral changes into a different route',()=>{
+ const quiet=make(),storm=make(),dark=make();let quietDistance=0,stormDistance=0,priorQ={x:.5,y:.5},priorS={x:.5,y:.5};
+ for(let i=0;i<60;i++){
+  const q=quiet.step({...f(i,.12),flux:.02,treble:.1,bass:.7,brightness:.2},i/30),s=storm.step({...f(i,.95),flux:i%8===0?.98:.6,treble:.9,bass:.1,brightness:i%8<4?.9:.3},i/30);
+  quietDistance+=Math.hypot(q.point!.x-priorQ.x,q.point!.y-priorQ.y);stormDistance+=Math.hypot(s.point!.x-priorS.x,s.point!.y-priorS.y);priorQ=q.point!;priorS=s.point!;
+ }
+ expect(stormDistance).toBeGreaterThan(quietDistance*3);
+ const a=make().step({...f(0),brightness:.95,treble:.9,bass:.05},0),b=dark.step({...f(0),brightness:.05,treble:.05,bass:.9},0);expect(a.point).not.toEqual(b.point);
+ const burst=make().step({...f(0,1),flux:.98},0);expect(burst.ink.length).toBe(3);expect(burst.feedback.splashes).toBe(6);expect(burst.segments.length).toBeLessThanOrEqual(8);
+});
+
+it('releases attraction without stopping the song or changing sonic nib pressure',()=>{
+ const guided=make(1),free=make(1);
+ guided.move({x:.9,y:.8},0,false);guided.releaseGuide();
+ for(let i=0;i<30;i++)expect(guided.step(f(i),i/30)).toEqual(free.step(f(i),i/30));
+ const slow=make(1),fast=make(1);
+ for(const s of [slow,fast])s.move({x:.5,y:.5},0,false);
+ slow.move({x:.6,y:.5},1);fast.move({x:.6,y:.5},1/30);
+ const a=slow.step(f(0),0),b=fast.step(f(0),0);
+ expect(b.point!.x).toBeGreaterThan(a.point!.x);expect(b.ink[0].width).toBe(a.ink[0].width);
+ fast.releaseGuide();expect(fast.step(f(1),1/30).ink.length).toBeGreaterThan(0);
 });
