@@ -1,3 +1,4 @@
+import {MATERIAL_RESPONSE} from './materials';
 // GLSL for the paint studio.
 //
 // The sheet is a pigment field:
@@ -345,7 +346,7 @@ float cottonFbm(vec2 p,int octaves) {
  * (suminagashi), the water carries it, wet paper lets it bleed, brushes lay
  * it down or lift it, and everything slowly dries.
  */
-export const FIELD_STEP = HEAD + NOISE + COTTON_NOISE + SEGMENTS + /* glsl */ `
+export const FIELD_STEP = HEAD + NOISE + COTTON_NOISE + SEGMENTS + MATERIAL_RESPONSE + /* glsl */ `
 uniform sampler2D uField;
 uniform sampler2D uVel;
 uniform vec2 uSize;
@@ -470,6 +471,16 @@ vec2 breathDisplacement(vec2 position){
   fan=normalize(direction+side*lateral*mix(0.12,0.78,fringe));
   return fan*extension*envelope*pressure*uBreathShape.y;
 }
+float pigmentMobility(vec4 value){
+ if(uOptical<.5||value.x<.0001)return 1.;
+ vec2 share=clamp(value.zw/value.x,0.,1.);
+ vec3 absorption=vec3(max(0.,1.-share.x-share.y),share);
+ // Hue ordering in absorption space avoids exponential work per neighbour.
+ float blue=smoothstep(.01,.18,min(absorption.r,absorption.g)-absorption.b);
+ float yellow=smoothstep(.02,.20,absorption.b-max(absorption.r,absorption.g));
+ float neutral=1.-smoothstep(.015,.10,max(absorption.r,max(absorption.g,absorption.b))-min(absorption.r,min(absorption.g,absorption.b)));
+ return clamp(.86-.24*blue+.12*yellow-.28*neutral,.4,1.);
+}
 vec4 mobileWater(vec4 value){
   float fraction=smoothstep(0.0001,0.001,value.y);
   return vec4(value.x*fraction,value.y,value.zw*fraction);
@@ -555,6 +566,7 @@ void main() {
     vec3 exchange = vec3(0.0);
     // Adjacent cells and diagonal exchange keep ONE connected, isotropic film.
     // Integer long strides used to isolate parity grids and reveal square pixels.
+    float centerMobility=pigmentMobility(center);
     float centerAffinity = 1.0 + uMaterial * 2.6 *
       (1.0-smoothstep(0.025,0.23,center.y)) * smoothstep(0.006,0.035,center.y);
     for (int axis = 0; axis < 8; axis++) {
@@ -568,6 +580,9 @@ void main() {
       if (axis >= 4) moisture = min(moisture,min(fieldAt(src+vec2(offset.x,0)).y,fieldAt(src+vec2(0,offset.y)).y));
       float fibre = 0.65 + 0.35 * smoothstep(-0.5,0.5,materialNoise((src + offset * 0.5) * 0.23 + uSeedOff));
       float mobility = mix(smoothstep(0.006,0.22,moisture),smoothstep(0.003,0.06,moisture),uMaterial) * fibre;
+      // The same face coefficient applies to BOTH donors: colour-dependent
+      // settling never creates pigment or leaks through dry cuts.
+      mobility *= min(centerMobility,pigmentMobility(neighbor));
       // Symmetric moisture-dependent fixation, without sharpening or adding grain.
       mobility *= mix(1.0,smoothstep(0.018,0.18,moisture),uFixation);
       float neighborAffinity = 1.0 + uMaterial * 2.6 *
@@ -899,7 +914,7 @@ void main() {
  * procedural noise. Bare paper stays bare; edges are as soft as the generator's
  * (softer still while wet) and pool into darker rims as they dry.
  */
-export const RENDER = HEAD + MAPPING + HEIGHT + /* glsl */ `
+export const RENDER = HEAD + MAPPING + HEIGHT + MATERIAL_RESPONSE + /* glsl */ `
 uniform sampler2D uField;
 uniform sampler2D uPaperTex;
 uniform sampler2D uFlow0;
@@ -1000,6 +1015,8 @@ void main() {
   float paperCapture=uDetail>0.5?mix(0.06,1.0,1.0-smoothstep(0.006,0.10,wet)):1.0;
   vec2 other = pv > 1e-4 ? clamp(fv.zw / pv, 0.0, 1.0) : vec2(0.0);
   inkShare = vec3(max(1.0 - other.x - other.y, 0.0), other);
+  vec3 materialReflectance=clamp(pigment(1.15)/max(uPaper,vec3(.03)),vec3(.003),vec3(1.));
+  vec4 response=uOptical>.5?pigmentResponse(materialReflectance):vec4(1.,1.,.5,0.);
 
   float edgeN = paperT.r * 2.0 - 1.0;
   vec3 col = uPaper;
@@ -1097,7 +1114,7 @@ void main() {
       // the source. Absorption is an approximation, not a spectral simulation.
       float mineral = (paperT.g * 0.4 - 0.15) * 5.0;
       float mottling = 0.88 + 0.36 * rag + 0.22 * f1.y;
-      float concentration = max(0.0, pv * mottling * (1.0 + uTexture * paperCapture * mineral * (0.25 + 0.75 * (1.0 - clamp(pv, 0.0, 1.0)))));
+      float concentration = max(0.0, pv * mottling * (1.0 + uTexture * paperCapture * mineral * response.x * (0.25 + 0.75 * (1.0 - clamp(pv, 0.0, 1.0)))));
       // Sharpen transported pigment only as it dries. Reuse the four gradient
       // samples; bounded local contrast cannot add paint outside the field.
       float crisp = uDrySharpness * uDryingDetail * (1.0-smoothstep(0.015,0.28,wet));
@@ -1105,11 +1122,15 @@ void main() {
       concentration += crisp*0.28*clamp(localDetail,-0.12*pv,0.30*pv);
       // A narrow broken tide mark, derived from the actual concentration slope.
       float rim = exp(-abs(pv - 0.065) / 0.018) * dry * min(slope * 0.12, 0.85);
-      concentration += rim * (0.045 + 0.035 * edgeN) * uEdge;
+      float contourChoice=smoothstep(-.30,.35,f1.w+.35*f2.y);
+      concentration += rim * (0.045 + 0.035 * edgeN) * uEdge * (.25+.75*contourChoice)*(.65+.55*response.x);
       if (uDryingDetail > 0.0) {
         vec4 alpha = flowSample(uDryingTex, suv);
         float reveal = (1.0 - smoothstep(0.015, 0.30, wet)) * uDryingDetail;
-        float material = reveal * (0.45 + 0.55 * uTexture);
+        // Pockets and curvature select detail; broad quiet colour planes stay quiet.
+        float activity=.24+.76*smoothstep(.18,.85,alpha.a*.8+alpha.g*.7);
+        float quietCore=smoothstep(.18,.55,pv)*(1.-smoothstep(.5,2.,slope));
+        float material = reveal * (0.45 + 0.55 * uTexture) * activity * mix(1.,.65,quietCore);
         // A soft threshold selects coherent sediment pockets instead of laying
         // uniform noise over the wash. Threshold and sharpness are independent:
         // the first selects deposits, the second defines their edges/contrast.
@@ -1122,10 +1143,10 @@ void main() {
         // denser islands. These masks never draw on unpainted paper.
         concentration *= mix(1.0, 0.88 + 0.24 * alpha.r + 0.12 * alpha.a, material);
         concentration *= 1.0 - material * alpha.b * 0.16;
-        concentration += material * alpha.g * (0.012 + (0.065+0.055*crisp) * min(pv, 0.5));
+        concentration += material * alpha.g * (.4+.8*response.x) * (0.012 + (0.065+0.055*crisp) * min(pv, 0.5));
         // Full-resolution paper tooth catches the selected mineral deposits.
         float sedimentRelief = alpha.a * (0.48 + 0.28 * alpha.r);
-        concentration *= 1.0+crisp*uTexture*sedimentRelief*0.24*clamp(mineral,-0.7,0.9);
+        concentration *= 1.0+crisp*uTexture*response.x*sedimentRelief*0.24*clamp(mineral,-0.7,0.9);
         // Coffee-ring deposit follows the REAL outer pigment boundary. A
         // second, interrupted inner rim suggests receding water, not a contour
         // pasted around every procedural mask. Width is in paper units.
@@ -1139,13 +1160,24 @@ void main() {
         float inner = exp(-abs(inset - innerOffset) / (width * (0.45 + 0.65 * alpha.a)));
         inner *= smoothstep(0.35, 0.75, alpha.r) * smoothstep(1.0, 6.0, slope);
         float paleBand = exp(-abs(inset - innerOffset * 0.65) / max(width,0.0001));
-        concentration *= 1.0 - reveal * paleBand * alpha.b * 0.18;
-        concentration += reveal * uEdge * broken * ((0.19+0.11*crisp) * outer + (0.025+0.025*crisp) * inner);
+        concentration *= 1.0 - reveal * paleBand * alpha.b * (.12+.10*(1.-response.z));
+        // Sparse pale reserves in thin washes; no holes, new paint or uniform speckle.
+        float reserve=smoothstep(.79,.94,alpha.b)*(1.-smoothstep(.08,.42,pv));
+        concentration *= 1.-reveal*reserve*.30;
+        concentration += reveal * uEdge * broken * (.55+.45*response.x) * ((0.19+0.11*crisp) * outer + (0.025+0.025*crisp) * inner);
       }
-      vec3 reflectance = clamp(pigment(1.15) / max(uPaper, vec3(0.03)), vec3(0.003), vec3(1.0));
-      col = uPaper * pow(reflectance, vec3(concentration * 1.55));
-      float edgeAA = max(fwidth(pv) * mix(0.8,0.48,crisp), mix(0.0015,0.0007,crisp));
-      float boundary = smoothstep(0.028 - edgeAA, 0.028 + edgeAA, pv + edgeN * 0.006);
+      // A soft optical shoulder keeps stacked chromatic glazes luminous. Dark
+      // neutral pigment retains a deeper range without changing transported mass.
+      float shoulder=.7+.8*response.w;
+      float thickness=min(concentration,.7)+shoulder*(1.-exp(-max(0.,concentration-.7)/shoulder));
+      col = uPaper * pow(materialReflectance, vec3(thickness * 1.55));
+      // One continuous, anti-aliased contour: caught, soft and lost passages
+      // alternate on the same real front, rather than outlining every wash.
+      float edgeAA = max(fwidth(pv) * mix(.85,.52,crisp),mix(.0015,.0007,crisp));
+      float lost=(1.-contourChoice)*smoothstep(.015,.20,wet);
+      edgeAA*=1.+lost*2.5;
+      float threshold=.028+lost*.014;
+      float boundary = smoothstep(threshold-edgeAA,threshold+edgeAA,pv+edgeN*.004);
       col = mix(uPaper, col, boundary);
       pig = 1.0 - exp(-concentration * 4.0);
       col *= 1.0 - 0.035 * wet * pig;
@@ -1164,7 +1196,7 @@ void main() {
   col *= 1.0 - damp * 0.16 * (1.0 - pig * 0.82);
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.
-  col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * paperCapture * tooth * gran;
+  col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * response.x * paperCapture * tooth * gran;
   col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(1.0,paperCapture,pig) * mix(0.06,0.65,pig) * light;
   col *= 1.0 + 0.65 * uTexture * mix(1.0,paperCapture,pig) * grain;
 
