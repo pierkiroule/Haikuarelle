@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {soundAt,videoMime,videoSize,visualTime} from '../src/dance/score';
+import {soundAt,danceEnvelope,videoMime,videoSize,visualTime} from '../src/dance/score';
 import type {AudioAnalysis} from '../src/audio/types';
 import {flightPose,flightMatrix,flightMesh,pigmentFocus,surfacePosition,processState} from '../src/dance/flight';
 describe('single watercolor process dance',()=>{
@@ -35,6 +35,14 @@ describe('single watercolor process dance',()=>{
  it('keeps breaths between forward bird phrases throughout thirty seconds',()=>{
   const analysis={duration:1,frames:Array.from({length:30},()=>({energy:.8,bass:.4,treble:.3,flux:.2}))} as AudioAnalysis;
   expect(soundAt(analysis,.5).energy).toBe(.8);expect(soundAt(analysis,1.2).energy).toBe(0);expect(soundAt(analysis,1.5).energy).toBe(.8);expect(soundAt(analysis,30).energy).toBe(0);
+ });
+ it('softens isolated sonic attacks and remains deterministic for video export',()=>{
+  const analysis={duration:5,frames:Array.from({length:150},(_,i)=>({energy:i===60?1:0,bass:0,treble:i===60?1:0,flux:i===60?1:0}))} as AudioAnalysis;
+  expect(soundAt(analysis,2).energy).toBe(1);
+  const attack=danceEnvelope(analysis,2);expect(attack.energy).toBeGreaterThan(0);expect(attack.energy).toBeLessThan(.12);
+  expect(danceEnvelope(analysis,2.3).energy).toBeGreaterThan(0);expect(danceEnvelope(analysis,2.7).energy).toBe(0);
+  danceEnvelope(analysis,20);expect(danceEnvelope(analysis,2)).toEqual(attack);
+  expect(danceEnvelope(analysis,30).energy).toBe(0);
  });
  it('chooses H264 MP4 or an honest WebM fallback and adapts resolution',()=>{
   expect(videoMime(m=>m==='video/mp4;codecs=avc1.42E01E,mp4a.40.2')).toContain('avc1');expect(videoMime(m=>m==='video/mp4')).toBeNull();expect(videoMime(m=>m==='video/webm')).toBe('video/webm');expect(videoMime(()=>false)).toBeNull();expect(videoSize(true,8)).toEqual({width:720,height:1280});

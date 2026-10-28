@@ -4,7 +4,7 @@ import {APP_NAME,publicSiteAddress} from '../brand';
 import {loadPoetryFont,POETRY_FONT} from '../birds/FixedPoetry';
 import type {BirdSound} from '../birds/BirdAudioBank';
 import type {ArtworkPoetry} from '../birds/artworkPoetry';
-import {soundAt,visualTime} from './score';
+import {danceEnvelope,visualTime} from './score';
 const vertex=`#version 300 es
 precision highp float;
 in vec2 aUV;
@@ -16,7 +16,7 @@ out vec2 vUV;out vec3 vNormal;
 vec3 surface(vec2 uv){
  float u=uv.x,v=uv.y,h=2./max(1.,uRatio),w=h*uRatio;
  float wave=.30*sin(u*5.1+v*3.7-uTime*.65)+.13*cos(v*8.3-u*2.6+uTime*.43);
- float resonance=(.055*uEnergy+.045*uFlux)*sin(u*13.+v*9.-uTime*3.2)+.018*uTreble*sin(v*23.-uTime*4.);
+ float resonance=(.018*uEnergy+.004*uFlux)*sin(u*4.5+v*3.2-uTime*1.1)+.002*uTreble*sin(v*6.-uTime*.9);
  float lod=max(0.,log2(float(textureSize(uImage,0).x)/192.));
  float density=clamp(length(max(vec3(0.),uPaper-textureLod(uImage,uv,lod).rgb))*1.3,0.,1.);
  float x=(u-.5)*w,y=(.5-v)*h,twist=uFluidity*(.95*sin(v*4.7+uTime*.38)+.35*sin(uTime*.27));
@@ -96,7 +96,7 @@ export class DanceRenderer{
   const t=visualTime(time),state=processState(t),matrix=flightMatrix(t,w/h,this.focus,this.ratio),opacity=smooth(0,.65,t)*(1-smooth(29.3,30,t));
   gl.viewport(0,0,w,h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
   gl.useProgram(this.program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.uniform1i(this.uniform('uImage'),0);gl.uniform3fv(this.uniform('uPaper'),this.paper);gl.uniform1f(this.uniform('uRatio'),this.ratio);gl.uniform1f(this.uniform('uTime'),t);gl.uniform1f(this.uniform('uOpacity'),opacity);gl.uniformMatrix4fv(this.uniform('uViewProjection'),false,matrix);
-  const sound=soundAt(this.sound.analysis,t);for(const [key,value]of Object.entries(sound))gl.uniform1f(this.uniform('u'+key[0].toUpperCase()+key.slice(1)),value);
+  const sound=danceEnvelope(this.sound.analysis,t);for(const [key,value]of Object.entries(sound))gl.uniform1f(this.uniform('u'+key[0].toUpperCase()+key.slice(1)),value);
   for(const key of ['emergence','diffusion','drying','fluidity'] as const)gl.uniform1f(this.uniform('u'+key[0].toUpperCase()+key.slice(1)),state[key]);
   gl.bindVertexArray(this.vao);gl.drawElements(gl.TRIANGLES,this.count,gl.UNSIGNED_SHORT,0);
   const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#fafbf9');sky.addColorStop(.7,'#fff');sky.addColorStop(1,'#fafcfb');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);ctx.drawImage(this.surface,0,0);
