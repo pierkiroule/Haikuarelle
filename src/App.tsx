@@ -52,7 +52,8 @@ export function BirdStudio(){
   const [point,setPoint]=useState<Point|null>(null),[contact,setContact]=useState(false);
   const [brushPrefs,setBrushPrefs]=useState<Partial<Record<BirdId,{size:number;opacity:number}>>>({});
   const [colour,setColour]=useState<number|null>(null);
-  const [tool,setTool]=useState<'water'|'plume'|'breath'>('water');
+  const [inkColour,setInkColour]=useState('#282423'),[inkSize,setInkSize]=useState(.5),[inkOpacity,setInkOpacity]=useState(.9);
+  const [tool,setTool]=useState<'water'|'plume'|'breath'|'ink'>('water');
   const [poemPlaced,setPoemPlaced]=useState(false);
   const [paintingPlacement,setPaintingPlacement]=useState<PaintingPlacement>(ORIGINAL_PAINTING);
   const [selected,setSelected]=useState<BirdId>('rougegorge');
@@ -78,7 +79,7 @@ export function BirdStudio(){
   const pointer=useRef<number|null>(null),keyHeld=useRef(false),voiceNumber=useRef(0);
   const current=useRef({settings,seed,brush,opacity,marks,selected});current.current={settings,seed,brush,opacity,marks,selected};
   const screen=useLargeScreen(studio);
-  const canCreate=stage==='paint',canPaint=canCreate&&tool==='plume',canWet=canCreate&&tool==='water',canBlow=canCreate&&tool==='breath',canDraw=canCreate;
+  const canCreate=stage==='paint',canPaint=canCreate&&(tool==='plume'||tool==='ink'),canWet=canCreate&&tool==='water',canBlow=canCreate&&tool==='breath',canDraw=canCreate;
   const immersiveActive=(immersive||screen.viewing)&&!canvasOnly&&['paint','drying'].includes(stage);
   useEffect(()=>{if(!immersiveActive)return;const before=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=before;};},[immersiveActive]);
   const ritual=RITUAL.find(step=>step.stage===stage)!;
@@ -132,7 +133,7 @@ export function BirdStudio(){
     if(stroke.current.busy){stroke.current.move(p,false);setContact(true);return;}
     const snapshot=current.current;
     const eventSeed=(snapshot.seed^Math.imul(++voiceNumber.current,0x9e3779b1)^BIRDS.indexOf(selectedBird)*107)>>>0;
-    void stroke.current.place(paintingBird,p,eventSeed,snapshot.brush,snapshot.marks.length,snapshot.opacity);
+    void stroke.current.place(tool==='ink'?{...selectedBird,inkTool:true,color:inkColour,gesture:'Ink · calligraphie du chant'}:paintingBird,p,eventSeed,tool==='ink'?inkSize:snapshot.brush,snapshot.marks.length,tool==='ink'?inkOpacity:snapshot.opacity);
     setContact(true);
   };
   const prepare=(bird:Bird)=>{
@@ -145,7 +146,7 @@ export function BirdStudio(){
     keyHeld.current=false;setContact(false);waterGesture.current=false;waterSong.current?.release();
     engine.current?.holdWater(!engine.current.status.hasPigment&&!stroke.current?.busy&&!waterSong.current?.busy);
   };
-  const selectTool=(next:'water'|'plume'|'breath')=>{
+  const selectTool=(next:'water'|'plume'|'breath'|'ink')=>{
     if(!canCreate)return;
     engine.current?.liftBreath(true);
     if(canWet)finishWater();else{pointer.current=null;keyHeld.current=false;setContact(false);}
@@ -236,7 +237,7 @@ export function BirdStudio(){
   };
   const dryingEnd=(engine.current?.composition.duration??1)*30;
   const dryingProgress=Math.min(1,Math.max(0,(status.ticks-dryingStart)/Math.max(1,dryingEnd-dryingStart)));
-  const liveText=canBlow?'Glisse pour déplacer l’eau et ses pigments vers l’extérieur.':canWet?(playing?'Le chant plonge dans l’eau…':loading?'L’eau accueille le chant…':waterPlaced?(marks.length?'L’eau réveille les pigments. Le chant peut revenir.':'L’eau accueille le chant. Tu peux encore l’étendre.'):'Glisse sur le papier pour déposer l’eau claire.') :stage==='drying'?'L’eau se retire. Les contours se précisent…':stage==='finished'?'Ton œuvre a trouvé ses mots.':loading?'La plume prépare son chant…':playing?`${BIRDS.find(b=>b.id===playing)?.name} · le chant anime la matière`:status.paused&&status.hasPigment&&status.phase!=='complete'?'La diffusion est suspendue.':status.phase==='complete'&&marks.length?'L’eau reste disponible pour les prochains chants.':marks.length?'Les pigments se diffusent doucement. L’eau reste présente.':'Dépose un chant sur le papier sec ou dans l’eau.';
+  const liveText=tool==='ink'&&canCreate?'Le geste guide l’encre, le chant écrit ses pleins et ses déliés.':canBlow?'Glisse pour déplacer l’eau et ses pigments vers l’extérieur.':canWet?(playing?'Le chant plonge dans l’eau…':loading?'L’eau accueille le chant…':waterPlaced?(marks.length?'L’eau réveille les pigments. Le chant peut revenir.':'L’eau accueille le chant. Tu peux encore l’étendre.'):'Glisse sur le papier pour déposer l’eau claire.') :stage==='drying'?'L’eau se retire. Les contours se précisent…':stage==='finished'?'Ton œuvre a trouvé ses mots.':loading?'La plume prépare son chant…':playing?`${BIRDS.find(b=>b.id===playing)?.name} · le chant anime la matière`:status.paused&&status.hasPigment&&status.phase!=='complete'?'La diffusion est suspendue.':status.phase==='complete'&&marks.length?'L’eau reste disponible pour les prochains chants.':marks.length?'Les pigments se diffusent doucement. L’eau reste présente.':'Dépose un chant sur le papier sec ou dans l’eau.';
   const secondaryActions=stage!=='choose'?<details className="atelier-more" onClick={event=>{if(event.target instanceof Element&&event.target.closest('button'))event.currentTarget.open=false;}}><summary aria-label="Autres actions">⋯</summary><div className="bird-actions"><button onClick={screen.toggle} aria-label="Grand écran HD"><Glyph name="screen"/>Grand écran</button>{busy&&<button onClick={stop}><Glyph name="stop"/>Interrompre le chant</button>}<button onClick={fresh} disabled={exporting||busy}><Glyph name="refresh"/>Nouvelle œuvre</button>{stage==='paint'&&!marks.length&&!busy&&<button onClick={()=>{stop();setStage('choose');}}>Retrouver les plumes</button>}<button onClick={erase} disabled={exporting||busy}><Glyph name="erase"/>Effacer tout</button><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="https://github.com/pierkiroule/Haikuarelle" target="_blank" rel="noreferrer">Code & installation ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Licence du moteur ↗</a></div></details>:null;
   return <div ref={studio} className={`bird-studio water-studio direct-studio flow-${stage} ${immersiveActive?'is-immersive':''} ${canvasOnly?'canvas-only':''} ${contact?'is-painting':''} ${screen.viewing?'bird-viewing':''} ${screen.hud?'show-hud':''}`} onPointerMove={screen.viewing?screen.reveal:undefined} onPointerDown={screen.viewing?screen.reveal:undefined} style={{'--paper':palette.paper,'--art-ratio':sheet.width/sheet.height,'--sample-color':paintingBird.color} as React.CSSProperties}>
     <FeatherDrift/>
@@ -259,7 +260,7 @@ export function BirdStudio(){
           {poetry&&stage==='finished'&&<FixedPoetry ratio={sheet.width/sheet.height} title={poetry.title} verses={poetry.verses}/>}
           <span className="paper-signature" aria-hidden="true">•°○</span>
           {!marks.length&&!contact&&!error&&(!canWet||!waterPlaced)&&stage!=='drying'&&stage!=='finished'&&<div className="bird-paper-invitation">{canWet?<WaterDrop className="invitation-feather"/>:<FeatherGlyph bird={selectedBird} className="invitation-feather"/>}<span>{canBlow?'Un souffle, la matière s’étire.':canWet?(waterPlaced?'L’eau résonante est déposée.':'Déposer ici ou là l’eau résonante•°'):'Ton oiseau peut entrer.'}</span><small>{canBlow?'Glisse sur une zone humide pour entraîner ses pigments.':canWet?'Dessine des chemins d’eau, sans un bruit.':'Dépose ou glisse la plume. Le chant anime ta matière.'}</small></div>}
-          {point&&canPaint&&!error&&<div className={`brush-cursor feather-cursor ${contact?'resonating':''}`} aria-hidden="true" style={{left:`${point.x*100}%`,top:`${point.y*100}%`,'--feather-tilt':`${featherTilt}deg`} as React.CSSProperties}><span className="feather-hotspot"/><FeatherGlyph bird={paintingBird}/></div>}
+          {point&&canPaint&&!error&&<div className={`brush-cursor feather-cursor ${contact?'resonating':''}`} aria-hidden="true" style={{left:`${point.x*100}%`,top:`${point.y*100}%`,'--feather-tilt':`${featherTilt}deg`} as React.CSSProperties}><span className="feather-hotspot"/><FeatherGlyph bird={tool==='ink'?{...selectedBird,color:inkColour}:paintingBird}/></div>}
           {point&&canBlow&&!error&&<div className={`breath-cursor ${contact?'is-blowing':''}`} aria-hidden="true" style={{left:`${point.x*100}%`,top:`${point.y*100}%`,width:`${24+brush*64}px`,height:`${24+brush*64}px`,'--breath-angle':`${breathAngle}deg`} as React.CSSProperties}><span>≋→</span></div>}
           {point&&canWet&&!error&&<div className={`water-cursor ${contact?'is-wetting':''}`} aria-hidden="true" style={{left:`${point.x*100}%`,top:`${point.y*100}%`}}><WaterDrop/></div>}
           {error&&<div className="bird-gpu-error" role="alert"><span>•°</span><p>Le papier attend votre GPU.</p><small>{error.includes('WebGL')?'Activez l’accélération graphique dans un navigateur compatible WebGL2.':error}</small><button onClick={event=>{event.stopPropagation();stop();setWaterPlaced(false);setMarks([]);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setStage(padIds.length===1?'paint':'choose');setTool('water');setPoint(null);setColour(null);setStatus(idle);setError('');setRetry(r=>r+1);}}>Réessayer</button></div>}
@@ -270,7 +271,7 @@ export function BirdStudio(){
       <aside className="bird-instrument">
         <div className="bird-pad-board">
           {stage==='paint'&&<>
-          <CreationPalette immersive={immersiveActive} drawing={contact} bird={selectedBird} tool={tool} colour={colour} size={brush} opacity={opacity} waterSize={waterSize} waterAmount={waterAmount} canDry={!!marks.length&&!error&&!exporting&&!busy} onTool={next=>next==='plume'?choose(selectedBird):selectTool(next)} onColour={next=>{selectTool('plume');setColour(next);}} onSize={setBrush} onOpacity={setOpacity} onWaterSize={setWaterSize} onWaterAmount={setWaterAmount} onDry={finalize}/>
+          <CreationPalette immersive={immersiveActive} drawing={contact} bird={selectedBird} tool={tool} colour={colour} size={brush} opacity={opacity} inkColour={inkColour} inkSize={inkSize} inkOpacity={inkOpacity} onInkColour={setInkColour} onInkSize={setInkSize} onInkOpacity={setInkOpacity} waterSize={waterSize} waterAmount={waterAmount} canDry={!!marks.length&&!error&&!exporting&&!busy} onTool={next=>next==='plume'?choose(selectedBird):selectTool(next)} onColour={next=>{selectTool('plume');setColour(next);}} onSize={setBrush} onOpacity={setOpacity} onWaterSize={setWaterSize} onWaterAmount={setWaterAmount} onDry={finalize}/>
           <div className="bird-live" role="status" aria-live="polite"><span className={playing?'bird-live-dot active':'bird-live-dot'}/><span>{liveText}</span>{busy&&<button onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/></button>}{canPaint&&!busy&&status.hasPigment&&status.phase!=='complete'&&<button className="drying-pause" onClick={()=>status.paused?engine.current?.resume():engine.current?.pause()} aria-label={status.paused?'Reprendre la diffusion':'Mettre la diffusion en pause'}>{status.paused?'Reprendre':'Pause'}</button>}</div>
           </>}
           {stage==='drying'&&<DryingProgress progress={dryingProgress} onResume={continuePainting}/>}

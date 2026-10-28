@@ -5,7 +5,7 @@ import type {EngineSettings,Point,InkStroke} from '../engine/types';
 import type {AudioFrame} from '../audio/types';
 import type {Bird} from './catalog';
 import type {BrushFrame,BrushSegment} from './ResonantBrush';
-import {WetPaper,WET_FILM_THRESHOLD,type WetRegion} from './WetPaper';
+import {WetPaper,WET_FILM_THRESHOLD} from './WetPaper';
 import {planSplashes} from './splashes';
 
 
@@ -30,8 +30,6 @@ export class SoundStain {
   private axis:number;
   private reach:number;
   private delivered=0;
-  private region:WetRegion;
-  private regionCursor=0;
   private splashes:BrushSegment[]=[];
   private accents=0;
   private plumageAccents=0;
@@ -39,7 +37,7 @@ export class SoundStain {
   private gestures:{a:Point;b:Point}[]=[];
   readonly bloom:Point;
   constructor(readonly bird:Bird,readonly seed:number,readonly origin:Point,private settings:EngineSettings,
-    private water:WetPaper,readonly size=.55,readonly layer=0,placedAt=0,private audibleTimes:number[]=[],private opacity=1){
+    private water:WetPaper,readonly size=.55,readonly layer=0,placedAt=0,audibleTimes:number[]=[],private opacity=1){
     this.anchor={...origin};
     this.rng=createRng(seed^0x513ac9);
     this.inkRng=createRng(seed^0x14b3c1);
@@ -58,8 +56,8 @@ export class SoundStain {
     }
     this.reach=.08+.18*size;
     this.bloom=this.offset(origin,this.axis+1.3,.017+.02*size);
-    this.region=water.region(origin,placedAt,Math.max(12,(audibleTimes.length||60)*3.2),createRng(seed^0x753b1));
-    this.splashes=thinSource?[]:planSplashes(seed,bird.slot,water,this.region,placedAt,settings.format).map(s=>({...s,waterAmount:0,effect:'splash'}));
+    const region=water.region(origin,placedAt,Math.max(12,(audibleTimes.length||60)*3.2),createRng(seed^0x753b1));
+    this.splashes=thinSource?[]:planSplashes(seed,bird.slot,water,region,placedAt,settings.format).map(s=>({...s,waterAmount:0,effect:'splash'}));
   }
   /** Gesture changes the material source while the same full phrase plays. */
   move(point:Point,time:number,connect=true):void{
@@ -68,7 +66,6 @@ export class SoundStain {
     this.gestures.push({a:connect?{...this.anchor}:p,b:p});
     if(this.gestures.length>32)this.gestures.splice(0,this.gestures.length-32);
     this.anchor=p;this.started=false;this.fronts=[];this.splashes=[];
-    if(this.bird.id==='pie'){this.region=this.water.region(p,time,48,this.rng);this.regionCursor=0;}
   }
 
   private offset(p:Point,angle:number,distance:number):Point{
@@ -84,7 +81,7 @@ export class SoundStain {
     const palette=this.bird.plumage??[this.bird.slot],out:BrushSegment[]=[];
     for(const s of segments){
       if(out.length>=12)break;
-      // Dry deposits use the same plumage as wet washes; Pie stays black.
+      // Dry deposits use the same plumage as wet washes.
       const colourBody=palette.length>1&&s.slot===this.bird.slot&&s.effect!=='splash';
       out.push({...s,radius:colourBody?s.radius*.78:s.radius,load:s.load*clamp(this.opacity)});
       if(!colourBody)continue;
@@ -111,31 +108,17 @@ export class SoundStain {
     for(const gesture of this.gestures.splice(0,3)){
       const wet=this.water.at(gesture.b,time)>=WET_FILM_THRESHOLD;
       const radius=(.012+.045*this.size)*(.35+1.15*Math.pow(energy,.65));
-      if(this.bird.id==='pie')segments.push({...this.dot(gesture.b,.001+.006*this.rng(),(.3+.5*energy)),wetOnly:false,waterAmount:0,effect:'splash'});
-      else segments.push({...this.dot(gesture.b,radius,(.22+.62*energy)),a:gesture.a,wetOnly:wet&&this.water.at(gesture.b,time)<.04,waterAmount:0,effect:'wash',coupling:wet?.12:0});
+      segments.push({...this.dot(gesture.b,radius,(.22+.62*energy)),a:gesture.a,wetOnly:wet&&this.water.at(gesture.b,time)<.04,waterAmount:0,effect:'wash',coupling:wet?.12:0});
     }
     // Dry cotton catches a compact, broken deposit. It adds pigment, not an
     // invisible water pool. Nearby prepared water alone can mobilise its edges.
     if(this.water.at(this.anchor,time)<WET_FILM_THRESHOLD){
       const angle=this.rng()*Math.PI*2,r=(.008+.020*this.size)*Math.sqrt(this.rng());
       const p=this.offset(this.anchor,angle,r);
-      const radius=this.bird.id==='pie'?(.001+.005*this.rng()):(.013+.038*this.size)*(.30+1.05*Math.pow(energy,.7));
-      segments.push({...this.dot(p,radius,(.18+.40*energy)),wetOnly:false,waterAmount:0,effect:this.bird.id==='pie'?'splash':'wash'});
+      const radius=(.013+.038*this.size)*(.30+1.05*Math.pow(energy,.7));
+      segments.push({...this.dot(p,radius,(.18+.40*energy)),wetOnly:false,waterAmount:0,effect:'wash'});
       this.tick++;
       return {segments:this.colours(segments),ink,point:this.anchor,feedback:{speed:energy,radius,splashes:1}};
-    }
-    if(this.bird.id==='pie'){
-      // Black punctuation visits the wet basin without becoming a drawn line.
-      let progress=clamp((feature.time+1/30)/2);
-      if(this.audibleTimes.length){let n=0;while(n<this.audibleTimes.length&&this.audibleTimes[n]<=feature.time+1e-5)n++;progress=n/this.audibleTimes.length;}
-      const target=Math.ceil(this.region.sites.length*clamp(progress/.82));
-      while(this.regionCursor<target&&segments.length<8){
-        const p=this.region.sites[this.regionCursor++].point;
-        if(this.water.at(p,time)<WET_FILM_THRESHOLD)continue;
-        segments.push({...this.dot(p,(.0012+.006*Math.pow(this.rng(),2))*(.5+this.size),(.55+.35*energy)),effect:'splash'});
-      }
-      this.tick++;
-      return {segments:this.colours(segments),ink,point:segments.length?this.anchor:null,feedback:{speed:energy,radius:.025+.04*this.size,splashes:segments.length}};
     }
     const crow=this.bird.id==='corneille';
     const style=this.bird.signature,soft=style==='velvet',lace=style==='lace',twig=style==='twig',ripple=style==='ripple';

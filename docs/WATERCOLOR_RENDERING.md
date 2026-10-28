@@ -44,3 +44,18 @@ Après révélation du haïku, la peinture entière peut être réduite entre 25
 ### Mise en page simplifiée
 
 L’inspecteur ne contient que la taille de la peinture (25 à 100 %) et son recentrage à la taille originale. Glisser la peinture ou utiliser les flèches la déplace ; le titre, les trois vers et la signature restent fixes. La mise en page et l’export utilisent la même règle de centrage, de taille automatique et d’interligne. Le PNG attend le chargement de Patrick Hand avant de mesurer et dessiner le texte ; sa position ne dépend pas de la transformation de la peinture. Les formats A4, portrait allongé et paysage gardent le titre en haut et les vers en bas.
+
+
+### Pie : même fonctionnement aquarelle
+
+La Pie utilise les mêmes lavis reliés au geste, dépôts sur papier sec et fronts de diffusion humides que les autres oiseaux. Les branches spécifiques qui la limitaient à des gouttelettes sont retirées du dépôt sonore et du pinceau gestuel. Son mode multicolore associe noir, ardoise bleutée et gris perle ; ses huit couleurs de plumage restent sélectionnables séparément. Le chant réel, sa lecture intégrale, la réactivité à son énergie et l’arrêt des pigments dans les silences sont conservés.
+
+### Ink : signature calligraphique du chant
+
+Le bouton Ink se trouve immédiatement à droite de Souffle. Ses réglages indépendants sont couleur, taille et opacité, avec un noir chaud par défaut. Il joue le chant intégral de l’oiseau choisi, comme la plume ; relâcher le geste ou changer d’outil n’interrompt pas ce chant. Échap ou l’action explicite d’interruption l’arrêtent.
+
+`SignatureInk` produit un ruban guidé par la position de la main. Même immobile, une courte arabesque évolue autour du dépôt. L’énergie sonore lissée module la largeur ; la luminosité spectrale lissée infléchit la courbe (ce n’est pas une détection de hauteur fondamentale). Les silences lèvent la pointe et les déplacements discontinus ne sont pas reliés. Les attaques fortes peuvent laisser une ponctuation rare, espacée d’au moins 650 ms. Le coût reste borné à un trait et deux segments de pigments par tick.
+
+Le cœur net est dessiné par `FineInkRenderer`, avec une couleur sRGB immuable par trait. Un dépôt de pigments sans ajout d’eau lui donne des bords légèrement diffusables dans l’eau existante ; le cœur reste lisible. Le slot optique 31 est réservé aux nouveaux dépôts Ink : les pigments déjà déposés conservent leurs coefficients d’absorption, et changer de couleur ne recolore pas les anciennes traces. L’export et la lecture morphique utilisent le même rendu composé.
+
+Les tests couvrent le guidage, les silences, les limites de taille/coût, la dynamique, les couleurs et le routage du chant entier. `scripts/check-ink-calligraphy.py` vérifie deux couleurs successives, l’export signé et la palette sur bureau et petit mobile, avec champ GPU logiciel réduit ; l’export du contrôle est limité à 1024 pixels pour lire les traits fins.

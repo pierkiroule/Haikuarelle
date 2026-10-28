@@ -29,6 +29,8 @@ export interface Gesture {
   stop?: number;
 }
 export interface InkStroke {
+  /** Optional immutable sRGB colour for an explicit Ink stroke. */
+  color?:[number,number,number];
   points: Point[];
   start: number;
   duration: number;

@@ -68,13 +68,21 @@ describe('one sample dropped into water creates a finite stain',()=>{
       expect(run(0).flatMap(f=>f.segments)).toEqual([]);
     }
   });
-  it('keeps the Pie as separate black droplets throughout the wet basin',()=>{
+  it('gives the Pie the shared wet wash and connected gesture behavior',()=>{
     const stain=new SoundStain(BIRD_BRUSHES.find(b=>b.id==='pie')!,42,{x:.5,y:.5},settings,water(),.7);
     const frames=Array.from({length:60},(_,i)=>stain.step(note(i),i/30)),drops=frames.flatMap(f=>f.segments);
     expect(drops.length).toBeGreaterThan(20);
-    expect(drops.every(s=>s.effect==='splash'&&s.slot===0&&s.wetOnly&&s.a===s.b)).toBe(true);
+    expect(drops.some(s=>s.effect!=='splash'&&s.radius>.01)).toBe(true);expect(drops.some(s=>s.slot===7)).toBe(true);
+    stain.move({x:.6,y:.5},2);const moved=stain.step(note(61),61/30).segments;expect(moved.some(s=>s.a.x!==s.b.x&&s.effect==='wash')).toBe(true);
     expect(Math.max(...drops.map(s=>s.radius))).toBeGreaterThan(Math.min(...drops.map(s=>s.radius))*2);
-    expect(frames.every(f=>f.segments.length<=12&&f.ink.length===0)).toBe(true);
+    expect(frames.every(f=>f.segments.length<=12)).toBe(true);
+  });
+  it('lets the Pie paint on dry paper and respects an explicitly selected pigment and silence',()=>{
+    const pie={...BIRD_BRUSHES.find(b=>b.id==='pie')!,pigmentSlot:14};
+    const stain=new SoundStain(pie,42,{x:.5,y:.5},settings,new WetPaper('portrait'),.7);
+    const deposits=stain.step(note(0),0).segments;
+    expect(deposits.length).toBeGreaterThan(0);expect(deposits.every(s=>s.slot===14&&!s.wetOnly&&s.effect==='wash')).toBe(true);
+    expect(deposits.some(s=>s.radius>.01)).toBe(true);expect(stain.step(undefined,1).segments).toEqual([]);
   });
   it('keeps short deposits local rather than filling the entire pool',()=>{
     const w=new WetPaper('portrait');w.add({x:.15,y:.45},{x:.85,y:.45},.075,.45,0);

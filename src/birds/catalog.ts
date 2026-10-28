@@ -1,7 +1,7 @@
 export type BirdId='rougegorge'|'merle'|'rossignol'|'fauvette'|'hirondelle'|'geai'|'etourneau'|'chouette'|'hibou'|'corneille'|'mesange'|'bouvreuil'|'sittelle'|'picvert'|'pie';
-export interface Bird {pigmentSlot?:number;id:BirdId;name:string;latin:string;gesture:string;motif:'plume'|'trille'|'branche'|'voile';slot:number;angle:number;color:string;source:string;author:string;plumage?:number[];signature?:'lace'|'velvet'|'twig'|'ripple'}
+export interface Bird {inkTool?:boolean;pigmentSlot?:number;id:BirdId;name:string;latin:string;gesture:string;motif:'plume'|'trille'|'branche'|'voile';slot:number;angle:number;color:string;source:string;author:string;plumage?:number[];signature?:'lace'|'velvet'|'twig'|'ripple'}
 const base='https://bigsoundbank.com/';
-export const PIE:Bird={id:'pie',name:'Pie',latin:'Pica pica',gesture:'Noir · pluie de gouttelettes',motif:'trille',slot:0,angle:.2,color:'#252b2c',plumage:[0],source:'https://freesound.org/people/naturenotesuk/sounds/555096/',author:'naturenotesuk'};
+export const PIE:Bird={id:'pie',name:'Pie',latin:'Pica pica',gesture:'Noir · gris & reflets ardoise',motif:'trille',slot:0,angle:.2,color:'#252b2c',plumage:[0,7,6],source:'https://freesound.org/people/naturenotesuk/sounds/555096/',author:'naturenotesuk'};
 export const BIRDS:Bird[]=[
   {id:'rougegorge',name:'Rouge-gorge',latin:'Erithacus rubecula',gesture:'Une plume de lumière',motif:'plume',slot:1,angle:-.65,color:'#ae775a',source:base+'robin-4-s1670.html',author:'Joseph SARDIN'},
   {id:'merle',name:'Merle noir',latin:'Turdus merula',gesture:'Un lavis profond',motif:'voile',slot:0,angle:.28,color:'#5c747b',source:base+'common-blackbird-30-s3503.html',author:'Le tiroir du fond'},
