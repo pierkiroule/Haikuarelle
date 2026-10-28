@@ -23,7 +23,7 @@
     "original_sha256": "29880506ced818405c99b0cab1cb6857b7fda15e3b1a1defcf70c3f83bf8e263",
     "modifications": "Extrait ≤ 6 s, mono 44,1 kHz, normalisation de volume, fondus courts, MP3 128 kbit/s.",
     "sha256": "84d0a037e92b7cc762542b3064465165069a028e0c8b57093808b4519587378f",
-    "pad_active": false
+    "pad_active": true
   },
   {
     "id": "rossignol",
@@ -204,5 +204,23 @@
     "sha256": "d4f997983fe454bef0b8c7edceb106077e384bcd739a7ac47d21d6133ac6f6db",
     "pad_active": true,
     "modifications": "Copie publique d’un extrait du cri réel « Eurasian magpie calling » de naturenotesuk (Freesound 555096), distribuée par WilhelmSFX sous CC0. Extrait conservé entier, sans boucle, répétition ni changement de hauteur/vitesse. Conversion stéréo 48 kHz vers mono 44,1 kHz, gain fixe +5 dB, fondus 5/15 ms, MP3 128 kbit/s. Aucun son synthétique."
+  },
+  {
+    "id": "moineau",
+    "species": "Passer domesticus",
+    "recording_type": "field-recording",
+    "source": "https://commons.wikimedia.org/wiki/File:House_Sparrow_(Passer_domesticus)_call.wav",
+    "author": "7575u",
+    "license": "CC-BY-SA-4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "source_copy_url": "https://raw.githubusercontent.com/Demidius/european-birds/c2275e5b6047529494a70c5ab53450d980cd7194/assets/audio/house-sparrow.mp3",
+    "source_copy_metadata_url": "https://raw.githubusercontent.com/Demidius/european-birds/c2275e5b6047529494a70c5ab53450d980cd7194/media-manifest.json",
+    "original_sha256": "5f98f4e3ee95f47bf1aab13e742a22d24e847eab1305fb7d7df4a1faeb5988b0",
+    "sha256": "014ce4161f2b401b7525f642d2ac208f6e90ee9476f79ea2413df63b7c9cb06c",
+    "bytes": 97009,
+    "duration": 6.0,
+    "excerpt_start": 0,
+    "modifications": "Extrait des 6 premières secondes de la copie MP3, mono 44,1 kHz, normalisation -20 LUFS, fondus 15/30 ms, MP3 128 kbit/s. Pas de répétition ni de synthèse.",
+    "pad_active": true
   }
 ]

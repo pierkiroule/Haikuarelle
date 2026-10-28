@@ -1,6 +1,7 @@
 import type {BirdId} from './catalog';
 /** Original sensory openings, rooted in each bird's habitat and behaviour. */
 export const SENSORY_OPENINGS:Record<BirdId,readonly [string,string,string]>={
+ moineau:['Sous la tuile, la paille est chaude','Un pépiement dans la poussière','Le grain craque au bord du toit'],
  geai:['Un gland tiède au creux du bec','Sous le chêne, un cri de soie','La mousse embaume les glands'],
  mesange:['Au nid, la mousse est tiède','Deux griffes au parfum d’écorce','Un ventre de soleil frémit'],
  bouvreuil:['Un bourgeon fond sous le bec','Le verger siffle à voix douce','Une braise au creux des haies'],

@@ -6,6 +6,7 @@ interface BirdPoetics {titles:readonly string[];lines:readonly [readonly string[
  * Each position is a complete image, not a bird name pasted into a colour poem.
  */
 export const BIRD_POETICS:Record<BirdId,BirdPoetics>={
+ moineau:{titles:[],lines:[['Sous les tuiles du village','Un moineau au bord de la cour','Dans la poussière du chemin'],['Un grain roule sous le bec','La paille réchauffe les petits','Un pépiement rassemble la cour'],['Le toit garde un nid de paille','La haie accueille leur sommeil','La cour reprend ses voix']]},
   geai:{titles:['La mémoire des chênes','Les glands oubliés','Un bois en devenir'],lines:[
     ['Au pli de la chênaie','Un geai traverse les branches','Sous les feuilles du chêne'],
     ['Un gland dort dans la terre','Le geai enfouit son automne','Un cri déplie la lisière'],
@@ -70,6 +71,7 @@ export const BIRD_POETICS:Record<BirdId,BirdPoetics>={
 
 /** Titles keep the bird explicitly at the heart of the work. */
 const titleImages:Record<BirdId,readonly string[]>={
+ moineau:['La cour','Le toit','Le pépiement'],
  geai:['La mémoire','Le secret','La forêt'],mesange:['Le berceau','La danse','Le jardin'],
  bouvreuil:['Le sifflet','Le verger','La tendresse'],sittelle:['Le secret','La réserve','La descente'],
  picvert:['Le rire','La prairie','Le festin'],rougegorge:['La veille','Le royaume','Le refuge'],
@@ -79,7 +81,7 @@ const titleImages:Record<BirdId,readonly string[]>={
  etourneau:['La nuée','Le murmure','Le dortoir'],chouette:['La veille','Le refuge','La nuit'],
  hibou:['Le repos','Le silence','Le pré'],
 };
-const titleBird:Record<BirdId,string>={geai:'du geai',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',rougegorge:'du rouge-gorge',corneille:'de la corneille',pie:'de la pie',merle:'du merle noir',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou'};
+const titleBird:Record<BirdId,string>={moineau:'du moineau domestique',geai:'du geai',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',rougegorge:'du rouge-gorge',corneille:'de la corneille',pie:'de la pie',merle:'du merle noir',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou'};
 for(const id of Object.keys(BIRD_POETICS) as BirdId[])BIRD_POETICS[id].titles=titleImages[id].map(image=>`${image} ${titleBird[id]}`);
 
 /** A trio contributes one living image per verse, including unpainted choices.

@@ -100,7 +100,7 @@ export function morphicFamily(r:ArtworkReading):keyof typeof MORPHIC_LINES{
  return 'passage';
 }
 export const BIRD_TITLE_REFERENCE:Record<BirdId,string>={
- rougegorge:'du rouge-gorge',merle:'du merle',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',geai:'du geai',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou',corneille:'de la corneille',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',pie:'de la pie',
+ moineau:'du moineau domestique',rougegorge:'du rouge-gorge',merle:'du merle noir',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',geai:'du geai',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou',corneille:'de la corneille',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',pie:'de la pie',
 };
 export function makeResonantHaiku(marks:readonly BirdMark[],seed:number,reading:ArtworkReading,bird:BirdId):ArtworkPoetry|null{
  if(!marks.length||reading.coverage<=0)return null;

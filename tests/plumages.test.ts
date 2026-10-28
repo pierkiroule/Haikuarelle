@@ -44,7 +44,7 @@ describe('four plumage grammars',()=>{
 });
 
 describe('bird colours on wet and dry cotton',()=>{
-  const expected:Record<string,number[]>={corneille:[0],rougegorge:[1,6,0],geai:[2,8,0],mesange:[3,4,6],bouvreuil:[5,6,7],sittelle:[7,8,0],picvert:[9,4,10],pie:[0,7,6]};
+  const expected:Record<string,number[]>={corneille:[0],rougegorge:[1,6,0],geai:[2,8,0],mesange:[3,4,6],bouvreuil:[5,6,7],sittelle:[7,8,0],picvert:[9,4,10],pie:[0,7,6],merle:[0,6,14],moineau:[8,6,0]};
   for(const bird of BIRD_BRUSHES)for(const wet of [false,true])it(`${bird.name}: original plumage on ${wet?'wet':'dry'} paper and while dragging`,()=>{
     const water=new WetPaper('portrait',Infinity);
     if(wet)water.add({x:.15,y:.5},{x:.85,y:.5},.19,.45,0);

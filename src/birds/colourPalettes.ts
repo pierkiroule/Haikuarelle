@@ -2,6 +2,8 @@ import type {BirdId} from './catalog';
 export interface FeatherColour {name:string;hex:string}
 const palette=(entries:[string,string][]):FeatherColour[]=>entries.map(([name,hex])=>({name,hex}));
 export const BIRD_COLOURS:Partial<Record<BirdId,readonly FeatherColour[]>>={
+ merle:palette([['Noir velouté','#242526'],['Brun sombre','#55463B'],['Gris fumée','#747576'],['Jaune du bec','#E6B735'],['Orange doré','#D68B29'],['Brun clair','#A28A70']]),
+ moineau:palette([['Brun châtain','#966444'],['Beige sable','#C7AD83'],['Gris cendré','#98958D'],['Noir bavette','#292A28'],['Brun rayé','#66503B'],['Blanc crème','#EDE6D7']]),
  mesange:palette([['Bleu azur','#2461B6'],['Bleu nuit','#17375E'],['Bleu gris','#6C91B1'],['Jaune citron','#F2CF38'],['Vert olive','#77A94D'],['Blanc crème','#F5F0D9'],['Gris doux','#A9A9A0'],['Anthracite','#25282A']]),
  rougegorge:palette([['Orange roux','#D66A38'],['Fauve doré','#B89165'],['Brun olive','#777451'],['Brun sombre','#514438'],['Gris chaud','#A6A399'],['Blanc crème','#EEE7D5'],['Noir brun','#302B27']]),
  geai:palette([['Rose brun','#BD9283'],['Beige rosé','#D4B5A1'],['Brun chaud','#94705B'],['Bleu vif','#438FCB'],['Bleu sombre','#284E70'],['Gris perle','#ADAFAB'],['Blanc ivoire','#F1EEE4'],['Noir','#272829']]),

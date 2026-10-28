@@ -69,7 +69,7 @@ beforeEach(async()=>{
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.restoreAllMocks();vi.useRealTimers();});
 describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   it('reveals the touched feather’s haiku immediately with its song, without a confirmation',async()=>{
-    expect(host.querySelectorAll('.feather-choice')).toHaveLength(8);
+    expect(host.querySelectorAll('.feather-choice')).toHaveLength(10);
     expect(host.querySelector('.trio-start')).toBeNull();
     await click(host.querySelector('.feather-choice[data-bird=mesange]')!);
     expect(h.previews).toEqual(['mesange']);expect(host.querySelector('.flow-paint')).not.toBeNull();
@@ -169,7 +169,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   });
   it('keeps a feather tip at the keyboard drawing position and replaces all bird silhouettes',async()=>{
     expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Plume d’Haïkuarelle");
-    expect(host.querySelectorAll('.feather-choice .feather-glyph')).toHaveLength(8);
+    expect(host.querySelectorAll('.feather-choice .feather-glyph')).toHaveLength(10);
     expect(host.querySelector('.bird-glyph')).toBeNull();
     await paint();
     expect(host.querySelectorAll('.bird-pad .feather-glyph')).toHaveLength(1);
