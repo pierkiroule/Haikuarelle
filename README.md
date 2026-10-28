@@ -181,3 +181,7 @@ Les films à partir de 0,006 d’humidité participent aux chemins de peinture. 
 Le film final montre les captures réelles de la toile, du dépôt d’eau au séchage, en lecture uniquement en avant jusqu’au PNG final. Les images compressées restent locales et leur nombre est limité pour le mobile ; les longues créations sont davantage échantillonnées. Le chant est joué une fois, suivi de trois échos décroissants puis du silence. Voir [le film de création](docs/DANCE.md).
 
 Le parcours ne contient aucune guidance vocale. Seuls les chants des oiseaux et leurs résonances accompagnent la création. Le bouton « Annuler » (Ctrl/Cmd Z) restaure l’eau, les pigments et les tracés d’Inkbird avant le dernier geste. L’historique est limité selon la mémoire disponible, jusqu’à six gestes. Les gestes annulés sont également retirés du film.
+
+### Matière et contours
+
+Les familles de couleurs ont des réponses de dépôt et de granulation distinctes. Les contours alternent netteté et diffusion ; le séchage révèle des détails localisés, tandis que les glacis gardent davantage de lumière et que les aplats restent plus calmes. Voir [le modèle pictural et ses limites](docs/WATERCOLOR_MATERIALS.md).

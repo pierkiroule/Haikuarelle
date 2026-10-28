@@ -125,7 +125,10 @@ export class SoundStain {
 
     const width=soft?1.27:lace?.70:twig?.73:1;
     const opening=(1-resonance)*.7+resonance*(.14+Math.pow(energy,.72)*1.65);
-    const load=(.18+.72*Math.pow(energy,.75))*Math.max(.65,1-this.layer*.025);
+    // A phrase opens strongly, then breathes instead of repeatedly saturating
+    // its centre. Explicit hand paths remain fully responsive to the chant.
+    const breathing=.84+.16*Math.exp(-this.tick/65);
+    const load=(.18+.72*Math.pow(energy,.75))*Math.max(.65,1-this.layer*.025)*breathing;
     const freshAttack=attack>.48&&time-this.pulse>.12;
     if(!this.started){
       this.started=true;
