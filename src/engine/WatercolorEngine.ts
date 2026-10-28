@@ -34,6 +34,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   readonly quality:PaintingQuality;
   settings:EngineSettings;
   composition!:Composition;
+  private undoStates:{bytes:number;restore:()=>void;dispose:()=>void}[]=[];
   private fineInk:FineInkRenderer;
   private audio:AudioAnalysis|null=null;
   private readonly requireAudio:boolean;
@@ -109,9 +110,30 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition=frameComposition(score,this.settings.format);
     this.active=true;this.prepareSheet();this.emit();this.request();
   }
+  get undoDepth(){return this.undoStates.length;}
+  checkpointGesture():boolean{
+    if(this.destroyed||!this.performance)return false;
+    const gpu=this.paint.captureWetState();if(!gpu)return false;
+    const composition=structuredClone(this.composition),water=this.wetPaper.clone(),tick=this.tick,hasPigment=this.hasPigment;
+    this.undoStates.push({bytes:gpu.bytes,dispose:gpu.dispose,restore:()=>{
+      gpu.restore();this.tick=tick;this.hasPigment=hasPigment;this.wetPaper=water;this.composition=composition;
+      this.drying=false;this.active=true;this.queued=[];this.waterPending=[];this.waterLast=null;this.waterBlooms=[];
+      this.breath.reset();this.breathPending=null;this.breathTicks=0;this.breathReleased=false;this.breathMoved=false;
+      this.resonantWater=new ResonantWater(this.seed);this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;
+      this.fineInk.setStrokes(composition.ink??[],sheetFor(this.settings.format));this.paint.setLook(this.look());
+    }});
+    while(this.undoStates.length>6||this.undoStates.length>1&&this.undoStates.reduce((n,s)=>n+s.bytes,0)>32*1024*1024)this.undoStates.shift()!.dispose();
+    return true;
+  }
+  undoGesture():boolean{
+    const state=this.undoStates.pop();if(!state)return false;
+    this.pause();state.restore();state.dispose();this.accumulator=0;this.last=0;this.notifyAt=-1;this.paint.render(0);this.emit();return true;
+  }
+  private clearGestureHistory(){for(const state of this.undoStates)state.dispose();this.undoStates=[];}
   /** Discard the current painting and stop all physical ticks. */
   clear():void {
     if(this.destroyed)return;
+    this.clearGestureHistory();
     cancelAnimationFrame(this.raf);this.raf=0;this.active=false;this.paused=true;
     this.voice=null;this.brushVoice=null;this.stainVoice=null;this.waterVoice=null;
     this.breath.reset();this.breathPending=null;this.breathMoved=false;this.breathTicks=0;this.breathReleased=false;this.lastBreathSync=-Infinity;
@@ -476,7 +498,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   captureProcessFrame():{width:number;height:number;pixels:Uint8Array} {const mobile=typeof matchMedia!=='undefined'&&matchMedia('(pointer:coarse)').matches;return this.paint.capture((mobile?1600:1920)/Math.max(this.paint.viewW,this.paint.viewH),0,false);}
   capturePreview():{width:number;height:number;pixels:Uint8Array} {return this.paint.capture(1,0);}
   destroy():void {
-    this.destroyed=true;cancelAnimationFrame(this.raf);this.observer.disconnect();
+    this.clearGestureHistory();this.destroyed=true;cancelAnimationFrame(this.raf);this.observer.disconnect();
     this.paint.canvas.removeEventListener('webglcontextlost',this.contextLost);
     document.removeEventListener('visibilitychange',this.visibility);this.paint.afterRender=undefined;this.fineInk.destroy();this.paint.dispose();
   }

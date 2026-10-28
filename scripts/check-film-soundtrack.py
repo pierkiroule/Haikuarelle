@@ -1,6 +1,6 @@
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--no-proxy-server']);page=browser.new_page();page.goto('http://localhost:5173/vocaux/index.html')
+ browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--no-proxy-server']);page=browser.new_page();page.route('**/__qa_blank',lambda route:route.fulfill(status=200,content_type='text/html',body='<!doctype html>'));page.goto('http://localhost:5173/__qa_blank')
  print(page.evaluate('''async()=>{
  const {scheduleSoundtrack,echoPhrases}=await import('/src/dance/soundtrack.ts');const context=new OfflineAudioContext(2,48000*30,48000),response=await fetch('/birds/mesange.mp3'),buffer=await context.decodeAudioData(await response.arrayBuffer());
  const phrases=echoPhrases(buffer.duration);scheduleSoundtrack(context,buffer,context.destination);const rendered=await context.startRendering(),pcm=rendered.getChannelData(0);

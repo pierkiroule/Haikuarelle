@@ -315,6 +315,14 @@ export class PaintEngine {
 
   // ------------------------------------------------------------- history
 
+  /** Lossless live gesture state: unlike legacy history, retain the water channel. */
+  captureWetState(){
+    if(!this.ready)return null;
+    const snapshot=this.makeTarget(this.fieldW,this.fieldH,this.rgba,false);
+    this.copyTarget(this.field[0],snapshot);let disposed=false;
+    return {bytes:this.fieldW*this.fieldH*8,restore:()=>{if(disposed)return;this.copyTarget(snapshot,this.field[0]);this.stopFlow();this.settleLeft=0;this.wetUntil=0;},dispose:()=>{if(!disposed){disposed=true;this.deleteTarget(snapshot);}}};
+  }
+
   /** Remembers the sheet as it is now; call when a gesture starts. */
   checkpoint(): void {
     if (!this.ready) return;

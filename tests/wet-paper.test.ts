@@ -70,3 +70,9 @@ it('keeps thin connected water roots reachable while excluding a nearby dry rese
  expect(region.sites.some(s=>s.point.x>.72&&s.point.y<.56)).toBe(true);
  expect(region.sites.every(s=>s.point.y<.61&&paper.at(s.point,0)>=WET_FILM_THRESHOLD)).toBe(true);
 });
+it('clones water guides without sharing their mutable moisture history',()=>{
+ const water=new WetPaper('a4',Infinity);water.add({x:.3,y:.4},{x:.4,y:.4},.08,.8,0);
+ const copy=water.clone(),before=copy.at({x:.35,y:.4},10);water.add({x:.8,y:.8},{x:.8,y:.8},.1,1,10);
+ expect(copy.at({x:.35,y:.4},10)).toBe(before);expect(copy.at({x:.8,y:.8},10)).toBe(0);
+ copy.retime(10,.1);expect(water.at({x:.35,y:.4},100)).toBeGreaterThan(.7);
+});

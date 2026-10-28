@@ -10,7 +10,7 @@ with sync_playwright() as pw:
  if os.getenv('HAIKUARELLE_DANCE_DESKTOP'):cases.insert(0,('rossignol','rossignol philomèle',1200,1000))
  for bird,name,width,height in cases:
   page=browser.new_page(viewport={'width':width,'height':height},is_mobile=width<700,has_touch=width<700,reduced_motion='reduce',accept_downloads=True);page.set_default_timeout(120000);errors=[];modules=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('request',lambda r:modules.append(r.url) if '/src/engine/WatercolorEngine.ts' in r.url else None)
-  page.add_init_script('''localStorage.setItem('haikuarelle-voice','off');for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(192,get.call(this,p)):get.call(this,p)}}''')
+  page.add_init_script('''for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(192,get.call(this,p)):get.call(this,p)}}''')
   print('opening',width,flush=True)
   page.goto(os.getenv('HAIKUARELLE_URL','http://127.0.0.1:5173/'),wait_until='domcontentloaded')
   page.locator('.feather-choice').first.wait_for();assert page.locator('.feather-choice').count()==12;print('loaded',width,flush=True)

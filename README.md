@@ -176,8 +176,8 @@ Les films à partir de 0,006 d’humidité participent aux chemins de peinture. 
 
 `scripts/check-water-roots.py` vérifie le scénario complet : eau claire, souffle, puis dépôt sonore local. Dans la scène contrôlée, la surface humide augmente d’environ 67 % et l’épaisseur moyenne diminue d’environ 40 % à volume pratiquement constant. La peinture colore un filament nouvellement étiré sans changer l’eau ni toucher la flaque séparée ; ces chiffres décrivent cette scène, pas tous les gestes.
 
-### Film de création et murmures poétiques
+### Film de création et annulation
 
 Le film final montre les captures réelles de la toile, du dépôt d’eau au séchage, en lecture uniquement en avant jusqu’au PNG final. Les images compressées restent locales et leur nombre est limité pour le mobile ; les longues créations sont davantage échantillonnées. Le chant est joué une fois, suivi de trois échos décroissants puis du silence. Voir [le film de création](docs/DANCE.md).
 
-La guidance vocale optionnelle accompagne les dix moments du parcours, avec file séquentielle, fondus, atténuation puis remontée progressive du chant et bouton Voix. Elle attend une interaction et n'interrompt pas le dessin. Les dix MP3 originaux sont intégrés dans [`public/vocaux/`](public/vocaux/README.md), de `Vocal00.mp3` à `Vocal09.mp3`. Les fichiers absents sont ignorés sans bloquer l'atelier.
+Le parcours ne contient aucune guidance vocale. Seuls les chants des oiseaux et leurs résonances accompagnent la création. Le bouton « Annuler » (Ctrl/Cmd Z) restaure l’eau, les pigments et les tracés d’Inkbird avant le dernier geste. L’historique est limité selon la mémoire disponible, jusqu’à six gestes. Les gestes annulés sont également retirés du film.

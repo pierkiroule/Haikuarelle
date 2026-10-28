@@ -20,3 +20,6 @@
 .inkbird-flight{position:absolute;z-index:6;width:5px;height:5px;border-radius:50%;background:currentColor;pointer-events:none;transform:translate(-50%,-50%)}.inkbird-flight[hidden]{display:none}
 
 .inkbird-attraction{position:absolute;z-index:6;width:44px;height:44px;border-radius:50%;border:1px solid #729b8950;background:radial-gradient(circle,#729b8918,transparent 70%);transform:translate(-50%,-50%);pointer-events:none}
+/* Undo stays reachable without squeezing the pigment tools on compact screens. */
+.creation-palette.accessible-palette .undo-pad{position:absolute;right:8px;top:-52px;width:44px;height:44px;min-height:44px;background:#f7f4eced;border:1px solid #bec9b4;box-shadow:0 2px 12px #39442c12}
+.creation-palette .undo-pad:disabled{opacity:.35;cursor:default}

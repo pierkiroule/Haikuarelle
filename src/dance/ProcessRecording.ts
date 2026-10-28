@@ -17,6 +17,7 @@ export class ProcessRecording {
  private canvas:HTMLCanvasElement|null=null;
  constructor(private unavailable:()=>void=()=>{}){}
  reset(){this.generation++;this.frames=[];this.interval=80;this.last=-Infinity;this.failed=false;}
+ rewind(time:number){this.generation++;this.frames=this.frames.filter(f=>f.time<time);this.last=this.frames.at(-1)?.time??-Infinity;this.failed=false;}
  get available(){return this.frames.length>1;}
  async capture(read:()=>{width:number;height:number;pixels:Uint8Array},time:number,force=false){
   if(this.failed)return;

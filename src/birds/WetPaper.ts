@@ -23,6 +23,11 @@ export class WetPaper {
     const sheet=sheetFor(format),unit=Math.min(sheet.width,sheet.height);
     this.sx=sheet.width/unit;this.sy=sheet.height/unit;
   }
+  clone():WetPaper{
+    const copy=new WetPaper('portrait',this.tau);copy.sx=this.sx;copy.sy=this.sy;
+    copy.strokes=this.strokes.map(s=>({...s,a:{...s.a},b:{...s.b}}));
+    copy.raster=this.raster?{...this.raster,water:this.raster.water.slice()}:null;return copy;
+  }
   replaceMoisture(snapshot:{width:number;height:number;water:Float32Array},time:number):void{
     if(snapshot.width<1||snapshot.height<1||snapshot.water.length!==snapshot.width*snapshot.height)return;
     this.raster={...snapshot,water:snapshot.water.slice(),time};this.strokes=[];

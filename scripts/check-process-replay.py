@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--no-proxy-server']);page=b.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
- page.goto('http://localhost:5173/vocaux/index.html')
+ page.route('**/__qa_blank',lambda route:route.fulfill(status=200,content_type='text/html',body='<!doctype html>'));page.goto('http://localhost:5173/__qa_blank')
  print(page.evaluate('''async()=>{
  const {DanceRenderer}=await import('/src/dance/renderer.ts');const source=document.createElement('canvas');source.width=720;source.height=1018;const c=source.getContext('2d'),frames=[];
  for(let i=0;i<9;i++){c.fillStyle='#f7f4ec';c.fillRect(0,0,720,1018);for(let j=0;j<i;j++){c.fillStyle=['#35788c','#c5b140','#a95a46'][j%3];c.beginPath();c.arc(140+(j%3)*180,220+Math.floor(j/3)*220,65,0,Math.PI*2);c.fill();}frames.push({time:i*250,image:await new Promise(r=>source.toBlob(r,'image/jpeg',.9))});}

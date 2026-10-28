@@ -2,7 +2,7 @@ from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--no-proxy-server','--use-angle=swiftshader','--enable-unsafe-swiftshader']);page=b.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.add_init_script('''for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(256,get.call(this,p)):get.call(this,p)}}''')
- page.goto('http://localhost:5173/vocaux/index.html')
+ page.route('**/__qa_blank',lambda route:route.fulfill(status=200,content_type='text/html',body='<!doctype html>'));page.goto('http://localhost:5173/__qa_blank')
  print(page.evaluate('''async()=>{
  const {HaikuarelleEngine}=await import('/src/engine/WatercolorEngine.ts');const canvas=document.createElement('canvas');canvas.style.cssText='width:180px;height:254px';document.body.append(canvas);
  const engine=new HaikuarelleEngine(canvas,{palette:'plumages',format:'a4',granulation:.84,wetness:.57,complexity:.52,ink:.2,resonance:.96,sharpness:.8,dryingThreshold:.42},undefined,e=>{throw Error(e)},{requireAudio:true});engine.beginSignature(7);engine.pause();

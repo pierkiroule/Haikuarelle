@@ -90,7 +90,7 @@ it('immerses the water song with a lowpass and fades in and out without affectin
  expect(filter.frequency.exponentialRampToValueAtTime).toHaveBeenLastCalledWith(350,expect.closeTo(.9));
  clock=.6;expect(level()).toBeGreaterThan(0);expect(level()).toBeLessThan(1);clock=.99;expect(level()).toBe(0);
  source.onended!();expect(ended).toHaveBeenCalledOnce();expect(filter.disconnect).toHaveBeenCalled();
- await bank.play('mesange',vi.fn(),vi.fn());expect(gains[2].gain.value).toBe(.72);expect(source.connect).toHaveBeenLastCalledWith(gains[2]);
+ await bank.play('mesange',vi.fn(),vi.fn());expect(gains[1].gain.value).toBe(.72);expect(source.connect).toHaveBeenLastCalledWith(gains[1]);
 });
 
 it('finishes an immersed release before the original sample ends, avoiding a late click',async()=>{

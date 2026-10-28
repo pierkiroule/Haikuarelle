@@ -47,3 +47,8 @@ it('reports capture failure once while allowing the painting flow to continue',a
  const error=vi.fn(),recorder=new ProcessRecording(error),read=()=>{throw Error('GPU unavailable');};
  await recorder.capture(read,0);await recorder.capture(read,300);expect(error).toHaveBeenCalledOnce();expect(await recorder.snapshot()).toEqual([]);
 });
+it('removes cancelled gestures from the recorded film and captures the restored state',async()=>{
+ fakeCanvas();const recorder=new ProcessRecording(),read=()=>({width:1,height:1,pixels:new Uint8Array(4)});
+ await recorder.capture(read,0,true);await recorder.capture(read,1000,true);await recorder.capture(read,2000,true);
+ recorder.rewind(1000);await recorder.capture(read,1000,true);expect((await recorder.snapshot()).map(f=>f.time)).toEqual([0,1000]);
+});

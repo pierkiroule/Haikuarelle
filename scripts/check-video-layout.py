@@ -4,7 +4,7 @@ with sync_playwright() as p:
  browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--no-proxy-server'])
  for width,height in [(320,568),(390,844),(844,390)]:
   page=browser.new_page(viewport={'width':width,'height':height})
-  page.goto('http://localhost:5173/vocaux/index.html')
+  page.route('**/__qa_blank',lambda route:route.fulfill(status=200,content_type='text/html',body='<!doctype html>'));page.goto('http://localhost:5173/__qa_blank')
   result=page.evaluate('''async()=>{
    await import('/src/dance/dance.css');const {DanceRenderer}=await import('/src/dance/renderer.ts');
    document.body.innerHTML='<dialog class="flight-dialog"><header><h2>La naissance de mon haïkuarelle</h2><button>×</button></header><canvas class="flight-canvas" width="720" height="1280"></canvas><div class="flight-controls"><span class="flight-status">La création en avant · puis en arrière</span><button>Suspendre</button><button>Garder le film · 30 s</button></div></dialog>';
