@@ -24,22 +24,23 @@ with sync_playwright() as pw:
   print('painting',width,flush=True)
   paper.focus();page.keyboard.press('Space');page.get_by_role('button',name='Choisir Inkbird',exact=True).click()
   assert page.locator('.breath-pad').evaluate("e=>e.nextElementSibling.classList.contains('ink-pad')")
-  page.get_by_label('Couleur de l’encre',exact=True).fill('#82374a');page.get_by_role('slider',name='Étendue du vol Inkbird',exact=True).fill('75');page.get_by_role('slider',name='Opacité de l’encre',exact=True).fill('90')
+  page.get_by_role('button',name='Plume Bleu azur',exact=True).click();page.get_by_role('slider',name='Étendue du vol Inkbird',exact=True).fill('75');page.get_by_role('slider',name='Opacité de l’encre',exact=True).fill('90')
   toolbar=page.locator('.palette-toolbar').bounding_box();assert toolbar['x']>=0 and toolbar['x']+toolbar['width']<=width
   paper.focus();page.keyboard.press('Space')
   page.wait_for_function('!!window.__p?.status.hasPigment');print('pigment ready',width,flush=True)
   page.wait_for_function('window.__p.composition.ink.length>3')
-  assert page.locator('.inkbird-flight').is_visible()
+  assert page.locator('.inkbird-flight').is_visible();assert page.locator('.inkbird-flight svg,input[type=color]').count()==0
+  assert page.locator('.inkbird-flight').evaluate('e=>getComputedStyle(e).width')=='5px'
   page.screenshot(path=f'/tmp/inkbird-flight-{width}.png')
-  assert page.evaluate('()=>window.__p.composition.ink.some(s=>s.color?.[0]===130/255)')
+  assert page.evaluate('()=>window.__p.composition.ink.some(s=>s.color?.[0]===36/255)')
   page.wait_for_function('!window.__p.stainVoice')
   page.keyboard.press('Escape')
   toolbar=page.locator('.palette-toolbar').bounding_box();assert toolbar['x']>=0 and toolbar['x']+toolbar['width']<=width,toolbar
-  if not page.get_by_label('Couleur de l’encre',exact=True).is_visible():page.get_by_role('button',name='Déployer la palette',exact=True).click()
-  page.get_by_label('Couleur de l’encre',exact=True).fill('#224488')
+  if not page.get_by_role('button',name='Plume Jaune citron',exact=True).is_visible():page.get_by_role('button',name='Déployer la palette',exact=True).click()
+  page.get_by_role('button',name='Plume Jaune citron',exact=True).click();assert page.get_by_role('button',name='Choisir Inkbird',exact=True).get_attribute('aria-pressed')=='true'
   box=paper.bounding_box();paper.click(position={'x':box['width']*.7,'y':box['height']*.55})
-  page.wait_for_function('window.__p.composition.ink.some(s=>s.color?.[0]===34/255)')
-  assert page.evaluate('()=>window.__p.composition.ink.some(s=>s.color?.[0]===130/255)')
+  page.wait_for_function('window.__p.composition.ink.some(s=>s.color?.[0]===242/255)')
+  assert page.evaluate('()=>window.__p.composition.ink.some(s=>s.color?.[0]===36/255)')
   page.wait_for_function('!window.__p.stainVoice');page.keyboard.press('Escape')
   page.get_by_role('button',name='Laisser sécher',exact=False).wait_for(state='visible');page.wait_for_function('!document.querySelector(".finalize-art").disabled')
   page.get_by_role('button',name='Laisser sécher',exact=False).click();page.evaluate('()=>window.__p.pause()')

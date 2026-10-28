@@ -115,9 +115,9 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
   });
   it('places Ink directly after Souffle and uses the current bird song with independent ink settings',async()=>{
     await encounter();const breath=button('Choisir le souffle du vivant'),ink=button('Choisir Inkbird');expect(breath.nextElementSibling).toBe(ink);
-    await click(ink);expect(ink.getAttribute('aria-pressed')).toBe('true');expect(host.querySelector('[aria-label="Couleur de l’encre"]')).not.toBeNull();expect(host.querySelector('[aria-label="Étendue du vol Inkbird"]')).not.toBeNull();expect(host.querySelector('[aria-label="Opacité de l’encre"]')).not.toBeNull();
+    await click(ink);expect(ink.getAttribute('aria-pressed')).toBe('true');expect(host.querySelector('input[type=color]')).toBeNull();expect(host.querySelector('.feather-colours')).not.toBeNull();expect(host.querySelector('[aria-label="Étendue du vol Inkbird"]')).not.toBeNull();expect(host.querySelector('[aria-label="Opacité de l’encre"]')).not.toBeNull();
     const paper=host.querySelector<HTMLElement>('.bird-paper')!;await act(async()=>paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true})));await act(async()=>paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true})));
-    expect(host.querySelector('.inkbird-flight')).not.toBeNull();expect(h.placed.at(-1)?.inkTool).toBe(true);expect(h.placed.at(-1)?.id).toBe('geai');expect(h.placed.at(-1)?.color).toBe('#282423');
+    expect(host.querySelector('.inkbird-flight')).not.toBeNull();expect(h.placed.at(-1)?.inkTool).toBe(true);expect(h.placed.at(-1)?.id).toBe('geai');expect(h.placed.at(-1)?.pigmentSlot).toBeUndefined();
     const moves=h.moves;await act(async()=>{paper.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));paper.dispatchEvent(new KeyboardEvent('keyup',{key:' ',bubbles:true}));});expect(h.moves).toBe(moves);
     const stops=h.stops;await click(host.querySelector('.bird-pad')!);expect(h.stops).toBe(stops);expect(ink.getAttribute('aria-pressed')).toBe('false');await act(async()=>h.finish());expect(host.querySelector('.inkbird-flight')).toBeNull();
   });

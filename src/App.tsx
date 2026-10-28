@@ -53,7 +53,7 @@ export function BirdStudio(){
   const [point,setPoint]=useState<Point|null>(null),[contact,setContact]=useState(false);
   const [brushPrefs,setBrushPrefs]=useState<Partial<Record<BirdId,{size:number;opacity:number}>>>({});
   const [colour,setColour]=useState<number|null>(null);
-  const [inkColour,setInkColour]=useState('#282423'),[inkSize,setInkSize]=useState(.5),[inkOpacity,setInkOpacity]=useState(.9);
+  const [inkSize,setInkSize]=useState(.5),[inkOpacity,setInkOpacity]=useState(.9);
   const [tool,setTool]=useState<'water'|'plume'|'breath'|'ink'>('water');
   const [poemPlaced,setPoemPlaced]=useState(false);
   const [paintingPlacement,setPaintingPlacement]=useState<PaintingPlacement>(ORIGINAL_PAINTING);
@@ -134,7 +134,7 @@ export function BirdStudio(){
     if(stroke.current.busy){if(tool!=='ink')stroke.current.move(p,false);setContact(true);return;}
     const snapshot=current.current;
     const eventSeed=(snapshot.seed^Math.imul(++voiceNumber.current,0x9e3779b1)^BIRDS.indexOf(selectedBird)*107)>>>0;
-    void stroke.current.place(tool==='ink'?{...selectedBird,inkTool:true,color:inkColour,gesture:'Inkbird · danse du chant'}:paintingBird,p,eventSeed,tool==='ink'?inkSize:snapshot.brush,snapshot.marks.length,tool==='ink'?inkOpacity:snapshot.opacity);
+    void stroke.current.place(tool==='ink'?{...paintingBird,inkTool:true,gesture:'Inkbird · danse du chant'}:paintingBird,p,eventSeed,tool==='ink'?inkSize:snapshot.brush,snapshot.marks.length,tool==='ink'?inkOpacity:snapshot.opacity);
     setContact(true);
   };
   const prepare=(bird:Bird)=>{
@@ -273,7 +273,7 @@ export function BirdStudio(){
       <aside className="bird-instrument">
         <div className="bird-pad-board">
           {stage==='paint'&&<>
-          <CreationPalette immersive={immersiveActive} drawing={contact} bird={selectedBird} tool={tool} colour={colour} size={brush} opacity={opacity} inkColour={inkColour} inkSize={inkSize} inkOpacity={inkOpacity} onInkColour={setInkColour} onInkSize={setInkSize} onInkOpacity={setInkOpacity} waterSize={waterSize} waterAmount={waterAmount} canDry={!!marks.length&&!error&&!exporting&&!busy} onTool={next=>next==='plume'?choose(selectedBird):selectTool(next)} onColour={next=>{selectTool('plume');setColour(next);}} onSize={setBrush} onOpacity={setOpacity} onWaterSize={setWaterSize} onWaterAmount={setWaterAmount} onDry={finalize}/>
+          <CreationPalette immersive={immersiveActive} drawing={contact} bird={selectedBird} tool={tool} colour={colour} size={brush} opacity={opacity} inkSize={inkSize} inkOpacity={inkOpacity} onInkSize={setInkSize} onInkOpacity={setInkOpacity} waterSize={waterSize} waterAmount={waterAmount} canDry={!!marks.length&&!error&&!exporting&&!busy} onTool={next=>next==='plume'?choose(selectedBird):selectTool(next)} onColour={next=>{if(tool!=='ink')selectTool('plume');setColour(next);}} onSize={setBrush} onOpacity={setOpacity} onWaterSize={setWaterSize} onWaterAmount={setWaterAmount} onDry={finalize}/>
           <div className="bird-live" role="status" aria-live="polite"><span className={playing?'bird-live-dot active':'bird-live-dot'}/><span>{liveText}</span>{busy&&<button onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/></button>}{canPaint&&!busy&&status.hasPigment&&status.phase!=='complete'&&<button className="drying-pause" onClick={()=>status.paused?engine.current?.resume():engine.current?.pause()} aria-label={status.paused?'Reprendre la diffusion':'Mettre la diffusion en pause'}>{status.paused?'Reprendre':'Pause'}</button>}</div>
           </>}
           {stage==='drying'&&<DryingProgress progress={dryingProgress} onResume={continuePainting}/>}

@@ -215,12 +215,6 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.stopBird();
     const start=this.tick/TICK_RATE;
     const frames=soundImprint(analysis);
-    if(bird.inkTool){
-      // Slot 31 is reserved for new Ink deposits. Old deposits store absorption,
-      // so changing this slot never recolours paint already on the paper.
-      while(this.pigmentColours.length<32)this.pigmentColours.push(this.pigmentColours[0]);
-      this.pigmentColours[31]=bird.color;this.paint.setLook(this.look());bird={...bird,pigmentSlot:31};
-    }
     this.stainVoice={stain:bird.inkTool?new SignatureInk(bird,seed,{...point},this.settings,size,opacity):new SoundStain(bird,seed,{...point},{...this.settings,...(bird.pigmentSlot!==undefined?{ink:0}:{})},this.wetPaper,size,layer,start,frames.filter(f=>f.active&&f.energy>0).map(f=>f.time),opacity),
       analysis:{...analysis,frames},start,clock:clock??(()=>this.tick/TICK_RATE-start),marked:false,onMark};
     this.audio=analysis;this.composition.title=bird.gesture;
