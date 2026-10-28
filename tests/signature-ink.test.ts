@@ -9,18 +9,25 @@ describe('Ink sound calligraphy',()=>{
  it('writes a bounded, deterministic ribbon even under a stationary hand',()=>{
   const run=()=>{const s=make();return Array.from({length:60},(_,i)=>s.step(f(i),i/30));};
   const frames=run();expect(frames).toEqual(run());const points=frames.flatMap(frame=>frame.ink.flatMap(s=>s.points));
-  expect(new Set(points.map(p=>p.x)).size).toBeGreaterThan(30);expect(points.every(p=>Math.abs(p.x-.5)<.06&&Math.abs(p.y-.5)<.06)).toBe(true);
-  expect(frames.every(frame=>frame.segments.length<=2&&frame.ink.length===1)).toBe(true);
+  expect(new Set(points.map(p=>p.x)).size).toBeGreaterThan(30);expect(points.every(p=>Math.hypot(p.x-.5,(p.y-.5)*1980/1400)<.241)).toBe(true);
+  expect(frames.every(frame=>frame.segments.length<=4&&frame.ink.length===1)).toBe(true);
   expect(frames.flatMap(frame=>frame.segments).every(s=>s.slot===31&&!s.water&&s.waterAmount===0)).toBe(true);
  });
- it('lets the hand guide the next stroke and lifts across silence or a disconnected gesture',()=>{
-  const s=make();s.step(f(0),0);s.move({x:.6,y:.5},.1);const guided=s.step(f(1),.1);expect(guided.ink[0].points.at(-1)!.x).toBeGreaterThan(.56);
-  expect(s.step({...f(2),active:false},.2).ink).toEqual([]);s.move({x:.8,y:.6},.3,false);const next=s.step(f(3),.3).ink[0].points;expect(next[0]).toEqual(next.at(-1));
-  expect(s.step(undefined,1).segments).toEqual([]);expect(make(.5,0).step(f(0),0).ink).toEqual([]);
+ it('ignores all pointer movement, continues flying in silence, but lifts the ink',()=>{
+  const a=make(),b=make();expect(a.step(f(0),0)).toEqual(b.step(f(0),0));a.move({x:.9,y:.1},.1,false);expect(a.step(f(1),.1)).toEqual(b.step(f(1),.1));
+  const before=a.flight!.point;expect(a.step({...f(2),active:false},.2).ink).toEqual([]);expect(a.flight!.point).not.toEqual(before);
+  expect(a.step(undefined,1).ink).toEqual([]);expect(a.flight).toBeNull();expect(make(.5,0).step(f(0),0).ink).toEqual([]);
+ });
+ it('changes flight extent without changing nib width and stays on paper near a corner',()=>{
+  const small=make(0),large=make(1);let sm=0,lg=0;
+  for(let i=0;i<240;i++){const a=small.step(f(i),i/30),b=large.step(f(i),i/30);expect(a.ink[0].width).toBe(b.ink[0].width);sm=Math.max(sm,Math.abs(a.point!.x-.5));lg=Math.max(lg,Math.abs(b.point!.x-.5));}
+  expect(lg).toBeGreaterThan(sm*3);
+  const corner=new SignatureInk(bird,7,{x:.025,y:.025},{palette:'plumages',format:'a4',wetness:.5,granulation:.8,complexity:.5},1);
+  for(let i=0;i<240;i++){const p=corner.step(f(i),i/30).point!;expect(p.x).toBeGreaterThanOrEqual(.025);expect(p.y).toBeGreaterThanOrEqual(.025);expect(p.x).toBeLessThanOrEqual(.975);expect(p.y).toBeLessThanOrEqual(.975);}
  });
  it('transduces dynamics into width and preserves selected color, size and opacity',()=>{
   const soft=make(),loud=make();expect(loud.step(f(0,1),0).ink[0].width).toBeGreaterThan(soft.step(f(0,.1),0).ink[0].width);
-  expect(make(1).step(f(0),0).ink[0].width).toBeGreaterThan(make(0).step(f(0),0).ink[0].width*3);
+  expect(make(1).step(f(0),0).ink[0].width).toBe(make(0).step(f(0),0).ink[0].width);
   const frame=make(.5,.4).step(f(0),0);expect(frame.ink[0].color).toEqual([130/255,55/255,74/255]);expect(frame.ink[0].opacity).toBeLessThanOrEqual(.4);
  });
 });

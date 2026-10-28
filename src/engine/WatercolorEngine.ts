@@ -227,6 +227,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.composition.duration=start+analysis.duration+this.dryingDuration();
     this.active=true;this.paused=false;this.last=0;this.notifyAt=-1;this.emit();this.request();return true;
   }
+  get inkbirdFlight(){const voice=this.stainVoice?.stain;return voice instanceof SignatureInk?voice.flight:null;}
   startWaterSong(analysis:AudioAnalysis,clock:()=>number,level:()=>number=()=>1):void{
     if(this.destroyed||!this.performance)return;
     this.waterVoice={analysis:{...analysis,frames:soundImprint(analysis)},clock,level};

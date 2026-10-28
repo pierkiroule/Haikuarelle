@@ -22,13 +22,15 @@ with sync_playwright() as pw:
   paper=page.locator('.bird-paper');box=paper.bounding_box();assert abs(box['width']/box['height']-210/297)<.002
   page.locator('canvas').evaluate('e=>e.dataset.witness="same-paper"')
   print('painting',width,flush=True)
-  paper.focus();page.keyboard.press('Space');page.get_by_role('button',name='Choisir Ink',exact=True).click()
+  paper.focus();page.keyboard.press('Space');page.get_by_role('button',name='Choisir Inkbird',exact=True).click()
   assert page.locator('.breath-pad').evaluate("e=>e.nextElementSibling.classList.contains('ink-pad')")
-  page.get_by_label('Couleur de l’encre',exact=True).fill('#82374a');page.get_by_role('slider',name='Taille de l’encre',exact=True).fill('75');page.get_by_role('slider',name='Opacité de l’encre',exact=True).fill('90')
+  page.get_by_label('Couleur de l’encre',exact=True).fill('#82374a');page.get_by_role('slider',name='Étendue du vol Inkbird',exact=True).fill('75');page.get_by_role('slider',name='Opacité de l’encre',exact=True).fill('90')
   toolbar=page.locator('.palette-toolbar').bounding_box();assert toolbar['x']>=0 and toolbar['x']+toolbar['width']<=width
   paper.focus();page.keyboard.press('Space')
   page.wait_for_function('!!window.__p?.status.hasPigment');print('pigment ready',width,flush=True)
   page.wait_for_function('window.__p.composition.ink.length>3')
+  assert page.locator('.inkbird-flight').is_visible()
+  page.screenshot(path=f'/tmp/inkbird-flight-{width}.png')
   assert page.evaluate('()=>window.__p.composition.ink.some(s=>s.color?.[0]===130/255)')
   page.wait_for_function('!window.__p.stainVoice')
   page.keyboard.press('Escape')
