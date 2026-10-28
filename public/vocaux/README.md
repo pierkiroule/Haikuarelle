@@ -1,6 +1,6 @@
 # Murmures poétiques
 
-Ajouter ici les fichiers originaux `Vocal00.mp3` à `Vocal09.mp3` (non fournis avec la demande). Aucun fichier factice ni voix de substitution n'est utilisé.
+Les dix fichiers originaux `Vocal00.mp3` à `Vocal09.mp3` sont intégrés localement et servis par l’application. Aucun service de synthèse vocale externe n’est utilisé.
 
 00 accueil, 01 apparition des plumes, 02 sélection, 03 première écoute, 04 atelier/eau, 05 premiers pigments, 06 geste libre (après 20 secondes de composition avec pigments), 07 séchage, 08 révélation du poème, 09 composition validée.
 

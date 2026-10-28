@@ -180,4 +180,4 @@ Les films à partir de 0,006 d’humidité participent aux chemins de peinture. 
 
 Le vol final devient une danse de six haïkuarelles abstraites, uniquement deux ailes peintes par forme, sans anatomie ni fil électrique. La caméra suit leurs trajectoires croisées et leurs glisses. Voir [la danse](docs/DANCE.md).
 
-La guidance vocale optionnelle accompagne les dix moments du parcours, avec file séquentielle, fondus, atténuation puis remontée progressive du chant et bouton Voix. Elle attend une interaction et n'interrompt pas le dessin. **Les dix MP3 originaux ne sont pas encore fournis** : les déposer dans [`public/vocaux/`](public/vocaux/README.md), de `Vocal00.mp3` à `Vocal09.mp3`. Les fichiers absents sont ignorés sans bloquer l'atelier.
+La guidance vocale optionnelle accompagne les dix moments du parcours, avec file séquentielle, fondus, atténuation puis remontée progressive du chant et bouton Voix. Elle attend une interaction et n'interrompt pas le dessin. Les dix MP3 originaux sont intégrés dans [`public/vocaux/`](public/vocaux/README.md), de `Vocal00.mp3` à `Vocal09.mp3`. Les fichiers absents sont ignorés sans bloquer l'atelier.
