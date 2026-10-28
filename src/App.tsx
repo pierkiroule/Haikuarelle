@@ -1,3 +1,4 @@
+import {DanceAudio} from './dance/media';
 import {InkbirdFlight} from './birds/InkbirdFlight';
 import {CompositionEditor} from './birds/CompositionEditor';
 import {BIRD_COLOURS} from './birds/colourPalettes';
@@ -57,7 +58,7 @@ export function BirdStudio(){
   const [colour,setColour]=useState<number|null>(null);
   const [inkSize,setInkSize]=useState(.5),[inkOpacity,setInkOpacity]=useState(.9);
   const [tool,setTool]=useState<'water'|'plume'|'breath'|'ink'>('water');
-  const [dance,setDance]=useState<{painting:Blob;sound:import('./birds/BirdAudioBank').BirdSound;credit:import('./dance/renderer').DanceCredit}|null>(null);
+  const [dance,setDance]=useState<{painting:Blob;sound:import('./birds/BirdAudioBank').BirdSound;credit:import('./dance/renderer').DanceCredit;audio:DanceAudio}|null>(null);
   const [poemPlaced,setPoemPlaced]=useState(false);
   const [paintingPlacement,setPaintingPlacement]=useState<PaintingPlacement>(ORIGINAL_PAINTING);
   const [selected,setSelected]=useState<BirdId>('rougegorge');
@@ -242,9 +243,9 @@ export function BirdStudio(){
   };
   const openDance=async()=>{
     if(!engine.current||!bank.current||!poetry||!poemPlaced||exporting)return;
-    stop();setExporting(true);
-    try{const [painting,sound,credits]=await Promise.all([engine.current.exportPNG(),bank.current.prepare(selectedBird.id),fetch('/birds/credits.json').then(r=>{if(!r.ok)throw new Error('Les crédits du chant ne sont pas disponibles. Réessaie.');return r.json() as Promise<({id:string}&import('./dance/renderer').DanceCredit)[]>;})]);const credit=credits.find(c=>c.id===selectedBird.id);if(!credit)throw new Error('Les crédits de ce chant sont indisponibles.');setDance({painting,sound,credit});}
-    catch(e){setNotice(e instanceof Error?e.message:'La danse ne peut pas démarrer.');}finally{setExporting(false);}
+    stop();setExporting(true);let flightAudio:DanceAudio|null=null;
+    try{flightAudio=new DanceAudio();await flightAudio.unlock();const [painting,sound,credits]=await Promise.all([engine.current.exportPNG(),bank.current.prepare(selectedBird.id),fetch('/birds/credits.json').then(r=>{if(!r.ok)throw new Error('Les crédits du chant ne sont pas disponibles. Réessaie.');return r.json() as Promise<({id:string}&import('./dance/renderer').DanceCredit)[]>;})]);const credit=credits.find(c=>c.id===selectedBird.id);if(!credit)throw new Error('Les crédits de ce chant sont indisponibles.');setDance({painting,sound,credit,audio:flightAudio});flightAudio=null;}
+    catch(e){setNotice(e instanceof Error?e.message:'Le vol ne peut pas démarrer.');}finally{void flightAudio?.dispose();setExporting(false);}
   };
   const dryingEnd=(engine.current?.composition.duration??1)*30;
   const dryingProgress=Math.min(1,Math.max(0,(status.ticks-dryingStart)/Math.max(1,dryingEnd-dryingStart)));
@@ -293,7 +294,7 @@ export function BirdStudio(){
               {!poemPlaced?<><CompositionEditor size={Math.round(paintingPlacement.scale*100)} onSize={n=>{const scale=n/100;setPaintingPlacement(p=>fitPainting({scale,x:p.x+(p.scale-scale)/2,y:p.y+(p.scale-scale)/2}));}} onReset={()=>setPaintingPlacement(ORIGINAL_PAINTING)}/>
               <button className="finalize-art place-haiku" onClick={()=>setPoemPlaced(true)}>Valider la composition</button></>:<button className="continue-art" onClick={()=>setPoemPlaced(false)}>Déplacer la peinture</button>}
               <button className="finalize-art share-art" onClick={()=>void exportArt('share')} disabled={!poemPlaced||exporting||!!error}>{exporting?'Préparation…':'Partager l’œuvre'} ↗</button>
-              <button className="finalize-art dance-art" onClick={()=>void openDance()} disabled={!poemPlaced||exporting||!!error}>Faire danser mon haïkuarelle</button>
+              <button className="finalize-art dance-art" onClick={()=>void openDance()} disabled={!poemPlaced||exporting||!!error}>Contempler le vol de mon Haïkuarelle</button>
               <button className="continue-art download-art" onClick={()=>void exportArt()} disabled={!poemPlaced||exporting||!!error}>Télécharger l’image · PNG</button>
             </>}
             <p className="shared-attribution">Création Plume d’Haïkuarelle · •°○<br/>La participation n’attribue pas de propriété exclusive sur l’œuvre.</p>
@@ -309,7 +310,7 @@ export function BirdStudio(){
     {screen.viewing&&!immersiveActive&&<button className="bird-exit" aria-label="Quitter le plein écran" onClick={screen.exit} onFocus={screen.reveal} onPointerMove={screen.reveal}><Glyph name="close"/>Quitter</button>}
     {screen.viewing&&playing&&<button className="bird-finish-screen" onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/>Interrompre le chant</button>}
     {screen.viewing&&!immersiveActive&&canCreate&&!busy&&marks.length>0&&<button className="bird-finalize-screen" onClick={finalize}>Laisser sécher ☼</button>}
-    {dance&&poetry&&<Suspense fallback={<div className="toast" role="status">Ouverture de la danse…</div>}><DanceStudio painting={dance.painting} sound={dance.sound} credit={dance.credit} poetry={poetry} paper={palette.paper} seed={seed} onClose={()=>setDance(null)}/></Suspense>}
+    {dance&&poetry&&<Suspense fallback={<div className="toast" role="status">Préparation de l’envol…</div>}><DanceStudio painting={dance.painting} sound={dance.sound} audio={dance.audio} credit={dance.credit} poetry={poetry} paper={palette.paper} seed={seed} onClose={()=>setDance(null)}/></Suspense>}
     {notice&&<div className="toast" role="status">{notice}</div>}
   </div>;
 }

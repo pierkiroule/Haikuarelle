@@ -1,4 +1,4 @@
-"""Actual bird → composition → five dance tools → cancel/retry → video → unchanged original.
+"""Actual bird → composition → automatic FPV flight → video → unchanged original.
 Set HAIKUARELLE_DANCE_DESKTOP=1 to also check the full-HD desktop export.
 """
 from playwright.sync_api import sync_playwright
@@ -63,46 +63,29 @@ with sync_playwright() as pw:
   page.get_by_role('button',name='Valider la composition').click();assert not page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
   assert page.locator('.resonant-haiku.is-editable').count()==0
   before=page.evaluate('Array.from(window.__p.capturePreview().pixels).reduce((s,v)=>s+v,0)')
-  page.get_by_role('button',name='Faire danser mon haïkuarelle',exact=True).click()
-  dance=page.locator('.dance-dialog');dance.wait_for()
-  page.get_by_role('button',name='Enregistrer ma danse · 9 s',exact=True).wait_for()
-  assert dance.evaluate('e=>e.matches(":modal")')
-  assert dance.locator('.dance-tools button').count()==5
-  assert dance.evaluate('e=>e.scrollWidth<=e.clientWidth')
-  print('dance size',page.locator('.dance-stage canvas').evaluate('e=>[e.width,e.height]'),page.evaluate('({width:innerWidth,coarse:matchMedia("(pointer:coarse)").matches})'),flush=True)
-  view=dance.locator('canvas');view.focus();page.keyboard.down('Space');page.keyboard.press('ArrowRight');page.wait_for_timeout(600);page.keyboard.up('Space')
-  page.screenshot(path=f'/tmp/dance-explore-{width}.png',full_page=True)
-  page.get_by_role('button',name='Enregistrer ma danse · 9 s',exact=True).click()
-  page.locator('.dance-recording').wait_for()
-  for tool in ['Onduler','Attirer','Tournoyer','Vibrer','Envoler']:
-   page.get_by_role('button',name=tool,exact=True).click()
-   rect=view.bounding_box()
-   page.mouse.move(rect['x']+rect['width']*.4,rect['y']+rect['height']*.45)
-   page.mouse.down();page.mouse.move(rect['x']+rect['width']*.65,rect['y']+rect['height']*.60,steps=4);page.wait_for_timeout(180);page.mouse.up()
-  page.get_by_role('button',name='Créer ma vidéo · 15 s',exact=True).wait_for()
-  page.get_by_role('button',name='Créer ma vidéo · 15 s',exact=True).click()
-  page.get_by_role('button',name='Annuler',exact=True).wait_for()
-  page.get_by_role('button',name='Annuler',exact=True).click()
-  page.get_by_role('button',name='Créer ma vidéo · 15 s',exact=True).wait_for()
-  page.get_by_role('button',name='Créer ma vidéo · 15 s',exact=True).click()
+  page.get_by_role('button',name='Contempler le vol de mon Haïkuarelle',exact=True).click()
+  page.locator('.flight-status').wait_for(timeout=20000)
+  assert page.locator('.dance-tools,.dance-panel').count()==0
+  assert page.locator('.flight-dialog').evaluate('e=>e.matches(":modal")')
+  page.wait_for_timeout(1800);page.screenshot(path=f'/tmp/flight-approach-{width}.png')
+  page.wait_for_timeout(2200);page.screenshot(path=f'/tmp/flight-close-{width}.png')
+  page.get_by_role('button',name='Garder le film · 15 s',exact=True).wait_for(timeout=15000)
+  page.get_by_role('button',name='Garder le film · 15 s',exact=True).click()
   download=page.get_by_role('button',name='Télécharger ·',exact=False)
   for attempt in range(60):
    if download.is_visible():break
    if page.locator('.dance-error').count():raise AssertionError(page.locator('.dance-error').inner_text())
-   if attempt%4==0:print('export progress',width,page.locator('.dance-panel').inner_text()[-600:],flush=True)
+   if attempt%6==0:print('export progress',width,page.locator('.flight-controls').inner_text(),flush=True)
    page.wait_for_timeout(5000)
-  assert download.is_visible(),'Export never finished'
+  assert download.is_visible()
   with page.expect_download() as info:download.click()
-  file=info.value;path=f'/tmp/haikuarelle-dance-{width}.'+file.suggested_filename.split('.')[-1];file.save_as(path)
-  video=page.locator('.dance-stage video');video.wait_for();page.wait_for_function('document.querySelector(".dance-stage video").readyState>=1')
+  file=info.value;path=f'/tmp/haikuarelle-flight-{width}.'+file.suggested_filename.split('.')[-1];file.save_as(path)
+  video=page.locator('.flight-video');video.wait_for();page.wait_for_function('document.querySelector(".flight-video").readyState>=1')
   metadata=video.evaluate('e=>({duration:e.duration,width:e.videoWidth,height:e.videoHeight})')
-  assert abs(metadata['duration']-15)<.1,metadata
-  assert metadata['width']==(720 if width<700 else 1080) and metadata['height']==(1280 if width<700 else 1920),metadata
-  page.screenshot(path=f'/tmp/dance-ready-{width}.png',full_page=True)
+  assert abs(metadata['duration']-15)<.1 and metadata['width']==(720 if width<700 else 1080),metadata
   page.get_by_role('button',name='Revenir à mon œuvre',exact=True).click()
-  assert page.locator('.dance-dialog').count()==0 and page.locator('canvas[data-witness=same-paper]').count()==1
+  assert page.locator('canvas[data-witness=same-paper]').count()==1
   assert page.evaluate('Array.from(window.__p.capturePreview().pixels).reduce((s,v)=>s+v,0)')==before
   assert not errors,errors
-  print(json.dumps({'viewport':[width,height],'video':metadata,'path':path,'tools':5,'originalPreserved':True,'errors':errors}),flush=True)
-  page.close()
+  print(json.dumps({'viewport':[width,height],'video':metadata,'path':path,'automatic':True,'originalPreserved':True,'errors':errors}),flush=True);page.close()
  browser.close()

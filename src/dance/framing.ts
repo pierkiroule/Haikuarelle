@@ -7,9 +7,3 @@ export function paintingBounds(pixels:Uint8ClampedArray,width:number,height:numb
  const x=Math.max(0,left-padx),y=Math.max(0,top-pady);
  return {x:x/width,y:y/height,width:(Math.min(width,right+1+padx)-x)/width,height:(Math.min(height,bottom+1+pady)-y)/height};
 }
-
-/** Account for the letterboxing of a portrait film inside a short mobile canvas. */
-export function dancePoint(clientX:number,clientY:number,rect:{left:number;top:number;width:number;height:number}){
- const width=Math.min(rect.width,rect.height*9/16),height=width*16/9;
- return {x:Math.max(0,Math.min(1,(clientX-rect.left-(rect.width-width)/2)/Math.max(1,width))),y:Math.max(0,Math.min(1,(clientY-rect.top-(rect.height-height)/2)/Math.max(1,height)))};
-}
