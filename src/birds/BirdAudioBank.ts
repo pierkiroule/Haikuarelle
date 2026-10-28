@@ -11,6 +11,9 @@ export class BirdAudioBank{
   private context:AudioContext|null=null;
   private source:AudioBufferSourceNode|null=null;
   private gain:GainNode|null=null;
+  private master:GainNode|null=null;
+  private ducked=false;
+  setVoiceDucking(active:boolean){this.ducked=active;if(this.context&&this.master){const p=this.master.gain,t=this.context.currentTime;p.cancelScheduledValues(t);p.setValueAtTime(p.value,t);p.linearRampToValueAtTime(active?.22:1,t+(active?.25:.9));}}
   private filter:BiquadFilterNode|null=null;
   private immersion:{level:()=>number;release:()=>void}|null=null;
   private ended:(()=>void)|null=null;
@@ -84,7 +87,8 @@ export class BirdAudioBank{
       }};
       source.connect(filter);filter.connect(gain);
     }else{gain.gain.value=.72;source.connect(gain);}
-    gain.connect(context.destination);
+    if(!this.master){this.master=context.createGain();this.master.gain.value=this.ducked?.22:1;this.master.connect(context.destination);}
+    gain.connect(this.master);
     this.source=source;this.gain=gain;this.ended=onEnd;
     source.onended=()=>{source.disconnect();gain.disconnect();if(this.source===source){this.filter?.disconnect();this.filter=null;this.immersion=null;this.source=null;this.gain=null;const done=this.ended;this.ended=null;done?.();}};
     const started=context.currentTime;

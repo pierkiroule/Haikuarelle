@@ -39,12 +39,12 @@ export default function DanceStudio({painting,sound,poetry,paper,seed,credit,aud
  };
  const deliver=async(mode:'share'|'download')=>{if(!video)return;try{const result=await deliverArtwork(video.blob,`haikuarelle-vol-${seed}.${video.extension}`,poetry.title,mode);setNotice(result==='saved'?'Le film est téléchargé.':result==='shared'?'Ton haïkuarelle a pris son envol.':'');}catch{setNotice('Le partage est indisponible. Essaie le téléchargement.');}};
  return <dialog ref={dialog} className="dance-dialog flight-dialog" aria-labelledby="flight-title" onCancel={e=>{e.preventDefault();onClose();}}>
-  <header><h2 id="flight-title">Un oiseau d’haïkuarelle</h2><button className="dance-close" onClick={onClose} aria-label="Revenir à mon œuvre">×</button></header>
+  <header><h2 id="flight-title">La danse des haïkuarelles</h2><button className="dance-close" onClick={onClose} aria-label="Revenir à mon œuvre">×</button></header>
   <canvas ref={canvas} hidden={phase==='done'} className="flight-canvas" aria-label="Voyage automatique en trois dimensions dans les pigments de ton haïkuarelle"/>
   {phase==='done'&&<video className="flight-video" src={videoURL} controls playsInline loop aria-label="Le vol de ton haïkuarelle, trente secondes"/>}
   {phase==='loading'&&<p className="flight-loading" role="status">La matière prépare son envol…</p>}
   <div className="flight-controls">
-   {phase==='flying'&&<><span className="flight-status">Battre des ailes, planer, se poser</span><button onClick={()=>{audio.stop();change('ready');}}>Suspendre</button><button onClick={()=>void exportVideo()}>Garder le vol · 30 s</button></>}
+   {phase==='flying'&&<><span className="flight-status">Six haïkuarelles dansent avec le vent</span><button onClick={()=>{audio.stop();change('ready');}}>Suspendre</button><button onClick={()=>void exportVideo()}>Garder le vol · 30 s</button></>}
    {phase==='ready'&&<><button className="dance-primary" onClick={()=>void play()}>Revoir le vol</button><button onClick={()=>void exportVideo()}>Garder le vol · 30 s</button></>}
    {phase==='exporting'&&<><p role="status">Création du film · {Math.round(seconds/VIDEO_SECONDS*100)} %</p><progress max={VIDEO_SECONDS} value={seconds} aria-label="Création du film"/><button onClick={()=>{abort.current?.abort();audio.stop();liveSize();renderer.current?.draw(0);change('ready');}}>Annuler</button></>}
    {phase==='done'&&<><button className="dance-primary" onClick={()=>void deliver('share')}>Partager le vol ↗</button><button onClick={()=>void deliver('download')}>Télécharger · {video?.extension.toUpperCase()}</button><button onClick={()=>{setVideo(null);setVideoURL('');if(url.current)URL.revokeObjectURL(url.current);url.current='';void play();}}>Revoir le vol</button>{video?.extension==='webm'&&<p className="flight-note">WebM sur ce navigateur. Pour Instagram, convertis le film en MP4 ou utilise un navigateur proposant le MP4.</p>}</>}

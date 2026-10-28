@@ -1,35 +1,31 @@
 import {describe,it,expect} from 'vitest';
 import {soundAt,videoMime,videoSize,visualTime} from '../src/dance/score';
 import type {AudioAnalysis} from '../src/audio/types';
-import {flightPose,flightMatrix,flightMesh,pigmentFocus,wingPosition,birdMotion,birdFeet,WIRE_Z,wireHeight,LANDING_TIME} from '../src/dance/flight';
-describe('bird flight and landing',()=>{
- it('beats its wings, glides, approaches and folds after touching the wire',()=>{
-  const beats=Array.from({length:210},(_,i)=>birdMotion(i/30).flap),glide=Array.from({length:120},(_,i)=>birdMotion(12+i/30).flap);
-  expect(Math.max(...beats)-Math.min(...beats)).toBeGreaterThan(1.4);expect(Math.max(...glide)-Math.min(...glide)).toBeLessThan(.09);
-  expect(birdMotion(20).feet).toBe(0);expect(birdMotion(24).feet).toBe(1);expect(birdMotion(LANDING_TIME-.01).contact).toBe(false);expect(birdMotion(LANDING_TIME).contact).toBe(true);
-  expect(birdMotion(24).fold).toBe(0);expect(birdMotion(29).fold).toBe(1);expect(birdMotion(29).position[2]).toBe(WIRE_Z);
- });
- it('lands without a position jump and keeps both grips on the moving cable',()=>{
-  const a=birdMotion(24.999).position,b=birdMotion(25.001).position;expect(Math.hypot(...a.map((v,i)=>v-b[i]))).toBeLessThan(.001);
-  for(const time of [25,26,28,30]){const feet=birdFeet(time);for(const index of [3,13]){expect(feet[index][2]).toBe(WIRE_Z);expect(feet[index][1]).toBeCloseTo(wireHeight(feet[index][0],time),8);}}
-  expect(birdFeet(10)).toEqual([]);
+import {flightPose,flightMatrix,flightMesh,pigmentFocus,wingPosition,birdMotion,FLOCK_COUNT,birdModel} from '../src/dance/flight';
+describe('abstract watercolor flock',()=>{
+ it('keeps six distinct wind trajectories without anatomy or landing',()=>{
+  expect(FLOCK_COUNT).toBe(6);
+  for(let t=0;t<=30;t+=.5){const positions=Array.from({length:FLOCK_COUNT},(_,i)=>birdMotion(t,i).position);for(let i=0;i<FLOCK_COUNT;i++){
+   expect(birdMotion(t,i).fold).toBe(0);expect(birdMotion(t,i).contact).toBe(false);expect([...birdModel(t,i)].every(Number.isFinite)).toBe(true);
+   for(let j=i+1;j<FLOCK_COUNT;j++)expect(Math.hypot(...positions[i].map((v,k)=>v-positions[j][k]))).toBeGreaterThan(.2);
+  }}
  });
  it('circles the travelling bird with finite, continuous camera matrices',()=>{
   let prior=flightPose(0).eye;const directions=new Set<number>();
-  for(let i=0;i<=900;i++){const pose=flightPose(i/30);expect(Math.hypot(...pose.eye.map((v,j)=>v-prior[j]))).toBeLessThan(.07);prior=pose.eye;const angle=Math.atan2(pose.eye[0]-pose.target[0],pose.eye[2]-pose.target[2]);directions.add(Math.floor((angle+Math.PI)/(Math.PI/2)));}
+  for(let i=0;i<=900;i++){const pose=flightPose(i/30);expect(Math.hypot(...pose.eye.map((v,j)=>v-prior[j]))).toBeLessThan(.09);prior=pose.eye;const angle=Math.atan2(pose.eye[0]-pose.target[0],pose.eye[2]-pose.target[2]);directions.add(Math.floor((angle+Math.PI)/(Math.PI/2)));}
   expect(directions.size).toBeGreaterThanOrEqual(4);
   for(const aspect of [9/16,16/9,1])for(let t=0;t<=30;t+=.1)expect([...flightMatrix(t,aspect)].every(Number.isFinite)).toBe(true);
  });
- it('preserves two full mirrored wing surfaces and folds them against the body',()=>{
+ it('preserves two full mirrored wing surfaces throughout the dance',()=>{
   for(const ratio of [.4,.7,1.7])for(const time of [0,12,29])for(const u of [0,.25,.5,1]){const a=wingPosition([u,.4,0],time,1,ratio),b=wingPosition([u,.4,0],time,-1,ratio);expect(a[0]).toBe(-b[0]);expect(a.slice(1)).toEqual(b.slice(1));}
-  expect(wingPosition([1,.5,0],29,1)[0]).toBeLessThan(wingPosition([1,.5,0],12,1)[0]*.4);
+  expect(birdMotion(29).fold).toBe(0);
  });
  it('uses bounded indexed meshes for wings and small body parts',()=>{
   const compact=flightMesh(true),hd=flightMesh(false);expect(hd.vertices.length).toBeGreaterThan(compact.vertices.length);expect(hd.vertices.length/2).toBeLessThan(65536);
   for(const mesh of [compact,hd])expect(mesh.indices.every(i=>i<mesh.vertices.length/2)).toBe(true);
  });
- it('keeps the story forward so the final bird stays perched',()=>{
-  expect(visualTime(0)).toBe(0);expect(visualTime(15)).toBe(15);expect(visualTime(30)).toBe(30);expect(birdMotion(visualTime(29)).contact).toBe(true);
+ it('keeps thirty seconds of forward choreography',()=>{
+  expect(visualTime(0)).toBe(0);expect(visualTime(15)).toBe(15);expect(visualTime(30)).toBe(30);expect(birdMotion(visualTime(29)).contact).toBe(false);
  });
  it('keeps breaths between forward bird phrases throughout thirty seconds',()=>{
   const analysis={duration:1,frames:Array.from({length:30},()=>({energy:.8,bass:.4,treble:.3,flux:.2}))} as AudioAnalysis;

@@ -1,3 +1,4 @@
+import {VocalGuidance} from './audio/VocalGuidance';
 import {DanceAudio} from './dance/media';
 import {InkbirdFlight} from './birds/InkbirdFlight';
 import {CompositionEditor} from './birds/CompositionEditor';
@@ -81,6 +82,16 @@ export function BirdStudio(){
   const studio=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),paper=useRef<HTMLDivElement>(null);
   const engine=useRef<HaikuarelleEngine|null>(null),bank=useRef<BirdAudioBank|null>(null),stroke=useRef<SoundDeposit|null>(null);
   const waterSong=useRef<WaterSong|null>(null),waterGesture=useRef(false);
+  const guidance=useRef<VocalGuidance|null>(null);
+  const [voiceEnabled,setVoiceEnabled]=useState(()=>localStorage.getItem('haikuarelle-voice')!=='off');
+  useEffect(()=>{const voice=new VocalGuidance(active=>bank.current?.setVoiceDucking?.(active));guidance.current=voice;voice.setEnabled(voiceEnabled);voice.request(0);voice.request(1);
+    const unlock=()=>voice.unlock();document.addEventListener('pointerdown',unlock);document.addEventListener('keydown',unlock);
+    return()=>{document.removeEventListener('pointerdown',unlock);document.removeEventListener('keydown',unlock);voice.destroy();guidance.current=null;};},[]);
+  useEffect(()=>{guidance.current?.setEnabled(voiceEnabled);localStorage.setItem('haikuarelle-voice',voiceEnabled?'on':'off');},[voiceEnabled]);
+  useEffect(()=>{if(stage==='choose'){guidance.current?.request(0);guidance.current?.request(1);}if(stage==='paint')guidance.current?.request(4);if(stage==='drying')guidance.current?.request(7);},[stage]);
+  useEffect(()=>{if(poetry)guidance.current?.request(8);},[poetry]);
+  useEffect(()=>{if(poemPlaced)guidance.current?.request(9);},[poemPlaced]);
+  useEffect(()=>{if(!marks.length||stage!=='paint')return;guidance.current?.request(5);const timer=setTimeout(()=>guidance.current?.request(6),20000);return()=>clearTimeout(timer);},[marks.length>0,stage]);
   const pointer=useRef<number|null>(null),keyHeld=useRef(false),voiceNumber=useRef(0);
   const current=useRef({settings,seed,brush,opacity,marks,selected});current.current={settings,seed,brush,opacity,marks,selected};
   const screen=useLargeScreen(studio);
@@ -123,7 +134,7 @@ export function BirdStudio(){
     waterGesture.current=false;waterSong.current?.cancel();previewToken.current++;setPreviewing(null);stroke.current?.cancel();if(canWet)engine.current?.holdWater();setContact(false);
     if(id!==null&&paper.current?.hasPointerCapture(id))paper.current.releasePointerCapture(id);
   };
-  const resetSheet=(next:number)=>{stop();setWaterPlaced(false);setSeed(next);setMarks([]);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===1?'paint':'choose');setTool('water');};
+  const resetSheet=(next:number)=>{stop();guidance.current?.reset();setWaterPlaced(false);setSeed(next);setMarks([]);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===1?'paint':'choose');setTool('water');};
   const fresh=()=>{setImmersive(false);resetSheet(randomSeed());setPadIds([]);setStage('choose');if(screen.viewing)screen.exit();};
   const erase=()=>{resetSheet(current.current.seed);setNotice('Tout est effacé. La feuille est prête.');};
   const wet=(p:Point,pressure=.5)=>{
@@ -161,12 +172,13 @@ export function BirdStudio(){
   const choose=(bird:Bird)=>{if(!canCreate)return;selectTool('plume');setSelected(bird.id);prepare(bird);};
   const pickBird=(bird:Bird)=>{
     if(stage!=='choose')return;
+    guidance.current?.request(2);
     const token=++previewToken.current,sounds=bank.current;
     sounds?.stop();setPreviewing(null);
     setPadIds([bird.id]);setSelected(bird.id);
     setWaterPlaced(false);engine.current?.beginSignature(seed);engine.current?.setBirdPalette(bird.id);setColour(null);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setTool('water');setStage('paint');setImmersive(true);
     if(!sounds)return;
-    void sounds.play(bird.id,()=>{if(token===previewToken.current){setPreviewing(bird.id);setReady(list=>list.includes(bird.id)?list:[...list,bird.id]);}},()=>{if(token===previewToken.current)setPreviewing(null);})
+    void sounds.play(bird.id,()=>{if(token===previewToken.current){guidance.current?.request(3);setPreviewing(bird.id);setReady(list=>list.includes(bird.id)?list:[...list,bird.id]);}},()=>{if(token===previewToken.current)setPreviewing(null);})
       .catch(()=>{if(token===previewToken.current)setNotice('L’aperçu n’a pas pu démarrer. La plume reste sélectionnée ; tu pourras réécouter son chant lors du dépôt.');});
   };
   const finalize=()=>{
@@ -199,7 +211,7 @@ export function BirdStudio(){
       if(event.key.toLowerCase()==='f'&&stage!=='choose')screen.toggle();
       if(canCreate&&event.key==='1'&&pads[0]){event.preventDefault();choose(pads[0]);}
     };
-    const visibility=()=>{if(document.hidden)stop();};
+    const visibility=()=>{if(document.hidden){stop();guidance.current?.stop();}};
     document.addEventListener('keydown',keys);document.addEventListener('visibilitychange',visibility);window.addEventListener('blur',stop);
     return()=>{document.removeEventListener('keydown',keys);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('blur',stop);};
   });
@@ -243,7 +255,7 @@ export function BirdStudio(){
   };
   const openDance=async()=>{
     if(!engine.current||!bank.current||!poetry||!poemPlaced||exporting)return;
-    stop();setExporting(true);let flightAudio:DanceAudio|null=null;
+    stop();guidance.current?.stop();setExporting(true);let flightAudio:DanceAudio|null=null;
     try{flightAudio=new DanceAudio();await flightAudio.unlock();const [painting,sound,credits]=await Promise.all([engine.current.exportPNG(),bank.current.prepare(selectedBird.id),fetch('/birds/credits.json').then(r=>{if(!r.ok)throw new Error('Les crédits du chant ne sont pas disponibles. Réessaie.');return r.json() as Promise<({id:string}&import('./dance/renderer').DanceCredit)[]>;})]);const credit=credits.find(c=>c.id===selectedBird.id);if(!credit)throw new Error('Les crédits de ce chant sont indisponibles.');setDance({painting,sound,credit,audio:flightAudio});flightAudio=null;}
     catch(e){setNotice(e instanceof Error?e.message:'Le vol ne peut pas démarrer.');}finally{void flightAudio?.dispose();setExporting(false);}
   };
@@ -255,7 +267,7 @@ export function BirdStudio(){
     <FeatherDrift/>
     <header className="bird-header">
       <a className="bird-wordmark feather-wordmark" href="/" aria-label={APP_NAME}><img className="watercolor-brand" src="/brand/plume-aquarelle.webp" alt="" width="48" height="48" decoding="async"/><span className="brand-copy"><span>Plume</span><small>d’Haïkuarelle</small></span></a><span className="bird-edition">UN RITUEL D’EAU, DE CHANTS ET DE SILENCE</span>
-      <div className="bird-view-controls">{['paint','drying'].includes(stage)&&!immersiveActive&&<button onClick={()=>{setCanvasOnly(false);setImmersive(true);}}>Toile immersive</button>}{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{if(canWet)stop();setCanvasOnly(v=>!v);}}>Toile seule</button>}{stage==='choose'&&<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="a4">A4 · 21 × 29,7 cm</option><option value="portrait">Portrait allongé</option><option value="landscape">Paysage HD</option></select>}{!immersiveActive&&secondaryActions}</div>
+      <div className="bird-view-controls"><button aria-pressed={voiceEnabled} onClick={()=>{guidance.current?.setEnabled(!voiceEnabled);if(!voiceEnabled){guidance.current?.unlock();for(const step of stage==='choose'?[0,1]:stage==='paint'?[4]:stage==='drying'?[7]:poemPlaced?[9]:poetry?[8]:[])guidance.current?.request(step);}setVoiceEnabled(v=>!v);}} title="Murmures poétiques">{voiceEnabled?'Voix · activée':'Voix · désactivée'}</button>{['paint','drying'].includes(stage)&&!immersiveActive&&<button onClick={()=>{setCanvasOnly(false);setImmersive(true);}}>Toile immersive</button>}{stage!=='choose'&&<button aria-pressed={canvasOnly} onClick={()=>{if(canWet)stop();setCanvasOnly(v=>!v);}}>Toile seule</button>}{stage==='choose'&&<select aria-label="Format de l’œuvre" value={settings.format} disabled={stage!=='choose'||busy} onChange={e=>setSettings(s=>({...s,format:e.target.value as ArtworkFormat}))}><option value="a4">A4 · 21 × 29,7 cm</option><option value="portrait">Portrait allongé</option><option value="landscape">Paysage HD</option></select>}{!immersiveActive&&secondaryActions}</div>
     </header>
     {immersiveActive&&<div className="immersive-controls" role="group" aria-label="Commandes de la toile immersive"><button className="immersive-exit" aria-label="Quitter le mode immersif" title="Quitter le mode immersif · Échap" onClick={()=>{setImmersive(false);if(screen.viewing)screen.exit();}}><Glyph name="close"/></button>{secondaryActions}</div>}
     {immersiveActive&&<span className="sr-only" role="status" aria-live="polite">{liveText}</span>}

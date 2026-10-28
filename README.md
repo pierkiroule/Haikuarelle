@@ -175,3 +175,9 @@ Le souffle étire la pellicule en racines d’eau : l’écoulement diverge à l
 Les films à partir de 0,006 d’humidité participent aux chemins de peinture. Le guide des flaques est plus fin après transport, et une petite épaisseur ne déclenche plus automatiquement un dépôt de peinture sèche. Sur ces filaments minces, les lavis restent limités au chemin humide et les projections sèches satellites sont supprimées ; les dépôts sur papier réellement sec restent disponibles. La diffusion et la visibilité de l’eau tiennent aussi compte des films fins. La fin du chant immergé ne suspend pas une rafale de souffle active sur de l’eau sans pigment.
 
 `scripts/check-water-roots.py` vérifie le scénario complet : eau claire, souffle, puis dépôt sonore local. Dans la scène contrôlée, la surface humide augmente d’environ 67 % et l’épaisseur moyenne diminue d’environ 40 % à volume pratiquement constant. La peinture colore un filament nouvellement étiré sans changer l’eau ni toucher la flaque séparée ; ces chiffres décrivent cette scène, pas tous les gestes.
+
+### Nuée et murmures poétiques
+
+Le vol final devient une danse de six haïkuarelles abstraites, uniquement deux ailes peintes par forme, sans anatomie ni fil électrique. La caméra suit leurs trajectoires croisées et leurs glisses. Voir [la danse](docs/DANCE.md).
+
+La guidance vocale optionnelle accompagne les dix moments du parcours, avec file séquentielle, fondus, atténuation puis remontée progressive du chant et bouton Voix. Elle attend une interaction et n'interrompt pas le dessin. **Les dix MP3 originaux ne sont pas encore fournis** : les déposer dans [`public/vocaux/`](public/vocaux/README.md), de `Vocal00.mp3` à `Vocal09.mp3`. Les fichiers absents sont ignorés sans bloquer l'atelier.
