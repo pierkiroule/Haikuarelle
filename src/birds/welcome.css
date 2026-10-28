@@ -1,0 +1,17 @@
+.direct-studio .artistic-welcome{max-width:1080px;margin:clamp(28px,6vh,72px) auto 64px;padding:0 24px;text-align:left;color:#53605d}
+.welcome-opening{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(288px,1fr);align-items:center;gap:40px}
+.welcome-kicker{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#826f5a;margin:0 0 18px}
+.direct-studio .artistic-welcome h1{font:400 clamp(36px,4.5vw,60px)/1.12 Georgia,serif;letter-spacing:-.035em;margin:0 0 20px;text-wrap:balance}
+.artistic-welcome h1 span{white-space:nowrap;color:#a46758;font-size:.52em;letter-spacing:.06em}
+.welcome-subtitle{font:italic 20px/1.5 Georgia,serif;margin:0 0 30px;color:#718176}
+.welcome-question{max-width:360px;font-size:15px;line-height:1.8;text-wrap:balance}
+.welcome-link{display:inline-flex;align-items:center;gap:22px;min-height:44px;color:#536c63;text-decoration:none;border-bottom:1px solid #9aafa0;font-size:13px;margin-top:10px}
+.welcome-link:focus-visible{outline:2px solid #628b82;outline-offset:5px}
+.welcome-feathers{scroll-margin-top:24px;min-width:0}.welcome-feathers .feather-encounter{margin:0 auto}.welcome-feathers .encounter-result{min-height:0;margin:5px 0}
+.welcome-statement{max-width:700px;margin:72px auto;font-size:16px;line-height:1.95}.welcome-statement p+p{margin-top:20px}
+.artistic-welcome h2{font:400 29px/1.3 Georgia,serif;margin:0 0 30px;color:#53605d;text-wrap:balance}
+.welcome-process{border-top:1px solid #9b9c7f40;padding-top:36px}
+.welcome-process ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;list-style:none;padding:0;margin:0}
+.welcome-number{font:italic 28px Georgia,serif;color:#a18c72}.welcome-process h3{font:400 23px Georgia,serif;margin:14px 0}.welcome-process li p{font-size:14px;line-height:1.9;margin:0;max-width:290px}
+.welcome-meeting{max-width:700px;margin:68px auto 0;padding-top:36px;border-top:1px solid #9b9c7f40;text-align:center}.welcome-meeting p{font-size:15px;line-height:1.9}.welcome-meeting .welcome-closing{font:italic 21px/1.7 Georgia,serif;margin-top:32px;color:#7b705d;text-wrap:balance}
+@media(max-width:700px){.direct-studio .artistic-welcome{padding:0 12px;margin-top:28px}.welcome-opening{grid-template-columns:minmax(0,1fr);gap:36px}.welcome-intro{text-align:center}.welcome-question{margin-inline:auto}.welcome-subtitle{font-size:18px;margin-bottom:22px}.welcome-statement{margin:40px auto;font-size:15px}.welcome-process ol{grid-template-columns:minmax(0,1fr);gap:28px}.welcome-process li{position:relative;padding-left:52px}.welcome-number{position:absolute;left:0;top:0}.welcome-process h3{margin:0 0 10px}.welcome-process li p{max-width:none}.welcome-meeting{margin-top:44px}.welcome-feathers{justify-self:center;width:100%;max-width:340px}}

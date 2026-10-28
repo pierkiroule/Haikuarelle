@@ -32,6 +32,7 @@ import './birds/drying.css';
 import './aquarelle.css';
 import './creation.css';
 import {CreationPalette} from './birds/CreationPalette';
+import {ArtisticWelcome} from './birds/ArtisticWelcome';
 import {FeatherEncounter} from './birds/FeatherEncounter';
 import {FeatherGlyph} from './birds/FeatherGlyph';
 import './immersive.css';
@@ -249,7 +250,7 @@ export function BirdStudio(){
     {immersiveActive&&<div className="immersive-controls" role="group" aria-label="Commandes de la toile immersive"><button className="immersive-exit" aria-label="Quitter le mode immersif" title="Quitter le mode immersif · Échap" onClick={()=>{setImmersive(false);if(screen.viewing)screen.exit();}}><Glyph name="close"/></button>{secondaryActions}</div>}
     {immersiveActive&&<span className="sr-only" role="status" aria-live="polite">{liveText}</span>}
     <RitualProgress stage={stage}/>
-    {stage==='choose'&&<section className="bird-selection" aria-labelledby="trio-title"><p className="bird-eyebrow">01 · LA RENCONTRE</p><h1 id="trio-title">Une plume sonore<br/><em>qui t’attire.</em></h1><p>Choisis parmi les plumes virevoltantes. Un geste, une rencontre. Son plumage devient ta palette. Le haïku naîtra de ta peinture.</p><FeatherEncounter onChoose={pickBird}/><span className="sr-only" role="status">{previewing?`Aperçu du chant : ${BIRDS.find(b=>b.id===previewing)?.name}`:''}</span></section>}
+    {stage==='choose'&&<ArtisticWelcome><FeatherEncounter onChoose={pickBird}/><span className="sr-only" role="status">{previewing?`Aperçu du chant : ${BIRDS.find(b=>b.id===previewing)?.name}`:''}</span></ArtisticWelcome>}
     {stage!=='choose'&&<section className="ritual-heading" aria-labelledby="ritual-title"><h1 id="ritual-title">{ritual.title}</h1><details className="ritual-help"><summary aria-label="Comment vivre cette étape ?">?</summary><div>{ritual.hint}</div></details></section>}
     <main className="bird-workbench">
       <section ref={artwork} className="bird-stage" aria-label="Votre œuvre d’aquarelle abstraite">
