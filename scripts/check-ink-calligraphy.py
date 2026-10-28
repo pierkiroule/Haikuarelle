@@ -56,8 +56,8 @@ with sync_playwright() as pw:
   page.get_by_role('button',name='Révéler le haïku résonant',exact=False).click();poem=page.locator('.resonant-haiku');poem.wait_for()
   assert poem.locator('span').count()==3 and page.locator('.artwork-title').count()==0
   title=page.locator('.resonant-title');assert 'mésange bleue' in title.inner_text().lower()
-  page.evaluate('()=>document.fonts.ready');assert page.evaluate("()=>document.fonts.check('20px \"Patrick Hand\"')")
-  assert 'Patrick Hand' in title.evaluate('e=>getComputedStyle(e).fontFamily')
+  page.evaluate('()=>document.fonts.ready');assert page.evaluate("()=>document.fonts.check('20px \"Special Elite\"')")
+  assert 'Special Elite' in title.evaluate('e=>getComputedStyle(e).fontFamily')
   assert title.evaluate('e=>getComputedStyle(e).textAlign')=='center' and poem.evaluate('e=>getComputedStyle(e).textAlign')=='center'
   assert page.locator('.composition-tabs,input[type=color],.composition-font').count()==0
   assert page.locator('.composition-editor input').count()==1
@@ -83,5 +83,5 @@ with sync_playwright() as pw:
   page.screenshot(path=f'/tmp/ink-signed-{width}.png',full_page=True)
   page.get_by_role('button',name='Déplacer la peinture').click();assert page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
   assert not errors,errors
-  print(json.dumps({'viewport':[width,height],'threeVerses':poem.locator('span').all_text_contents(),'dragAndResize':True,'fixedTitle':title.inner_text(),'handwritten':True,'signatureInPNG':True,'export':[im.width,im.height],'sameCanvas':True,'errors':errors}),flush=True);page.close()
+  print(json.dumps({'viewport':[width,height],'threeVerses':poem.locator('span').all_text_contents(),'dragAndResize':True,'fixedTitle':title.inner_text(),'typewriter':True,'signatureInPNG':True,'export':[im.width,im.height],'sameCanvas':True,'errors':errors}),flush=True);page.close()
  browser.close()
