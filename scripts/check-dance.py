@@ -1,4 +1,4 @@
-"""Actual bird → composition → thirty-second mirrored FPV loop → video → unchanged original.
+"""Actual bird → composition → thirty-second bird flight and landing → video → unchanged original.
 Set HAIKUARELLE_DANCE_DESKTOP=1 to also check the full-HD desktop export.
 """
 from playwright.sync_api import sync_playwright
@@ -69,8 +69,8 @@ with sync_playwright() as pw:
   assert page.locator('.flight-dialog').evaluate('e=>e.matches(":modal")')
   page.wait_for_timeout(1800);page.screenshot(path=f'/tmp/flight-approach-{width}.png')
   page.wait_for_timeout(2200);page.screenshot(path=f'/tmp/flight-close-{width}.png')
-  page.get_by_role('button',name='Garder la boucle · 30 s',exact=True).wait_for(timeout=15000)
-  page.get_by_role('button',name='Garder la boucle · 30 s',exact=True).click()
+  page.get_by_role('button',name='Garder le vol · 30 s',exact=True).wait_for(timeout=15000)
+  page.get_by_role('button',name='Garder le vol · 30 s',exact=True).click()
   download=page.get_by_role('button',name='Télécharger ·',exact=False)
   for attempt in range(120):
    if download.is_visible():break

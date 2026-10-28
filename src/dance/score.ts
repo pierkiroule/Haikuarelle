@@ -1,11 +1,8 @@
 import type {AudioAnalysis} from '../audio/types';
 export const DANCE_SECONDS=15,VIDEO_SECONDS=30;
 export const clamp=(v:number,a=0,b=1)=>Math.max(a,Math.min(b,v));
-/** Cosine ping-pong: identical visual state at t and 30-t, resting at each turn. */
-export function visualTime(time:number){
- const t=Math.max(0,Math.min(VIDEO_SECONDS,time));
- return DANCE_SECONDS*(1-Math.cos(2*Math.PI*t/VIDEO_SECONDS))*.5;
-}
+/** A forward thirty-second flight ends with the bird perched, never an un-landing in reverse. */
+export function visualTime(time:number){return Math.max(0,Math.min(VIDEO_SECONDS,time));}
 export function soundAt(analysis:AudioAnalysis,time:number){
  if(time<0||time>=VIDEO_SECONDS)return {energy:0,bass:0,treble:0,flux:0};
  const local=time%(analysis.duration+.5),frame=local<analysis.duration?analysis.frames[Math.floor(local*30)]:undefined;

@@ -1,6 +1,6 @@
 # Plume d’Haïkuarelle
 
-Une création artistique où le chant des oiseaux devient matière picturale. Douze plumes proposent leurs enregistrements locaux et les couleurs de leurs plumages. L’eau et le geste composent l’aquarelle ; après séchage, un titre et trois vers résonnent avec la peinture. L’œuvre peut ensuite devenir un Rorschach vivant en trois dimensions et une boucle vidéo verticale.
+Une création artistique où le chant des oiseaux devient matière picturale. Douze plumes proposent leurs enregistrements locaux et les couleurs de leurs plumages. L’eau et le geste composent l’aquarelle ; après séchage, un titre et trois vers résonnent avec la peinture. L’œuvre peut ensuite devenir un oiseau d’aquarelle en trois dimensions et un film vertical.
 
 React + Vite + TypeScript. Simulation et rendu WebGL2 fondés sur Paint Studio / Pigment Drift (MIT). Sans backend, service payant ni appel à une IA.
 
@@ -29,7 +29,7 @@ npm run preview
 2. **Composer avec l’eau et le chant.** Eau, Plume, Souffle et Inkbird partagent une palette accessible. Les chants jouent entièrement ; l’eau persiste jusqu’au séchage volontaire. Inkbird vole seul ou se laisse attirer par le geste.
 3. **Laisser sécher.** Un halo bleu et une progression accompagnent les douze secondes simulées de séchage.
 4. **Révéler le haïku et partager.** Le titre et les trois vers naissent de l’oiseau et de la peinture. Les textes en Caveat à 80 % restent centrés ; seule la peinture se déplace et se redimensionne. Le PNG inclut la signature •°○.
-5. **Contempler le vol de mon Haïkuarelle.** La peinture entière se dédouble en deux ailes miroirs. Une caméra FPV révèle leur déploiement pendant une boucle de trente secondes : quinze secondes aller puis retour exact, avec le chant toujours à l’endroit. Le film conserve une signature et des crédits discrets. MP4 H.264/AAC si compatible, sinon WebM. Voir [le fonctionnement et les limites de l’export](docs/DANCE.md).
+5. **Contempler le vol de mon Haïkuarelle.** La peinture habille un oiseau dont les ailes battent, planent puis se replient lorsqu’il se pose sur un fil noir. Une caméra de drone l’accompagne pendant trente secondes, avec le chant toujours à l’endroit. Le film conserve une signature et des crédits discrets. MP4 H.264/AAC si compatible, sinon WebM. Voir [le fonctionnement et les limites de l’export](docs/DANCE.md).
 
 ## Pigments et signatures
 
