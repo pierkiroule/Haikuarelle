@@ -1,5 +1,5 @@
 import {fitPainting,ORIGINAL_PAINTING,type PaintingPlacement} from './PaintingPlacement';
-import {fixedPoetryLayout,POETRY_FONT,loadPoetryFont,POETRY_COLOR,POETRY_LINE_HEIGHT} from './FixedPoetry';
+import {fixedPoetryLayout,POETRY_FONT,loadPoetryFont,POETRY_COLOR,POETRY_OPACITY,POETRY_LINE_HEIGHT} from './FixedPoetry';
 /** Fixed handwritten title and verses; only the original painting is transformed. */
 export async function exportResonantArtwork(painting:Blob,verses:readonly string[],title:string,paintingPlacement:PaintingPlacement=ORIGINAL_PAINTING):Promise<Blob>{
  await loadPoetryFont();
@@ -15,7 +15,9 @@ export async function exportResonantArtwork(painting:Blob,verses:readonly string
    const baseline=(size*POETRY_LINE_HEIGHT-ascent-descent)/2+ascent;
    lines.forEach((line,i)=>ctx.fillText(line,output.width/2,y*output.height+baseline+i*size*POETRY_LINE_HEIGHT));
   };
+  ctx.globalAlpha=POETRY_OPACITY;
   drawBlock([title],layout.titleSize,layout.titleY);drawBlock(verses,layout.verseSize,layout.verseY);
+  ctx.globalAlpha=1;
   ctx.fillStyle='rgba(163,68,61,.72)';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.font=`${output.width*.026}px Georgia`;
   ctx.fillText('•°○',output.width*.97,output.height-output.width*.025);
   return await new Promise<Blob>((resolve,reject)=>output.toBlob(v=>v?resolve(v):reject(new Error('Export impossible.')),'image/png'));
