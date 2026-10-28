@@ -2,6 +2,8 @@ import type {BirdId} from './catalog';
 export interface FeatherColour {name:string;hex:string}
 const palette=(entries:[string,string][]):FeatherColour[]=>entries.map(([name,hex])=>({name,hex}));
 export const BIRD_COLOURS:Partial<Record<BirdId,readonly FeatherColour[]>>={
+ rossignol:palette([['Brun chaud','#846448'],['Roux de la queue','#B46B44'],['Brun olive','#756D50'],['Crème du ventre','#E7DBC3'],['Gris beige','#B2A696'],['Brun sombre','#443B32']]),
+ etourneau:palette([['Noir irisé','#252B2C'],['Vert métallique','#416D5D'],['Violet irisé','#635276'],['Crème moucheté','#DED6BC'],['Brun des rémiges','#74604B'],['Jaune du bec','#D7B64B'],['Gris ardoise','#6E797D']]),
  merle:palette([['Noir velouté','#242526'],['Brun sombre','#55463B'],['Gris fumée','#747576'],['Jaune du bec','#E6B735'],['Orange doré','#D68B29'],['Brun clair','#A28A70']]),
  moineau:palette([['Brun châtain','#966444'],['Beige sable','#C7AD83'],['Gris cendré','#98958D'],['Noir bavette','#292A28'],['Brun rayé','#66503B'],['Blanc crème','#EDE6D7']]),
  mesange:palette([['Bleu azur','#2461B6'],['Bleu nuit','#17375E'],['Bleu gris','#6C91B1'],['Jaune citron','#F2CF38'],['Vert olive','#77A94D'],['Blanc crème','#F5F0D9'],['Gris doux','#A9A9A0'],['Anthracite','#25282A']]),

@@ -4,12 +4,12 @@ from PIL import Image
 import os,json
 with sync_playwright() as pw:
  browser=pw.chromium.launch(executable_path=os.getenv('HAIKUARELLE_CHROMIUM','/usr/bin/chromium'),headless=True,args=['--no-sandbox','--disable-dev-shm-usage','--no-proxy-server','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
- for bird,name,width,height in [('merle','merle noir',1200,1000),('moineau','moineau domestique',320,568)]:
+ for bird,name,width,height in [('rossignol','rossignol philomèle',1200,1000),('etourneau','étourneau sansonnet',320,568)]:
   page=browser.new_page(viewport={'width':width,'height':height},reduced_motion='reduce',accept_downloads=True);page.set_default_timeout(120000);errors=[];modules=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('request',lambda r:modules.append(r.url) if '/src/engine/WatercolorEngine.ts' in r.url else None)
   page.add_init_script('''for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(192,get.call(this,p)):get.call(this,p)}}''')
   print('opening',width,flush=True)
   page.goto(os.getenv('HAIKUARELLE_URL','http://127.0.0.1:5173/'),wait_until='domcontentloaded')
-  page.locator('.feather-choice').first.wait_for();assert page.locator('.feather-choice').count()==10;print('loaded',width,flush=True)
+  page.locator('.feather-choice').first.wait_for();assert page.locator('.feather-choice').count()==12;print('loaded',width,flush=True)
   # Limit the software display buffer as well as the field, so a short real
   # sample cannot finish while SwiftShader renders a full-window frame.
   page.evaluate('''async url=>{const {HaikuarelleEngine}=await import(url);const begin=HaikuarelleEngine.prototype.beginSignature;HaikuarelleEngine.prototype.beginSignature=function(...args){
@@ -39,8 +39,9 @@ with sync_playwright() as pw:
   page.get_by_role('button',name='Révéler le haïku résonant',exact=False).click();poem=page.locator('.resonant-haiku');poem.wait_for()
   assert poem.locator('span').count()==3 and page.locator('.artwork-title').count()==0
   title=page.locator('.resonant-title');assert name in title.inner_text().lower()
-  page.evaluate('()=>document.fonts.ready');assert page.evaluate("()=>document.fonts.check('20px \"Special Elite\"')")
-  assert 'Special Elite' in title.evaluate('e=>getComputedStyle(e).fontFamily')
+  page.evaluate('()=>document.fonts.ready');assert page.evaluate("()=>document.fonts.check('20px \"Caveat\"')")
+  assert title.evaluate('e=>getComputedStyle(e).opacity')=='0.8' and poem.evaluate('e=>getComputedStyle(e).opacity')=='0.8'
+  assert 'Caveat' in title.evaluate('e=>getComputedStyle(e).fontFamily')
   assert title.evaluate('e=>getComputedStyle(e).textAlign')=='center' and poem.evaluate('e=>getComputedStyle(e).textAlign')=='center'
   assert page.locator('.composition-tabs,input[type=color],.composition-font').count()==0
   assert page.locator('.composition-editor input').count()==1
@@ -64,5 +65,5 @@ with sync_playwright() as pw:
   page.screenshot(path=f'/tmp/resonant-haiku-{width}.png',full_page=True)
   page.get_by_role('button',name='Déplacer la peinture').click();assert page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
   assert not errors,errors
-  print(json.dumps({'viewport':[width,height],'threeVerses':poem.locator('span').all_text_contents(),'dragAndResize':True,'fixedTitle':title.inner_text(),'typewriter':True,'signatureInPNG':True,'export':[im.width,im.height],'sameCanvas':True,'errors':errors}),flush=True);page.close()
+  print(json.dumps({'viewport':[width,height],'threeVerses':poem.locator('span').all_text_contents(),'dragAndResize':True,'fixedTitle':title.inner_text(),'handwritten':True,'signatureInPNG':True,'export':[im.width,im.height],'sameCanvas':True,'errors':errors}),flush=True);page.close()
  browser.close()

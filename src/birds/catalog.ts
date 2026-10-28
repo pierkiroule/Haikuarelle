@@ -5,11 +5,11 @@ export const PIE:Bird={id:'pie',name:'Pie',latin:'Pica pica',gesture:'Noir · gr
 export const BIRDS:Bird[]=[
   {id:'rougegorge',name:'Rouge-gorge',latin:'Erithacus rubecula',gesture:'Une plume de lumière',motif:'plume',slot:1,angle:-.65,color:'#ae775a',source:base+'robin-4-s1670.html',author:'Joseph SARDIN'},
   {id:'merle',name:'Merle noir',latin:'Turdus merula',gesture:'Noir · brun & éclats d’or',plumage:[0,6,14],motif:'voile',slot:0,angle:.28,color:'#5c747b',source:base+'common-blackbird-30-s3503.html',author:'Le tiroir du fond'},
-  {id:'rossignol',name:'Rossignol',latin:'Luscinia megarhynchos',gesture:'Des filaments d’encre',motif:'trille',slot:0,angle:-.3,color:'#7d7f99',source:base+'common-nightingale-2-s3087.html',author:'Joseph SARDIN'},
+  {id:'rossignol',name:'Rossignol philomèle',plumage:[11,12,14,15],latin:'Luscinia megarhynchos',gesture:'Brun · roux & chants nocturnes',motif:'trille',slot:11,angle:-.3,color:'#7d7f99',source:base+'common-nightingale-2-s3087.html',author:'Joseph SARDIN'},
   {id:'fauvette',name:'Fauvette',latin:'Sylvia atricapilla',gesture:'Une ramure légère',motif:'branche',slot:1,angle:-1.1,color:'#819279',source:base+'eurasian-blackcap-1-s3466.html',author:'Le tiroir du fond'},
   {id:'hirondelle',name:'Hirondelle',latin:'Hirundo rustica',gesture:'Un élan dans l’eau',motif:'plume',slot:0,angle:-.9,color:'#748f97',source:base+'swallows-2-s1016.html',author:'Joseph SARDIN'},
   {id:'geai',name:'Geai',latin:'Garrulus glandarius',gesture:'Un éclat minéral',motif:'branche',slot:2,angle:.6,color:'#9a9474',source:base+'eurasian-jay-2-s3454.html',author:'Joseph SARDIN & Axeline T.'},
-  {id:'etourneau',name:'Étourneau',latin:'Sturnus vulgaris',gesture:'Des murmures mêlés',motif:'trille',slot:1,angle:.1,color:'#8b846c',source:base+'starlings-few-s1903.html',author:'Joseph SARDIN'},
+  {id:'etourneau',name:'Étourneau sansonnet',plumage:[0,12,13,14],latin:'Sturnus vulgaris',gesture:'Noir · vert & violet irisés',motif:'trille',slot:0,angle:.1,color:'#8b846c',source:base+'starlings-few-s1903.html',author:'Joseph SARDIN'},
   {id:'chouette',name:'Chouette',latin:'Strix aluco',gesture:'Un voile de nuit',motif:'voile',slot:0,angle:1.05,color:'#747c90',source:base+'tawny-owl-2-s1764.html',author:'Joseph SARDIN'},
   {id:'hibou',name:'Hibou',latin:'Asio otus',gesture:'Une terre tranquille',motif:'voile',slot:2,angle:-.4,color:'#96856f',source:base+'long-eared-owl-1-s0936.html',author:'Joseph SARDIN'},
   {id:'corneille',name:'Corneille',latin:'Corvus corone',gesture:'Une nervure d’ombre',motif:'branche',slot:0,angle:.8,color:'#6f7670',source:base+'carrion-crow-3-s3463.html',author:'Le tiroir du fond'},
@@ -27,4 +27,4 @@ export const BIRD_PADS:Bird[]=[
   {...birdFor('rougegorge'),gesture:'Orange · gris & réserves',color:'#bd6545',plumage:[1,6,0]},
   {...birdFor('geai'),gesture:'Bleu · brun & traits vifs',color:'#4a83a7',plumage:[2,8,5,0]},
 ];
-export const BIRD_BRUSHES:Bird[]=[...BIRD_PADS,...(['mesange','bouvreuil','sittelle','picvert','pie','merle','moineau'] as BirdId[]).map(birdFor)];
+export const BIRD_BRUSHES:Bird[]=[...BIRD_PADS,...(['mesange','bouvreuil','sittelle','picvert','pie','merle','moineau','rossignol','etourneau'] as BirdId[]).map(birdFor)];

@@ -34,3 +34,8 @@
 
 .gust-9{animation-name:feather-gust-9}
 @keyframes feather-gust-9{0.00%{transform:translate(33px,-3px)}11.11%{transform:translate(84px,-24px)}22.22%{transform:translate(37px,-46px)}33.33%{transform:translate(-69px,96px)}44.44%{transform:translate(-15px,70px)}55.56%{transform:translate(96px,-15px)}66.67%{transform:translate(45px,-8px)}77.78%{transform:translate(79px,-52px)}88.89%{transform:translate(46px,52px)}100.00%{transform:translate(33px,-3px)}}
+
+.gust-10{animation-name:feather-gust-10}
+@keyframes feather-gust-10{0%,100%{transform:translate(64px,-62px)}17%{transform:translate(-32px,-91px)}36%{transform:translate(-88px,24px)}54%{transform:translate(20px,78px)}73%{transform:translate(85px,15px)}89%{transform:translate(-18px,-30px)}}
+.gust-11{animation-name:feather-gust-11}
+@keyframes feather-gust-11{0%,100%{transform:translate(-68px,56px)}13%{transform:translate(27px,94px)}31%{transform:translate(91px,-18px)}52%{transform:translate(-14px,-83px)}76%{transform:translate(-93px,-24px)}92%{transform:translate(21px,36px)}}

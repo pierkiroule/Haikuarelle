@@ -2,7 +2,7 @@
 import json,html,pathlib
 root=pathlib.Path(__file__).resolve().parents[1]
 rows=json.loads((root/'public/birds/credits.json').read_text())
-names={'rougegorge':'Rouge-gorge','merle':'Merle noir','geai':'Geai','corneille':'Corneille','mesange':'Mésange bleue','bouvreuil':'Bouvreuil','sittelle':'Sittelle','picvert':'Pic vert','pie':'Pie','moineau':'Moineau domestique'}
+names={'rossignol':'Rossignol philomèle','etourneau':'Étourneau sansonnet','rougegorge':'Rouge-gorge','merle':'Merle noir','geai':'Geai','corneille':'Corneille','mesange':'Mésange bleue','bouvreuil':'Bouvreuil','sittelle':'Sittelle','picvert':'Pic vert','pie':'Pie','moineau':'Moineau domestique'}
 def esc(v):return html.escape(str(v),quote=True)
 def license_url(r):
  if r.get('license_url'):return r['license_url']

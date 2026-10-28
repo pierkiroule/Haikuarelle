@@ -19,11 +19,11 @@ it('ships the real magpie recording with matching local credits and licence',()=
 it('ships a credited, hash-verified sample for every selectable feather, with no duplicate selection',async()=>{
  const {BIRD_BRUSHES}=await import('../src/birds/catalog');
  const rows=JSON.parse(readFileSync(new URL('../public/birds/credits.json',import.meta.url),'utf8'));
- expect(BIRD_BRUSHES).toHaveLength(10);
+ expect(BIRD_BRUSHES).toHaveLength(12);
  for(const bird of BIRD_BRUSHES){
   const row=rows.find(r=>r.id===bird.id),audio=readFileSync(new URL(`../public/birds/${bird.id}.mp3`,import.meta.url));
   expect(row.source).toBe(bird.source);expect(row.author).toContain(bird.author.split(' · ')[0]);expect(row.pad_active).toBe(true);expect(row.sha256).toBe(createHash('sha256').update(audio).digest('hex'));
   expect(['CC0-1.0','CC-BY-SA-3.0','CC-BY-SA-4.0']).toContain(row.license);expect(audio.length).toBeGreaterThan(1000);
  }
- expect(new Set(BIRD_BRUSHES.map(b=>b.id)).size).toBe(10);
+ expect(new Set(BIRD_BRUSHES.map(b=>b.id)).size).toBe(12);
 });

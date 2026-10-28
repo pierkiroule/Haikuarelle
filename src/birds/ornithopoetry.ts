@@ -81,7 +81,7 @@ const titleImages:Record<BirdId,readonly string[]>={
  etourneau:['La nuée','Le murmure','Le dortoir'],chouette:['La veille','Le refuge','La nuit'],
  hibou:['Le repos','Le silence','Le pré'],
 };
-const titleBird:Record<BirdId,string>={moineau:'du moineau domestique',geai:'du geai',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',rougegorge:'du rouge-gorge',corneille:'de la corneille',pie:'de la pie',merle:'du merle noir',rossignol:'du rossignol',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',etourneau:'de l’étourneau',chouette:'de la chouette',hibou:'du hibou'};
+const titleBird:Record<BirdId,string>={moineau:'du moineau domestique',geai:'du geai',mesange:'de la mésange bleue',bouvreuil:'du bouvreuil',sittelle:'de la sittelle',picvert:'du pic vert',rougegorge:'du rouge-gorge',corneille:'de la corneille',pie:'de la pie',merle:'du merle noir',rossignol:'du rossignol philomèle',fauvette:'de la fauvette',hirondelle:'de l’hirondelle',etourneau:'de l’étourneau sansonnet',chouette:'de la chouette',hibou:'du hibou'};
 for(const id of Object.keys(BIRD_POETICS) as BirdId[])BIRD_POETICS[id].titles=titleImages[id].map(image=>`${image} ${titleBird[id]}`);
 
 /** A trio contributes one living image per verse, including unpainted choices.

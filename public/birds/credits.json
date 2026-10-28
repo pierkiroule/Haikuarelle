@@ -36,7 +36,7 @@
     "original_sha256": "7d301a9dbaeb0a03422ddc117c898bbbc82e47233a88a64a7fb32072dae8eaa4",
     "modifications": "Extrait ≤ 6 s, mono 44,1 kHz, normalisation de volume, fondus courts, MP3 128 kbit/s.",
     "sha256": "8d0957bfe90ceedc0a6aefbaa10729785ee4c94f3649def4eb645251a3b593c7",
-    "pad_active": false
+    "pad_active": true
   },
   {
     "id": "fauvette",
@@ -88,7 +88,7 @@
     "original_sha256": "eb1a3a5dfa1e0934c5aaeb421637f7d56910b1dae3c4dad3c2b7cad8007e7313",
     "modifications": "Extrait ≤ 6 s, mono 44,1 kHz, normalisation de volume, fondus courts, MP3 128 kbit/s.",
     "sha256": "d0eab6128aa759b7d18107c74e0a75da51cedb7440be04cee7fee4a801b33f76",
-    "pad_active": false
+    "pad_active": true
   },
   {
     "id": "chouette",

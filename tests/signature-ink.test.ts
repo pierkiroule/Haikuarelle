@@ -14,8 +14,8 @@ describe('Ink sound calligraphy',()=>{
   expect(frames.every(frame=>frame.segments.length<=8&&frame.ink.length<=3)).toBe(true);
   expect(frames.flatMap(frame=>frame.segments).every(s=>s.slot===31&&!s.water&&s.waterAmount===0)).toBe(true);
  });
- it('ignores all pointer movement, continues flying in silence, but lifts the ink',()=>{
-  const a=make(),b=make();expect(a.step(f(0),0)).toEqual(b.step(f(0),0));a.move({x:.9,y:.1},.1,false);expect(a.step(f(1),.1)).toEqual(b.step(f(1),.1));
+ it('responds to guidance, continues flying in silence, but lifts the ink',()=>{
+  const a=make(),b=make();expect(a.step(f(0),0)).toEqual(b.step(f(0),0));a.move({x:.9,y:.1},.1,false);expect(a.step(f(1),.1).point).not.toEqual(b.step(f(1),.1).point);
   const before=a.flight!.point;expect(a.step({...f(2),active:false},.2).ink).toEqual([]);expect(a.flight!.point).not.toEqual(before);
   expect(a.step(undefined,1).ink).toEqual([]);expect(a.flight).toBeNull();expect(make(.5,0).step(f(0),0).ink).toEqual([]);
  });
@@ -56,4 +56,16 @@ it('translates an attack into a faster flight and spectral changes into a differ
  expect(stormDistance).toBeGreaterThan(quietDistance*3);
  const a=make().step({...f(0),brightness:.95,treble:.9,bass:.05},0),b=dark.step({...f(0),brightness:.05,treble:.05,bass:.9},0);expect(a.point).not.toEqual(b.point);
  const burst=make().step({...f(0,1),flux:.98},0);expect(burst.ink.length).toBe(3);expect(burst.feedback.splashes).toBe(6);expect(burst.segments.length).toBeLessThanOrEqual(8);
+});
+
+it('releases attraction without stopping the song or changing sonic nib pressure',()=>{
+ const guided=make(1),free=make(1);
+ guided.move({x:.9,y:.8},0,false);guided.releaseGuide();
+ for(let i=0;i<30;i++)expect(guided.step(f(i),i/30)).toEqual(free.step(f(i),i/30));
+ const slow=make(1),fast=make(1);
+ for(const s of [slow,fast])s.move({x:.5,y:.5},0,false);
+ slow.move({x:.6,y:.5},1);fast.move({x:.6,y:.5},1/30);
+ const a=slow.step(f(0),0),b=fast.step(f(0),0);
+ expect(b.point!.x).toBeGreaterThan(a.point!.x);expect(b.ink[0].width).toBe(a.ink[0].width);
+ fast.releaseGuide();expect(fast.step(f(1),1/30).ink.length).toBeGreaterThan(0);
 });
