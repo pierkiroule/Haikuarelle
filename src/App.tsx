@@ -1,3 +1,4 @@
+import {ProcessRecording,type ProcessFrame} from './dance/ProcessRecording';
 import {VocalGuidance} from './audio/VocalGuidance';
 import {DanceAudio} from './dance/media';
 import {InkbirdFlight} from './birds/InkbirdFlight';
@@ -59,7 +60,7 @@ export function BirdStudio(){
   const [colour,setColour]=useState<number|null>(null);
   const [inkSize,setInkSize]=useState(.5),[inkOpacity,setInkOpacity]=useState(.9);
   const [tool,setTool]=useState<'water'|'plume'|'breath'|'ink'>('water');
-  const [dance,setDance]=useState<{painting:Blob;sound:import('./birds/BirdAudioBank').BirdSound;credit:import('./dance/renderer').DanceCredit;audio:DanceAudio}|null>(null);
+  const [dance,setDance]=useState<{painting:Blob;sound:import('./birds/BirdAudioBank').BirdSound;credit:import('./dance/renderer').DanceCredit;audio:DanceAudio;frames:ProcessFrame[];placement:PaintingPlacement}|null>(null);
   const [poemPlaced,setPoemPlaced]=useState(false);
   const [paintingPlacement,setPaintingPlacement]=useState<PaintingPlacement>(ORIGINAL_PAINTING);
   const [selected,setSelected]=useState<BirdId>('rougegorge');
@@ -81,6 +82,11 @@ export function BirdStudio(){
   const artwork=useRef<HTMLElement>(null);
   const studio=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),paper=useRef<HTMLDivElement>(null);
   const engine=useRef<HaikuarelleEngine|null>(null),bank=useRef<BirdAudioBank|null>(null),stroke=useRef<SoundDeposit|null>(null);
+  const recording=useRef<ProcessRecording|null>(null);
+  const captureTick=useRef(-1);
+  useEffect(()=>{recording.current=new ProcessRecording(()=>setNotice('La vidéo du processus est indisponible pour cette œuvre. La peinture et son image restent disponibles.'));return()=>{recording.current?.dispose();recording.current=null;};},[]);
+  useEffect(()=>{if(!['paint','drying'].includes(stage))return;const capture=()=>{const painter=engine.current;if(document.hidden||!painter||painter.status.ticks===captureTick.current)return;captureTick.current=painter.status.ticks;void recording.current?.capture(()=>painter.captureProcessFrame(),painter.status.ticks/30*1000);};const timer=setInterval(capture,250);return()=>clearInterval(timer);},[stage]);
+  const captureProcess=(force=false)=>{const painter=engine.current;return painter?recording.current?.capture(()=>painter.captureProcessFrame(),painter.status.ticks/30*1000,force):undefined;};
   const waterSong=useRef<WaterSong|null>(null),waterGesture=useRef(false);
   const guidance=useRef<VocalGuidance|null>(null);
   const [voiceEnabled,setVoiceEnabled]=useState(()=>localStorage.getItem('haikuarelle-voice')!=='off');
@@ -134,15 +140,17 @@ export function BirdStudio(){
     waterGesture.current=false;waterSong.current?.cancel();previewToken.current++;setPreviewing(null);stroke.current?.cancel();if(canWet)engine.current?.holdWater();setContact(false);
     if(id!==null&&paper.current?.hasPointerCapture(id))paper.current.releasePointerCapture(id);
   };
-  const resetSheet=(next:number)=>{stop();guidance.current?.reset();setWaterPlaced(false);setSeed(next);setMarks([]);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===1?'paint':'choose');setTool('water');};
+  const resetSheet=(next:number)=>{stop();guidance.current?.reset();recording.current?.reset();captureTick.current=-1;setWaterPlaced(false);setSeed(next);setMarks([]);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setPoint(null);voiceNumber.current=0;engine.current?.beginSignature(next);setStage(padIds.length===1?'paint':'choose');setTool('water');};
   const fresh=()=>{setImmersive(false);resetSheet(randomSeed());setPadIds([]);setStage('choose');if(screen.viewing)screen.exit();};
   const erase=()=>{resetSheet(current.current.seed);setNotice('Tout est effacé. La feuille est prête.');};
   const wet=(p:Point,pressure=.5)=>{
     if(!canWet||!engine.current||error||exporting)return;
+    void captureProcess();
     if(!waterGesture.current){waterGesture.current=true;if(!stroke.current?.busy)void waterSong.current?.begin(selectedBird);}
     engine.current.wetBrush(p,waterSize,pressure,waterAmount);setWaterPlaced(true);setContact(true);
   };
   const begin=(p:Point,time:number,pressure=.5)=>{
+    void captureProcess();
     if(canBlow){engine.current?.blow(p,time,brush);setContact(true);return;}
     if(canWet){wet(p,pressure);return;}
     if(!canPaint||!stroke.current||error||exporting)return;
@@ -176,7 +184,7 @@ export function BirdStudio(){
     const token=++previewToken.current,sounds=bank.current;
     sounds?.stop();setPreviewing(null);
     setPadIds([bird.id]);setSelected(bird.id);
-    setWaterPlaced(false);engine.current?.beginSignature(seed);engine.current?.setBirdPalette(bird.id);setColour(null);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setTool('water');setStage('paint');setImmersive(true);
+    recording.current?.reset();captureTick.current=-1;setWaterPlaced(false);engine.current?.beginSignature(seed);engine.current?.setBirdPalette(bird.id);setColour(null);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setTool('water');setStage('paint');setImmersive(true);void captureProcess(true);
     if(!sounds)return;
     void sounds.play(bird.id,()=>{if(token===previewToken.current){guidance.current?.request(3);setPreviewing(bird.id);setReady(list=>list.includes(bird.id)?list:[...list,bird.id]);}},()=>{if(token===previewToken.current)setPreviewing(null);})
       .catch(()=>{if(token===previewToken.current)setNotice('L’aperçu n’a pas pu démarrer. La plume reste sélectionnée ; tu pourras réécouter son chant lors du dépôt.');});
@@ -188,7 +196,7 @@ export function BirdStudio(){
   const continuePainting=()=>{engine.current?.setDrying(false);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setStage('paint');setImmersive(true);};
   useEffect(()=>{
     if(stage!=='drying'||status.phase!=='complete'||error||!engine.current)return;
-    setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setStage('finished');setImmersive(false);if(screen.viewing)screen.exit();
+    void captureProcess(true);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setPoemPlaced(false);setStage('finished');setImmersive(false);if(screen.viewing)screen.exit();
   },[stage,status.phase,error]);
   const revealHaiku=()=>{
     if(!engine.current||stage!=='finished'||error)return;
@@ -256,7 +264,7 @@ export function BirdStudio(){
   const openDance=async()=>{
     if(!engine.current||!bank.current||!poetry||!poemPlaced||exporting)return;
     stop();guidance.current?.stop();setExporting(true);let flightAudio:DanceAudio|null=null;
-    try{flightAudio=new DanceAudio();await flightAudio.unlock();const [painting,sound,credits]=await Promise.all([engine.current.exportPNG(),bank.current.prepare(selectedBird.id),fetch('/birds/credits.json').then(r=>{if(!r.ok)throw new Error('Les crédits du chant ne sont pas disponibles. Réessaie.');return r.json() as Promise<({id:string}&import('./dance/renderer').DanceCredit)[]>;})]);const credit=credits.find(c=>c.id===selectedBird.id);if(!credit)throw new Error('Les crédits de ce chant sont indisponibles.');setDance({painting,sound,credit,audio:flightAudio});flightAudio=null;}
+    try{flightAudio=new DanceAudio();await flightAudio.unlock();const frames=await recording.current?.snapshot();if(!frames||frames.length<2)throw new Error('Le processus n’a pas été enregistré. Crée une nouvelle haïkuarelle pour préparer son film.');const [painting,sound,credits]=await Promise.all([engine.current.exportPNG(),bank.current.prepare(selectedBird.id),fetch('/birds/credits.json').then(r=>{if(!r.ok)throw new Error('Les crédits du chant ne sont pas disponibles. Réessaie.');return r.json() as Promise<({id:string}&import('./dance/renderer').DanceCredit)[]>;})]);const credit=credits.find(c=>c.id===selectedBird.id);if(!credit)throw new Error('Les crédits de ce chant sont indisponibles.');setDance({painting,sound,credit,audio:flightAudio,frames,placement:{...paintingPlacement}});flightAudio=null;}
     catch(e){setNotice(e instanceof Error?e.message:'Le vol ne peut pas démarrer.');}finally{void flightAudio?.dispose();setExporting(false);}
   };
   const dryingEnd=(engine.current?.composition.duration??1)*30;
@@ -306,7 +314,7 @@ export function BirdStudio(){
               {!poemPlaced?<><CompositionEditor size={Math.round(paintingPlacement.scale*100)} onSize={n=>{const scale=n/100;setPaintingPlacement(p=>fitPainting({scale,x:p.x+(p.scale-scale)/2,y:p.y+(p.scale-scale)/2}));}} onReset={()=>setPaintingPlacement(ORIGINAL_PAINTING)}/>
               <button className="finalize-art place-haiku" onClick={()=>setPoemPlaced(true)}>Valider la composition</button></>:<button className="continue-art" onClick={()=>setPoemPlaced(false)}>Déplacer la peinture</button>}
               <button className="finalize-art share-art" onClick={()=>void exportArt('share')} disabled={!poemPlaced||exporting||!!error}>{exporting?'Préparation…':'Partager l’œuvre'} ↗</button>
-              <button className="finalize-art dance-art" onClick={()=>void openDance()} disabled={!poemPlaced||exporting||!!error}>Contempler la danse de mon Haïkuarelle</button>
+              <button className="finalize-art dance-art" onClick={()=>void openDance()} disabled={!poemPlaced||exporting||!!error}>Revoir la naissance de mon Haïkuarelle</button>
               <button className="continue-art download-art" onClick={()=>void exportArt()} disabled={!poemPlaced||exporting||!!error}>Télécharger l’image · PNG</button>
             </>}
             <p className="shared-attribution">Création Plume d’Haïkuarelle · •°○<br/>La participation n’attribue pas de propriété exclusive sur l’œuvre.</p>
@@ -322,7 +330,7 @@ export function BirdStudio(){
     {screen.viewing&&!immersiveActive&&<button className="bird-exit" aria-label="Quitter le plein écran" onClick={screen.exit} onFocus={screen.reveal} onPointerMove={screen.reveal}><Glyph name="close"/>Quitter</button>}
     {screen.viewing&&playing&&<button className="bird-finish-screen" onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/>Interrompre le chant</button>}
     {screen.viewing&&!immersiveActive&&canCreate&&!busy&&marks.length>0&&<button className="bird-finalize-screen" onClick={finalize}>Laisser sécher ☼</button>}
-    {dance&&poetry&&<Suspense fallback={<div className="toast" role="status">Préparation de la danse…</div>}><DanceStudio painting={dance.painting} sound={dance.sound} audio={dance.audio} credit={dance.credit} poetry={poetry} paper={palette.paper} seed={seed} onClose={()=>setDance(null)}/></Suspense>}
+    {dance&&poetry&&<Suspense fallback={<div className="toast" role="status">Préparation du film…</div>}><DanceStudio frames={dance.frames} placement={dance.placement} painting={dance.painting} sound={dance.sound} audio={dance.audio} credit={dance.credit} poetry={poetry} paper={palette.paper} seed={seed} onClose={()=>setDance(null)}/></Suspense>}
     {notice&&<div className="toast" role="status">{notice}</div>}
   </div>;
 }

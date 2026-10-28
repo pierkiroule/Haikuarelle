@@ -1,11 +1,21 @@
-# La danse de mon haïkuarelle
+# Revoir la naissance de mon Haïkuarelle
 
-« Contempler la danse de mon Haïkuarelle » ouvre une animation 3D automatique de trente secondes dans un espace blanc. L’œuvre complète apparaît une seule fois, sans duplication, symétrie, ailes ou silhouette d’oiseau.
+Le bouton final ouvre une vidéo du véritable processus de création, en aller-retour : 15 secondes du début à l’œuvre séchée, puis les mêmes images dans l’ordre inverse pendant 15 secondes. La 3D, les déformations, la symétrie et les oiseaux animés sont supprimés.
 
-La danse évoque le processus aquarelle : émergence progressive et irrégulière des pigments (0–10 s), diffusion et ondulations souples liées à l’énergie, aux attaques et aux aigus du chant, puis séchage (19–28 s), retour des détails et apaisement de la surface. C’est une reconstruction poétique à partir de la peinture finale ; ce n’est pas une restitution chronologique des gestes ni une nouvelle simulation du moteur aquarelle.
+## Capture de la toile
 
-La texture conserve ses coordonnées d’origine. Une seule surface indexée (128 × 176 cellules sur écran compact, 192 × 256 sur grand écran) utilise la texture HD, des mipmaps et le filtrage anisotrope disponible. Les normales suivent les déformations. La matière se tord en plis profonds et asymétriques, avec une respiration sonore lissée sur 600 ms, avec des rides lentes de faible amplitude et des reflets d’eau discrets. Deux passages rapprochés de la caméra visent les zones réellement pigmentées détectées dans l’image ; le roulis et les changements d’angle rendent les volumes lisibles. La caméra recule ensuite pour retrouver l’œuvre entière. Les pigments gardent leur définition native pendant toute la danse, sans flou ajouté. Le blanc du papier devient transparent ; les pigments presque identiques au papier peuvent être atténués.
+Les images proviennent du rendu réel de l’eau, des pigments, d’Inkbird, du souffle et du séchage. Elles sont capturées pendant l’atelier, sans curseur ni commandes, sur un bord long de 1280 pixels, compressées en JPEG à qualité 0,9. La capture vise quatre images par seconde selon le temps de simulation, lorsque celle-ci évolue (les pauses ne rallongent pas le film) ; les gestes peuvent également déclencher une capture. L’image finale utilise le PNG haute définition.
 
-Le chant reste à l’endroit avec une respiration entre les phrases. Le titre reste fixe ; un vers accompagne chacun des trois temps de dix secondes. Signature, adresse et crédits sont conservés. Un fondu blanc encadre la danse. Aucun microphone.
+Les captures restent en mémoire locale à la session, sans envoi serveur ni accès au microphone. Effacer ou recommencer vide l’historique. Un rechargement de la page le perd. Le masquage de l’onglet suspend les captures. Si la capture échoue, un message prévient ; la peinture et son PNG restent disponibles, sans faux rejeu depuis la seule image finale.
 
-L’export conserve trente secondes : 900 images à timestamps fixes avec WebCodecs/Mediabunny, H.264/AAC en MP4 si supporté, sinon WebM annoncé. MediaRecorder sert de repli lorsque compatible ; cadence et durée dépendent alors du navigateur. Format vertical : 1080 × 1920 sur ordinateur, 720 × 1280 sur écran étroit/tactile ou à mémoire limitée. L’export peut prendre plus de trente secondes. Fermer ou annuler libère les ressources sans modifier l’original. Safari/iPhone et les performances sur appareils réels restent à vérifier.
+Le stockage est limité à 240 images et environ 24 Mio de données compressées. Pour les créations longues, l’historique est progressivement éclairci et la fréquence diminue, en conservant le début, la fin et la chronologie complète. Le film est donc un accéléré échantillonné, pas un enregistrement à 30 images par seconde de chaque geste. Sa fluidité est obtenue par des fondus entre captures. Au plus quatre images voisines restent décodées pendant la lecture.
+
+## Film final
+
+Le film reprend le placement et l’échelle validés de la peinture. Le titre et les trois vers apparaissent à l’approche de l’œuvre terminée, puis s’effacent pendant le retour. La signature •°○, le nom de l’application, son adresse et les crédits sonores sont conservés.
+
+Le chant de l’oiseau accompagne le film à l’endroit, avec des respirations et des fondus ; ce n’est pas la bande sonore exacte enregistrée pendant les gestes. Les vocaux de guidance ne sont pas inclus.
+
+L’export prépare 900 images à timestamps fixes avec WebCodecs/Mediabunny et attend le décodage de chaque image avant l’encodage. MP4 H.264/AAC si disponible, sinon WebM annoncé. MediaRecorder reste une solution de repli, dont la cadence dépend du navigateur. Format vertical : 1080 × 1920 sur ordinateur, 720 × 1280 sur écran étroit/tactile ou à mémoire limitée. Ces dimensions sont celles du film ; les étapes intermédiaires restent limitées à la définition de capture.
+
+Fermer ou annuler libère les images décodées et les ressources audio/vidéo sans modifier l’œuvre. Safari/iPhone et les performances sur appareils physiques restent à vérifier.

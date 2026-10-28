@@ -13,10 +13,11 @@ export class DanceAudio{
 }
 export interface DanceVideo{blob:Blob;extension:'mp4'|'webm'}
 /** One replay, one video/audio clock; no concatenation of MediaRecorder fragments. */
-async function recordRealtimeDance(canvas:HTMLCanvasElement,draw:(time:number)=>void,audio:DanceAudio,buffer:AudioBuffer,signal:AbortSignal,onProgress:(n:number)=>void):Promise<DanceVideo>{
+async function recordRealtimeDance(canvas:HTMLCanvasElement,draw:(time:number)=>void|Promise<void>,audio:DanceAudio,buffer:AudioBuffer,signal:AbortSignal,onProgress:(n:number)=>void):Promise<DanceVideo>{
  if(typeof MediaRecorder==='undefined'||!canvas.captureStream)throw new Error('Ce navigateur ne permet pas la vidéo. La danse et le PNG restent disponibles.');
  const mime=videoMime(value=>MediaRecorder.isTypeSupported(value));if(!mime)throw new Error('Aucun format vidéo compatible sur ce navigateur.');
  await audio.unlock();if(signal.aborted)throw new DOMException('Annulé','AbortError');
+ await draw(0);if(signal.aborted)throw new DOMException('Annulé','AbortError');
  const destination=audio.context.createMediaStreamDestination(),stream=canvas.captureStream(30);destination.stream.getAudioTracks().forEach(track=>stream.addTrack(track));
  let recorder:MediaRecorder|undefined,frame=0,timer:ReturnType<typeof setTimeout>|undefined;
  try{
@@ -29,15 +30,15 @@ async function recordRealtimeDance(canvas:HTMLCanvasElement,draw:(time:number)=>
    recording.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
    recording.onerror=()=>fail(new Error('L’enregistrement vidéo a échoué. Tu peux réessayer.'));
    recording.onstop=()=>{signal.removeEventListener('abort',abort);if(ended)return;ended=true;const blob=new Blob(chunks,{type:recording.mimeType});if(!blob.size)reject(new Error('La vidéo est vide. Réessaie.'));else resolve({blob,extension:recording.mimeType.includes('mp4')?'mp4':'webm'});};
-   draw(0);recording.start(250);audio.play(buffer,destination);const start=audio.context.currentTime;
+   const start=audio.context.currentTime;recording.start(250);audio.play(buffer,destination);
    let lastFrame=-1;
-   const step=()=>{if(ended)return;try{const time=Math.min(VIDEO_SECONDS,audio.context.currentTime-start);if(time-lastFrame<1/30&&time<VIDEO_SECONDS){frame=requestAnimationFrame(step);return;}lastFrame=time;draw(time);onProgress(time/VIDEO_SECONDS);if(time>=VIDEO_SECONDS){recording.stop();return;}frame=requestAnimationFrame(step);}catch(error){fail(error instanceof Error?error:new Error('Le rendu a été interrompu.'));}};
+   const step=async()=>{if(ended)return;try{const time=Math.min(VIDEO_SECONDS,audio.context.currentTime-start);if(time-lastFrame<1/30&&time<VIDEO_SECONDS){frame=requestAnimationFrame(step);return;}lastFrame=time;await draw(time);if(ended)return;onProgress(time/VIDEO_SECONDS);if(time>=VIDEO_SECONDS){recording.stop();return;}frame=requestAnimationFrame(step);}catch(error){fail(error instanceof Error?error:new Error('Le rendu a été interrompu.'));}};
    frame=requestAnimationFrame(step);timer=setTimeout(()=>fail(new Error('L’export a été interrompu. Garde cet écran ouvert puis réessaie.')),(VIDEO_SECONDS+7)*1000);
   });
  }finally{cancelAnimationFrame(frame);clearTimeout(timer);if(recorder&&recorder.state!=='inactive')recorder.stop();stream.getTracks().forEach(track=>track.stop());destination.disconnect();audio.stop();}
 }
 
-export async function recordDance(canvas:HTMLCanvasElement,draw:(time:number)=>void,audio:DanceAudio,buffer:AudioBuffer,signal:AbortSignal,onProgress:(n:number)=>void):Promise<DanceVideo>{
+export async function recordDance(canvas:HTMLCanvasElement,draw:(time:number)=>void|Promise<void>,audio:DanceAudio,buffer:AudioBuffer,signal:AbortSignal,onProgress:(n:number)=>void):Promise<DanceVideo>{
  audio.stop();
  if(typeof VideoEncoder!=='undefined'&&typeof AudioEncoder!=='undefined'){
   const {encodeDance}=await import('./encode');if(signal.aborted)throw new DOMException('Annulé','AbortError');

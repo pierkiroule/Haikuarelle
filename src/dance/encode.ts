@@ -2,7 +2,7 @@ import {Output,BufferTarget,Mp4OutputFormat,WebMOutputFormat,CanvasSource,AudioB
 import {VIDEO_SECONDS} from './score';
 import type {DanceVideo} from './media';
 /** Fixed timestamps preserve all 900 frames even on a slow GPU. */
-export async function encodeDance(canvas:HTMLCanvasElement,draw:(time:number)=>void,buffer:AudioBuffer,signal:AbortSignal,onProgress:(n:number)=>void):Promise<DanceVideo>{
+export async function encodeDance(canvas:HTMLCanvasElement,draw:(time:number)=>void|Promise<void>,buffer:AudioBuffer,signal:AbortSignal,onProgress:(n:number)=>void):Promise<DanceVideo>{
  const videoOptions={width:canvas.width,height:canvas.height,frameRate:30};
  const [avc,aac]=await Promise.all([getFirstEncodableVideoCodec(['avc'],videoOptions),getFirstEncodableAudioCodec(['aac'],{sampleRate:48000,numberOfChannels:2})]);
  const mp4=!!avc&&!!aac;
@@ -18,7 +18,7 @@ export async function encodeDance(canvas:HTMLCanvasElement,draw:(time:number)=>v
   for(let t=0;t<VIDEO_SECONDS;t+=buffer.duration+.5){const source=context.createBufferSource();source.buffer=buffer;source.connect(gain);source.start(t);source.stop(Math.min(VIDEO_SECONDS,t+buffer.duration));}
   const soundtrack=await context.startRendering();check();await output.start();audioWriting=audio.add(soundtrack);void audioWriting.catch(()=>{});
   for(let frame=0;frame<VIDEO_SECONDS*30;frame++){
-   check();draw(frame/30);await video.add(frame/30,1/30);onProgress((frame+1)/(VIDEO_SECONDS*30));
+   check();await draw(frame/30);check();await video.add(frame/30,1/30);onProgress((frame+1)/(VIDEO_SECONDS*30));
    if(frame%4===0)await new Promise<void>(resolve=>setTimeout(resolve,0));
   }
   await audioWriting;check();await output.finalize();check();if(!target.buffer?.byteLength)throw new Error('La vidéo est vide.');
