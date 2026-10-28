@@ -63,14 +63,14 @@ with sync_playwright() as pw:
   page.get_by_role('button',name='Valider la composition').click();assert not page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
   assert page.locator('.resonant-haiku.is-editable').count()==0
   before=page.evaluate('Array.from(window.__p.capturePreview().pixels).reduce((s,v)=>s+v,0)')
-  page.get_by_role('button',name='Contempler le vol de mon Haïkuarelle',exact=True).click()
+  page.get_by_role('button',name='Contempler la danse de mon Haïkuarelle',exact=True).click()
   page.locator('.flight-status').wait_for(timeout=20000)
   assert page.locator('.dance-tools,.dance-panel').count()==0
   assert page.locator('.flight-dialog').evaluate('e=>e.matches(":modal")')
   page.wait_for_timeout(1800);page.screenshot(path=f'/tmp/flight-approach-{width}.png')
   page.wait_for_timeout(2200);page.screenshot(path=f'/tmp/flight-close-{width}.png')
-  page.get_by_role('button',name='Garder le vol · 30 s',exact=True).wait_for(timeout=15000)
-  page.get_by_role('button',name='Garder le vol · 30 s',exact=True).click()
+  page.get_by_role('button',name='Garder la danse · 30 s',exact=True).wait_for(timeout=15000)
+  page.get_by_role('button',name='Garder la danse · 30 s',exact=True).click()
   download=page.get_by_role('button',name='Télécharger ·',exact=False)
   for attempt in range(120):
    if download.is_visible():break

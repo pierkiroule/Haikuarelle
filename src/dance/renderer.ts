@@ -1,4 +1,4 @@
-import {flightMatrix,flightMesh,birdMotion,birdModel,smooth,FLOCK_COUNT} from './flight';
+import {flightMatrix,flightMesh,processState,smooth} from './flight';
 import {paintingBounds} from './framing';
 import {APP_NAME,publicSiteAddress} from '../brand';
 import {loadPoetryFont,POETRY_FONT} from '../birds/FixedPoetry';
@@ -10,58 +10,55 @@ precision highp float;
 in vec2 aUV;
 uniform sampler2D uImage;
 uniform vec3 uPaper;
-uniform float uRatio,uRoot,uTime,uEnergy,uBass,uTreble,uFlux;
-uniform mat4 uViewProjection,uModel;
-uniform vec4 uMotion;
-uniform int uPart;
-out vec2 vUV;out vec3 vNormal;flat out int vKind;
+uniform float uRatio,uTime,uEnergy,uTreble,uFlux,uFluidity;
+uniform mat4 uViewProjection;
+out vec2 vUV;out vec3 vNormal;
+vec3 surface(vec2 uv){
+ float u=uv.x,v=uv.y,h=2./max(1.,uRatio),w=h*uRatio;
+ float wave=.14*sin(u*5.1+v*3.7-uTime*.65)+.065*cos(v*8.3-u*2.6+uTime*.43);
+ float resonance=(.018*uEnergy+.012*uFlux)*sin(u*13.+v*9.-uTime*3.2)+.006*uTreble*sin(v*23.-uTime*4.);
+ float lod=max(0.,log2(float(textureSize(uImage,0).x)/192.));
+ float density=clamp(length(max(vec3(0.),uPaper-textureLod(uImage,uv,lod).rgb))*1.3,0.,1.);
+ return vec3((u-.5)*w+.035*uFluidity*sin(v*7.+uTime*.32),(.5-v)*h+.025*uFluidity*cos(u*6.-uTime*.4),uFluidity*(wave+resonance)+density*.018);
+}
 void main(){
- vUV=aUV;int kind=gl_InstanceID+uPart;vKind=kind;vec3 pos,normal;
- if(kind<2){
-  float side=kind==0?-1.:1.,u=aUV.x,v=aUV.y,height=min(1.05,.9/uRatio),width=height*uRatio,reach=(u-uRoot)*width;
-  float fold=uMotion.y,phase=uMotion.z,angle=uMotion.x+.035*uFlux*(1.-fold)*sin(phase),ca=cos(angle),sa=sin(angle),flex=(.045*sin(phase-.7)*(.7+.3*uEnergy)+.008*uTreble*sin(uTime*10.))*(1.-fold),sp=sin(u*3.14159265),cp=cos(u*3.14159265);
-  vec3 open=vec3(side*(.025+reach*ca),.09+reach*sa+flex*sp,(v-.5)*height*(1.-.65*u)+.18*u*u);
-  vec3 folded=vec3(side*(.07+.06*u),.12-.11*u+.015*sin(v*3.14159265),(v-.5)*.36+.20*u+.05);
-  pos=mix(open,folded,fold);
-  vec3 du=mix(vec3(side*width*ca,width*sa+flex*3.14159265*cp,-.65*(v-.5)*height+.36*u),vec3(side*.06,-.11,.20),fold);
-  vec3 dv=mix(vec3(0.,0.,height*(1.-.65*u)),vec3(0.,.015*3.14159265*cos(v*3.14159265),.36),fold);
-  normal=normalize(cross(du,dv));
-  float lod=max(0.,log2(max(float(textureSize(uImage,0).x)/128.,float(textureSize(uImage,0).y)/176.))+1.);
-  float density=clamp(length(max(vec3(0.),uPaper-textureLod(uImage,aUV,lod).rgb))*1.3,0.,1.);
-  pos+=normal*density*.018;
- }
-
- vNormal=mat3(uModel)*normal;
- gl_Position=uViewProjection*uModel*vec4(pos,1.);
+ vUV=aUV;vec3 pos=surface(aUV);
+ vec3 du=surface(aUV+vec2(.001,0.))-surface(aUV-vec2(.001,0.));
+ vec3 dv=surface(aUV+vec2(0.,.001))-surface(aUV-vec2(0.,.001));
+ vNormal=normalize(cross(du,dv));gl_Position=uViewProjection*vec4(pos,1.);
 }`;
 const fragment=`#version 300 es
 precision highp float;
-uniform sampler2D uImage;uniform vec3 uPaper;uniform float uOpacity;
-in vec2 vUV;in vec3 vNormal;flat in int vKind;out vec4 outColor;
+uniform sampler2D uImage;uniform vec3 uPaper;
+uniform float uOpacity,uTime,uEmergence,uDiffusion,uDrying;
+in vec2 vUV;in vec3 vNormal;out vec4 outColor;
 void main(){
- vec3 ink=texture(uImage,vUV).rgb;
+ // Coarse-to-fine optical emergence: original UVs and the original painting stay intact.
+ float blur=(1.-uDrying)*(.65+.8*(1.-uDiffusion));
+ vec3 ink=textureLod(uImage,vUV,blur).rgb;
  float difference=length(max(vec3(0.),uPaper-ink));
- // Soft matting preserves washes; never use a hard white-key threshold.
  float alpha=smoothstep(.018,.12,difference);
- if(vKind<2&&alpha<.002)discard;
- vec3 color=clamp((ink-uPaper*(1.-alpha))/max(alpha,.001),0.,1.);
-
- vec3 normal=normalize(vNormal);
- float light=.84+.16*abs(dot(normal,normalize(vec3(-.35,.5,1.))));
+ float field=.5+.20*sin(vUV.x*9.1+vUV.y*5.7)+.15*cos(vUV.y*11.3-vUV.x*3.2)+.10*sin(vUV.x*19.+vUV.y*13.);
+ float reveal=1.-smoothstep(uEmergence*1.4-.32,uEmergence*1.4+.08,field);
+ alpha*=reveal;
+ if(alpha<.002)discard;
+ float matte=smoothstep(.018,.12,difference);
+ vec3 color=clamp((ink-uPaper*(1.-matte))/max(matte,.001),0.,1.);
+ float light=.91+.09*abs(dot(normalize(vNormal),normalize(vec3(-.35,.5,1.))));
  outColor=vec4(color*light,alpha*uOpacity);
 }`;
 export interface DanceCredit{author:string;license:string;source:string}
 export class DanceRenderer{
- private gl:WebGL2RenderingContext;private program:WebGLProgram;private texture:WebGLTexture;private vao:WebGLVertexArrayObject;private buffer:WebGLBuffer;private count=0;private indexBuffer:WebGLBuffer;private root=.16;
+ private gl:WebGL2RenderingContext;private program:WebGLProgram;private texture:WebGLTexture;private vao:WebGLVertexArrayObject;private buffer:WebGLBuffer;private count=0;private indexBuffer:WebGLBuffer;
  private surface=document.createElement('canvas');private ctx:CanvasRenderingContext2D;private ratio:number;private paper:number[];
  private site=publicSiteAddress(location.href);
  private uniforms=new Map<string,WebGLUniformLocation|null>();
  private constructor(readonly canvas:HTMLCanvasElement,image:ImageBitmap,readonly poetry:ArtworkPoetry,readonly sound:BirdSound,paper:string,readonly credit:DanceCredit){
   this.ratio=image.width/image.height;this.paper=[1,3,5].map(i=>parseInt(paper.slice(i,i+2),16)/255);
   const gl=this.surface.getContext('webgl2',{alpha:true,antialias:true,preserveDrawingBuffer:false});
-  const ctx=canvas.getContext('2d',{alpha:false});if(!gl||!ctx)throw new Error('Le vol nécessite WebGL2. Ton image reste disponible.');this.gl=gl;this.ctx=ctx;
+  const ctx=canvas.getContext('2d',{alpha:false});if(!gl||!ctx)throw new Error('La danse nécessite WebGL2. Ton image reste disponible.');this.gl=gl;this.ctx=ctx;
   const shaders:WebGLShader[]=[];
-  const compile=(type:number,source:string)=>{const shader=gl.createShader(type)!;shaders.push(shader);gl.shaderSource(shader,source);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw new Error('Le vol ne peut pas ouvrir sa surface 3D.');return shader;};
+  const compile=(type:number,source:string)=>{const shader=gl.createShader(type)!;shaders.push(shader);gl.shaderSource(shader,source);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw new Error('La danse ne peut pas ouvrir sa surface 3D.');return shader;};
   this.program=gl.createProgram()!;gl.attachShader(this.program,compile(gl.VERTEX_SHADER,vertex));gl.attachShader(this.program,compile(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(this.program);shaders.forEach(s=>gl.deleteShader(s));if(!gl.getProgramParameter(this.program,gl.LINK_STATUS))throw new Error('La surface de danse est indisponible.');
   this.texture=gl.createTexture()!;gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
   /* indexed geometry shares vertices while keeping the original HD colour map */
@@ -89,19 +86,13 @@ export class DanceRenderer{
   const {canvas,gl,ctx}=this,w=canvas.width,h=canvas.height;
   if(gl.isContextLost())throw new Error('La surface 3D a été interrompue. Ferme puis rouvre la danse.');
   if(this.surface.width!==w||this.surface.height!==h){this.surface.width=w;this.surface.height=h;}
-  const t=visualTime(time),motion=birdMotion(t),matrix=flightMatrix(t,w/h),opacity=smooth(0,.65,t)*(1-smooth(29.3,30,t));
+  const t=visualTime(time),state=processState(t),matrix=flightMatrix(t,w/h,[],this.ratio),opacity=smooth(0,.65,t)*(1-smooth(29.3,30,t));
   gl.viewport(0,0,w,h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-  gl.useProgram(this.program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.uniform1i(this.uniform('uImage'),0);gl.uniform3fv(this.uniform('uPaper'),this.paper);gl.uniform1f(this.uniform('uRatio'),this.ratio);gl.uniform1f(this.uniform('uRoot'),this.root);gl.uniform1f(this.uniform('uTime'),t);gl.uniform1f(this.uniform('uOpacity'),opacity);gl.uniform4fv(this.uniform('uMotion'),[motion.flap,motion.fold,motion.phase,motion.feet]);gl.uniformMatrix4fv(this.uniform('uModel'),false,birdModel(t));gl.uniformMatrix4fv(this.uniform('uViewProjection'),false,matrix);
+  gl.useProgram(this.program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.uniform1i(this.uniform('uImage'),0);gl.uniform3fv(this.uniform('uPaper'),this.paper);gl.uniform1f(this.uniform('uRatio'),this.ratio);gl.uniform1f(this.uniform('uTime'),t);gl.uniform1f(this.uniform('uOpacity'),opacity);gl.uniformMatrix4fv(this.uniform('uViewProjection'),false,matrix);
   const sound=soundAt(this.sound.analysis,t);for(const [key,value]of Object.entries(sound))gl.uniform1f(this.uniform('u'+key[0].toUpperCase()+key.slice(1)),value);
-  gl.bindVertexArray(this.vao);gl.uniform1i(this.uniform('uPart'),0);
-  // Shared HD texture and indexed wing mesh; six lightweight draw calls, no anatomy.
-  for(let i=0;i<FLOCK_COUNT;i++){
-   const state=birdMotion(t,i);
-   gl.uniform4fv(this.uniform('uMotion'),[state.flap,0,state.phase,0]);
-   gl.uniformMatrix4fv(this.uniform('uModel'),false,birdModel(t,i));
-   gl.drawElementsInstanced(gl.TRIANGLES,this.count,gl.UNSIGNED_SHORT,0,2);
-  }
-  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#f0f7fc');sky.addColorStop(.7,'#fff');sky.addColorStop(1,'#fafcfb');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);ctx.drawImage(this.surface,0,0);
+  for(const key of ['emergence','diffusion','drying','fluidity'] as const)gl.uniform1f(this.uniform('u'+key[0].toUpperCase()+key.slice(1)),state[key]);
+  gl.bindVertexArray(this.vao);gl.drawElements(gl.TRIANGLES,this.count,gl.UNSIGNED_SHORT,0);
+  const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#fafbf9');sky.addColorStop(.7,'#fff');sky.addColorStop(1,'#fafcfb');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);ctx.drawImage(this.surface,0,0);
   const text=(value:string,y:number,size:number,color='#35483e',alpha=.8)=>{ctx.save();ctx.fillStyle=color;ctx.globalAlpha=alpha;ctx.textAlign='center';ctx.textBaseline='middle';const unit=Math.min(w,h*9/16);ctx.font=`${size*unit}px ${POETRY_FONT}`;const width=ctx.measureText(value).width;if(width>w*.84)ctx.font=`${size*unit*w*.84/width}px ${POETRY_FONT}`;ctx.fillText(value,w/2,h*y);ctx.restore();};
   const visual=visualTime(time),verse=Math.min(2,Math.floor(visual/10)),phase=visual%10;
   text(this.poetry.title,.10,.050);

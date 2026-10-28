@@ -306,7 +306,7 @@ export function BirdStudio(){
               {!poemPlaced?<><CompositionEditor size={Math.round(paintingPlacement.scale*100)} onSize={n=>{const scale=n/100;setPaintingPlacement(p=>fitPainting({scale,x:p.x+(p.scale-scale)/2,y:p.y+(p.scale-scale)/2}));}} onReset={()=>setPaintingPlacement(ORIGINAL_PAINTING)}/>
               <button className="finalize-art place-haiku" onClick={()=>setPoemPlaced(true)}>Valider la composition</button></>:<button className="continue-art" onClick={()=>setPoemPlaced(false)}>Déplacer la peinture</button>}
               <button className="finalize-art share-art" onClick={()=>void exportArt('share')} disabled={!poemPlaced||exporting||!!error}>{exporting?'Préparation…':'Partager l’œuvre'} ↗</button>
-              <button className="finalize-art dance-art" onClick={()=>void openDance()} disabled={!poemPlaced||exporting||!!error}>Contempler le vol de mon Haïkuarelle</button>
+              <button className="finalize-art dance-art" onClick={()=>void openDance()} disabled={!poemPlaced||exporting||!!error}>Contempler la danse de mon Haïkuarelle</button>
               <button className="continue-art download-art" onClick={()=>void exportArt()} disabled={!poemPlaced||exporting||!!error}>Télécharger l’image · PNG</button>
             </>}
             <p className="shared-attribution">Création Plume d’Haïkuarelle · •°○<br/>La participation n’attribue pas de propriété exclusive sur l’œuvre.</p>
@@ -322,7 +322,7 @@ export function BirdStudio(){
     {screen.viewing&&!immersiveActive&&<button className="bird-exit" aria-label="Quitter le plein écran" onClick={screen.exit} onFocus={screen.reveal} onPointerMove={screen.reveal}><Glyph name="close"/>Quitter</button>}
     {screen.viewing&&playing&&<button className="bird-finish-screen" onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/>Interrompre le chant</button>}
     {screen.viewing&&!immersiveActive&&canCreate&&!busy&&marks.length>0&&<button className="bird-finalize-screen" onClick={finalize}>Laisser sécher ☼</button>}
-    {dance&&poetry&&<Suspense fallback={<div className="toast" role="status">Préparation de l’envol…</div>}><DanceStudio painting={dance.painting} sound={dance.sound} audio={dance.audio} credit={dance.credit} poetry={poetry} paper={palette.paper} seed={seed} onClose={()=>setDance(null)}/></Suspense>}
+    {dance&&poetry&&<Suspense fallback={<div className="toast" role="status">Préparation de la danse…</div>}><DanceStudio painting={dance.painting} sound={dance.sound} audio={dance.audio} credit={dance.credit} poetry={poetry} paper={palette.paper} seed={seed} onClose={()=>setDance(null)}/></Suspense>}
     {notice&&<div className="toast" role="status">{notice}</div>}
   </div>;
 }

@@ -1,31 +1,30 @@
 import {describe,it,expect} from 'vitest';
 import {soundAt,videoMime,videoSize,visualTime} from '../src/dance/score';
 import type {AudioAnalysis} from '../src/audio/types';
-import {flightPose,flightMatrix,flightMesh,pigmentFocus,wingPosition,birdMotion,FLOCK_COUNT,birdModel} from '../src/dance/flight';
-describe('abstract watercolor flock',()=>{
- it('keeps six distinct wind trajectories without anatomy or landing',()=>{
-  expect(FLOCK_COUNT).toBe(6);
-  for(let t=0;t<=30;t+=.5){const positions=Array.from({length:FLOCK_COUNT},(_,i)=>birdMotion(t,i).position);for(let i=0;i<FLOCK_COUNT;i++){
-   expect(birdMotion(t,i).fold).toBe(0);expect(birdMotion(t,i).contact).toBe(false);expect([...birdModel(t,i)].every(Number.isFinite)).toBe(true);
-   for(let j=i+1;j<FLOCK_COUNT;j++)expect(Math.hypot(...positions[i].map((v,k)=>v-positions[j][k]))).toBeGreaterThan(.2);
-  }}
+import {flightPose,flightMatrix,flightMesh,pigmentFocus,surfacePosition,processState} from '../src/dance/flight';
+describe('single watercolor process dance',()=>{
+ it('emerges, diffuses, then dries and settles',()=>{
+  expect(processState(0).emergence).toBe(0);expect(processState(10).emergence).toBe(1);expect(processState(14).diffusion).toBe(1);
+  expect(processState(18).drying).toBe(0);expect(processState(28).drying).toBe(1);expect(processState(28).fluidity).toBe(0);
+  let previous=processState(0);for(let t=0;t<=30;t+=.1){const s=processState(t);expect(s.emergence).toBeGreaterThanOrEqual(previous.emergence);expect(s.drying).toBeGreaterThanOrEqual(previous.drying);previous=s;}
  });
- it('circles the travelling bird with finite, continuous camera matrices',()=>{
-  let prior=flightPose(0).eye;const directions=new Set<number>();
-  for(let i=0;i<=900;i++){const pose=flightPose(i/30);expect(Math.hypot(...pose.eye.map((v,j)=>v-prior[j]))).toBeLessThan(.09);prior=pose.eye;const angle=Math.atan2(pose.eye[0]-pose.target[0],pose.eye[2]-pose.target[2]);directions.add(Math.floor((angle+Math.PI)/(Math.PI/2)));}
-  expect(directions.size).toBeGreaterThanOrEqual(4);
+ it('accompanies the single artwork with finite, continuous camera matrices',()=>{
+  let prior=flightPose(0).eye;
+  for(let i=0;i<=900;i++){const pose=flightPose(i/30);expect(Math.hypot(...pose.eye.map((v,j)=>v-prior[j]))).toBeLessThan(.09);prior=pose.eye;expect(pose.eye[2]).toBeGreaterThan(2);}
   for(const aspect of [9/16,16/9,1])for(let t=0;t<=30;t+=.1)expect([...flightMatrix(t,aspect)].every(Number.isFinite)).toBe(true);
  });
- it('preserves two full mirrored wing surfaces throughout the dance',()=>{
-  for(const ratio of [.4,.7,1.7])for(const time of [0,12,29])for(const u of [0,.25,.5,1]){const a=wingPosition([u,.4,0],time,1,ratio),b=wingPosition([u,.4,0],time,-1,ratio);expect(a[0]).toBe(-b[0]);expect(a.slice(1)).toEqual(b.slice(1));}
-  expect(birdMotion(29).fold).toBe(0);
+ it('keeps original left/right positions and settles to one flat complete painting',()=>{
+  for(const ratio of [.4,.7,1.7])for(const u of [0,.25,.5,1])for(const v of [0,.5,1]){
+   const p=surfacePosition(u,v,28,ratio);expect(p[0]).toBeCloseTo((u-.5)*2/Math.max(1,ratio)*ratio);expect(p[1]).toBeCloseTo((.5-v)*2/Math.max(1,ratio));expect(p[2]).toBeCloseTo(0);
+  }
+  const left=surfacePosition(.2,.4,12),right=surfacePosition(.8,.4,12);expect(left[2]).not.toBeCloseTo(right[2]);
  });
- it('uses bounded indexed meshes for wings and small body parts',()=>{
+ it('uses bounded indexed meshes for the one fluid surface',()=>{
   const compact=flightMesh(true),hd=flightMesh(false);expect(hd.vertices.length).toBeGreaterThan(compact.vertices.length);expect(hd.vertices.length/2).toBeLessThan(65536);
   for(const mesh of [compact,hd])expect(mesh.indices.every(i=>i<mesh.vertices.length/2)).toBe(true);
  });
  it('keeps thirty seconds of forward choreography',()=>{
-  expect(visualTime(0)).toBe(0);expect(visualTime(15)).toBe(15);expect(visualTime(30)).toBe(30);expect(birdMotion(visualTime(29)).contact).toBe(false);
+  expect(visualTime(0)).toBe(0);expect(visualTime(15)).toBe(15);expect(visualTime(30)).toBe(30);expect(processState(visualTime(29)).drying).toBe(1);
  });
  it('keeps breaths between forward bird phrases throughout thirty seconds',()=>{
   const analysis={duration:1,frames:Array.from({length:30},()=>({energy:.8,bass:.4,treble:.3,flux:.2}))} as AudioAnalysis;

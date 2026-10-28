@@ -1,31 +1,23 @@
 export type Vec3=[number,number,number];
-export const FLOCK_COUNT=6;
 export function smooth(a:number,b:number,t:number){const p=Math.max(0,Math.min(1,(t-a)/(b-a)));return p*p*(3-2*p);}
-/** Six phase-shifted, continuous wind ribbons. Depth separation keeps crossings airy. */
-export function birdMotion(time:number,index=0){
- const t=Math.max(0,Math.min(30,time)),a=t*.27+index*Math.PI/3;
- const glide=(Math.sin(t*.48+index*1.7)+1)/2,phase=t*(5.3+index*.13)+index*1.8;
- const position:Vec3=[1.65*Math.cos(a),.55*Math.sin(2*a)+.16*Math.sin(t*.7+index),.85*Math.sin(a)+.20*Math.cos(2*a+index*.3)];
- return {time:t,position,flap:.12+(.12+.55*(1-glide))*Math.sin(phase),fold:0,glide,phase,feet:0,contact:false,pitch:.13*Math.sin(a*2),roll:.30*Math.sin(a+.6),yaw:-a-.4,scale:.70+index*.025};
+/** A poetic reconstruction from the finished texture, not a recording of brush history. */
+export function processState(time:number){
+ const t=Math.max(0,Math.min(30,time));
+ return {time:t,emergence:smooth(.5,10,t),diffusion:smooth(4,14,t),drying:smooth(19,28,t),fluidity:1-smooth(19,28,t)};
 }
-export function birdModel(time:number,index=0){
- const s=birdMotion(time,index),cy=Math.cos(s.yaw),sy=Math.sin(s.yaw),cp=Math.cos(s.pitch),sp=Math.sin(s.pitch),cr=Math.cos(s.roll),sr=Math.sin(s.roll),k=s.scale;
- return new Float32Array([(cy*cr+sy*sp*sr)*k,cp*sr*k,(-sy*cr+cy*sp*sr)*k,0,(-cy*sr+sy*sp*cr)*k,cp*cr*k,(sy*sr+cy*sp*cr)*k,0,sy*cp*k,-sp*k,cy*cp*k,0,...s.position,1]);
+/** One complete, unmirrored sheet of pigment, with asymmetric liquid motion. */
+export function surfacePosition(u:number,v:number,time:number,ratio=1):Vec3{
+ const s=processState(time),height=2/Math.max(1,ratio),width=height*ratio;
+ const wave=.14*Math.sin(u*5.1+v*3.7-time*.65)+.065*Math.cos(v*8.3-u*2.6+time*.43);
+ return [(u-.5)*width+.035*s.fluidity*Math.sin(v*7+time*.32),( .5-v)*height+.025*s.fluidity*Math.cos(u*6-time*.4),s.fluidity*wave];
 }
-export function transformPoint(matrix:Float32Array,p:Vec3):Vec3{return [0,1,2].map(i=>matrix[i]*p[0]+matrix[4+i]*p[1]+matrix[8+i]*p[2]+matrix[12+i]) as Vec3;}
-/** Two complete mirrored paintings, joined without any anatomical body. */
-export function wingPosition(uv:Vec3,time:number,side:number,ratio=1,root=.16):Vec3{
- const s=birdMotion(time),height=Math.min(1.05,.9/ratio),width=height*ratio,u=uv[0],v=uv[1],reach=(u-root)*width,flex=.045*Math.sin(s.phase-.7)*Math.sin(u*Math.PI);
- return [side*(.025+reach*Math.cos(s.flap)),.09+reach*Math.sin(s.flap)+flex,(v-.5)*height*(1-.65*u)+.18*u*u];
-}
-/** A slow orbit alternates breathing room and a closer escort of the flock. */
-export function flightPose(time:number,aspect=9/16,_focus:readonly Vec3[]=[],_ratio=1,_root=.16){
- const t=Math.max(0,Math.min(30,time)),angle=.6+t*.19,close=(1-Math.cos(t*Math.PI/15))/2;
- const portrait=Math.max(1,(9/16)/aspect),radius=(9.2-1.0*close)*portrait;
- const lead=birdMotion(t,0).position;
- const target:Vec3=[lead[0]*.16*close,.12+lead[1]*.12,lead[2]*.12*close];
- const eye:Vec3=[target[0]+Math.sin(angle)*radius,target[1]+1.25+.35*Math.sin(t*.21),target[2]+Math.cos(angle)*radius];
- return {eye,target,roll:.055*Math.sin(t*.23)};
+/** Oblique travelling camera, never turning the work edge-on or mirroring it. */
+export function flightPose(time:number,aspect=9/16,_focus:readonly Vec3[]=[],ratio=1,_root=0){
+ const t=Math.max(0,Math.min(30,time)),s=processState(t),height=2/Math.max(1,ratio),width=height*ratio;
+ const distance=Math.max(height*1.5,width/aspect*1.15),breath=.5-.5*Math.cos(t*Math.PI/15);
+ const target:Vec3=[.06*Math.sin(t*.21)*s.fluidity,.025*Math.cos(t*.27)*s.fluidity,0];
+ const eye:Vec3=[.38*Math.sin(t*.20)*s.fluidity,.24*Math.cos(t*.16)*s.fluidity,distance*(1-.13*breath)];
+ return {eye,target,roll:.025*Math.sin(t*.23)*s.fluidity};
 }
 const sub=(a:Vec3,b:Vec3):Vec3=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
 const dot=(a:Vec3,b:Vec3)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -51,19 +43,11 @@ export function pigmentFocus(pixels:Uint8ClampedArray,width:number,height:number
 }
 /** Indexed mesh density scales with the device while the colour texture stays HD. */
 export function flightMesh(compact:boolean){
- return surfaceMesh(compact?64:96,compact?88:128);
+ return surfaceMesh(compact?128:192,compact?176:256);
 }
 export function surfaceMesh(nx:number,ny:number){
  const vertices=new Float32Array((nx+1)*(ny+1)*2),indices=new Uint16Array(nx*ny*6);let v=0,j=0;
  for(let y=0;y<=ny;y++)for(let x=0;x<=nx;x++){vertices[v++]=x/nx;vertices[v++]=y/ny;}
  for(let y=0;y<ny;y++)for(let x=0;x<nx;x++){const a=y*(nx+1)+x,b=a+1,c=a+nx+1,d=c+1;indices.set([a,b,c,b,d,c],j);j+=6;}
  return {vertices,indices};
-}
-/** Register the mirror near the first substantial pigment, not the blank crop margin. */
-export function pigmentRoot(pixels:Uint8ClampedArray,width:number,height:number,paper:number[]){
- const weights=new Float64Array(width);let total=0;
- for(let y=0;y<height;y++)for(let x=0;x<width;x++){const i=(y*width+x)*4,d=Math.max(0,Math.hypot(...paper.map((p,c)=>Math.max(0,p-pixels[i+c]/255)))-.05);weights[x]+=d;total+=d;}
- if(!total)return .16;
- let sum=0;for(let x=0;x<width;x++){sum+=weights[x];if(sum>=total*.03)return Math.max(.06,Math.min(.25,(x+.5)/width));}
- return .16;
 }

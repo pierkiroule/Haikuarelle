@@ -29,7 +29,7 @@ npm run preview
 2. **Composer avec l’eau et le chant.** Eau, Plume, Souffle et Inkbird partagent une palette accessible. Les chants jouent entièrement ; l’eau persiste jusqu’au séchage volontaire. Inkbird vole seul ou se laisse attirer par le geste.
 3. **Laisser sécher.** Un halo bleu et une progression accompagnent les douze secondes simulées de séchage.
 4. **Révéler le haïku et partager.** Le titre et les trois vers naissent de l’oiseau et de la peinture. Les textes en Caveat à 80 % restent centrés ; seule la peinture se déplace et se redimensionne. Le PNG inclut la signature •°○.
-5. **Contempler le vol de mon Haïkuarelle.** La peinture habille un oiseau dont les ailes battent, planent puis se replient lorsqu’il se pose sur un fil noir. Une caméra de drone l’accompagne pendant trente secondes, avec le chant toujours à l’endroit. Le film conserve une signature et des crédits discrets. MP4 H.264/AAC si compatible, sinon WebM. Voir [le fonctionnement et les limites de l’export](docs/DANCE.md).
+5. **Contempler la danse de mon Haïkuarelle.** Une seule peinture se déploie en 3D : émergence des pigments, matière fluide réagissant au chant puis séchage. Une caméra accompagne cette évocation du processus pendant trente secondes, sans symétrie ni silhouette d’oiseau. Le film conserve une signature et des crédits discrets. MP4 H.264/AAC si compatible, sinon WebM. Voir [le fonctionnement et les limites de l’export](docs/DANCE.md).
 
 ## Pigments et signatures
 
@@ -176,8 +176,8 @@ Les films à partir de 0,006 d’humidité participent aux chemins de peinture. 
 
 `scripts/check-water-roots.py` vérifie le scénario complet : eau claire, souffle, puis dépôt sonore local. Dans la scène contrôlée, la surface humide augmente d’environ 67 % et l’épaisseur moyenne diminue d’environ 40 % à volume pratiquement constant. La peinture colore un filament nouvellement étiré sans changer l’eau ni toucher la flaque séparée ; ces chiffres décrivent cette scène, pas tous les gestes.
 
-### Nuée et murmures poétiques
+### Danse de la matière et murmures poétiques
 
-Le vol final devient une danse de six haïkuarelles abstraites, uniquement deux ailes peintes par forme, sans anatomie ni fil électrique. La caméra suit leurs trajectoires croisées et leurs glisses. Voir [la danse](docs/DANCE.md).
+La danse finale anime une seule fois l’œuvre complète en 3D, sans symétrie ni oiseau. Elle évoque l’émergence des pigments, leur diffusion puis le séchage, à partir de l’image finale ; elle ne rejoue pas l’historique des gestes. Voir [la danse](docs/DANCE.md).
 
 La guidance vocale optionnelle accompagne les dix moments du parcours, avec file séquentielle, fondus, atténuation puis remontée progressive du chant et bouton Voix. Elle attend une interaction et n'interrompt pas le dessin. Les dix MP3 originaux sont intégrés dans [`public/vocaux/`](public/vocaux/README.md), de `Vocal00.mp3` à `Vocal09.mp3`. Les fichiers absents sont ignorés sans bloquer l'atelier.
