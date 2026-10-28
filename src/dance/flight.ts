@@ -8,17 +8,25 @@ export function processState(time:number){
 /** One complete, unmirrored sheet of pigment, with asymmetric liquid motion. */
 export function surfacePosition(u:number,v:number,time:number,ratio=1):Vec3{
  const s=processState(time),height=2/Math.max(1,ratio),width=height*ratio;
- const wave=.14*Math.sin(u*5.1+v*3.7-time*.65)+.065*Math.cos(v*8.3-u*2.6+time*.43);
- return [(u-.5)*width+.035*s.fluidity*Math.sin(v*7+time*.32),( .5-v)*height+.025*s.fluidity*Math.cos(u*6-time*.4),s.fluidity*wave];
+ const x=(u-.5)*width,y=(.5-v)*height,f=s.fluidity;
+ const twist=f*(.95*Math.sin(v*4.7+time*.38)+.35*Math.sin(time*.27));
+ const wave=.30*Math.sin(u*5.1+v*3.7-time*.65)+.13*Math.cos(v*8.3-u*2.6+time*.43);
+ return [x*Math.cos(twist)+.09*f*Math.sin(v*7+time*.32),y+.09*f*Math.cos(u*6-time*.4),-x*Math.sin(twist)+f*wave];
 }
-/** Oblique travelling camera, never turning the work edge-on or mirroring it. */
-export function flightPose(time:number,aspect=9/16,_focus:readonly Vec3[]=[],ratio=1,_root=0){
+/** Two sweeping close passes at actual pigment, followed by a full, calm reveal. */
+export function flightPose(time:number,aspect=9/16,focus:readonly Vec3[]=[],ratio=1,_root=0){
  const t=Math.max(0,Math.min(30,time)),s=processState(t),height=2/Math.max(1,ratio),width=height*ratio;
- const distance=Math.max(height*1.5,width/aspect*1.15),breath=.5-.5*Math.cos(t*Math.PI/15);
- const target:Vec3=[.06*Math.sin(t*.21)*s.fluidity,.025*Math.cos(t*.27)*s.fluidity,0];
- const eye:Vec3=[.38*Math.sin(t*.20)*s.fluidity,.24*Math.cos(t*.16)*s.fluidity,distance*(1-.13*breath)];
- return {eye,target,roll:.025*Math.sin(t*.23)*s.fluidity};
+ const wide=Math.max(height*1.5,width/aspect*1.15);
+ const pass=smooth(2,6,t)*(1-smooth(8,12,t))+.85*smooth(13,16,t)*(1-smooth(19,24,t));
+ const between=smooth(10,17,t),first=focus[0]??[.35,.42,0],second=focus[1]??[.65,.6,0];
+ const uv=first.map((v,i)=>v*(1-between)+second[i]*between) as Vec3;
+ const point=surfacePosition(uv[0],uv[1],t,ratio),follow=pass*.72;
+ const target=point.map(v=>v*follow) as Vec3;
+ const distance=wide*(1-pass*.57),angle=.48*Math.sin(t*.27)*s.fluidity;
+ const eye:Vec3=[target[0]+distance*Math.sin(angle),target[1]+.48*Math.cos(t*.31)*s.fluidity,target[2]+distance*Math.cos(angle)];
+ return {eye,target,roll:.15*Math.sin(t*.33)*s.fluidity};
 }
+
 const sub=(a:Vec3,b:Vec3):Vec3=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
 const dot=(a:Vec3,b:Vec3)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const cross=(a:Vec3,b:Vec3):Vec3=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];

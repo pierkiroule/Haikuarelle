@@ -1,4 +1,4 @@
-import {flightMatrix,flightMesh,processState,smooth} from './flight';
+import {flightMatrix,flightMesh,processState,pigmentFocus,smooth,type Vec3} from './flight';
 import {paintingBounds} from './framing';
 import {APP_NAME,publicSiteAddress} from '../brand';
 import {loadPoetryFont,POETRY_FONT} from '../birds/FixedPoetry';
@@ -15,11 +15,12 @@ uniform mat4 uViewProjection;
 out vec2 vUV;out vec3 vNormal;
 vec3 surface(vec2 uv){
  float u=uv.x,v=uv.y,h=2./max(1.,uRatio),w=h*uRatio;
- float wave=.14*sin(u*5.1+v*3.7-uTime*.65)+.065*cos(v*8.3-u*2.6+uTime*.43);
- float resonance=(.018*uEnergy+.012*uFlux)*sin(u*13.+v*9.-uTime*3.2)+.006*uTreble*sin(v*23.-uTime*4.);
+ float wave=.30*sin(u*5.1+v*3.7-uTime*.65)+.13*cos(v*8.3-u*2.6+uTime*.43);
+ float resonance=(.055*uEnergy+.045*uFlux)*sin(u*13.+v*9.-uTime*3.2)+.018*uTreble*sin(v*23.-uTime*4.);
  float lod=max(0.,log2(float(textureSize(uImage,0).x)/192.));
  float density=clamp(length(max(vec3(0.),uPaper-textureLod(uImage,uv,lod).rgb))*1.3,0.,1.);
- return vec3((u-.5)*w+.035*uFluidity*sin(v*7.+uTime*.32),(.5-v)*h+.025*uFluidity*cos(u*6.-uTime*.4),uFluidity*(wave+resonance)+density*.018);
+ float x=(u-.5)*w,y=(.5-v)*h,twist=uFluidity*(.95*sin(v*4.7+uTime*.38)+.35*sin(uTime*.27));
+ return vec3(x*cos(twist)+.09*uFluidity*sin(v*7.+uTime*.32),y+.09*uFluidity*cos(u*6.-uTime*.4),-x*sin(twist)+uFluidity*(wave+resonance)+density*.026);
 }
 void main(){
  vUV=aUV;vec3 pos=surface(aUV);
@@ -34,8 +35,7 @@ uniform float uOpacity,uTime,uEmergence,uDiffusion,uDrying;
 in vec2 vUV;in vec3 vNormal;out vec4 outColor;
 void main(){
  // Coarse-to-fine optical emergence: original UVs and the original painting stay intact.
- float blur=(1.-uDrying)*(.65+.8*(1.-uDiffusion));
- vec3 ink=textureLod(uImage,vUV,blur).rgb;
+ vec3 ink=texture(uImage,vUV).rgb;
  float difference=length(max(vec3(0.),uPaper-ink));
  float alpha=smoothstep(.018,.12,difference);
  float field=.5+.20*sin(vUV.x*9.1+vUV.y*5.7)+.15*cos(vUV.y*11.3-vUV.x*3.2)+.10*sin(vUV.x*19.+vUV.y*13.);
@@ -44,13 +44,18 @@ void main(){
  if(alpha<.002)discard;
  float matte=smoothstep(.018,.12,difference);
  vec3 color=clamp((ink-uPaper*(1.-matte))/max(matte,.001),0.,1.);
- float light=.91+.09*abs(dot(normalize(vNormal),normalize(vec3(-.35,.5,1.))));
- outColor=vec4(color*light,alpha*uOpacity);
+ vec3 n=normalize(vNormal);if(!gl_FrontFacing)n=-n;
+ float light=.78+.22*abs(dot(n,normalize(vec3(-.35,.5,1.))));
+ float wet=(1.-uDrying)*uDiffusion;
+ float sheen=pow(max(0.,dot(n,normalize(vec3(-.4,.65,1.4)))),28.)*.13*wet;
+ float rim=pow(1.-abs(n.z),3.)*.07*wet;
+ // Water-light follows the moving surface without washing away the HD pigment detail.
+ outColor=vec4(clamp(color*light+vec3(sheen+rim),0.,1.),alpha*uOpacity);
 }`;
 export interface DanceCredit{author:string;license:string;source:string}
 export class DanceRenderer{
  private gl:WebGL2RenderingContext;private program:WebGLProgram;private texture:WebGLTexture;private vao:WebGLVertexArrayObject;private buffer:WebGLBuffer;private count=0;private indexBuffer:WebGLBuffer;
- private surface=document.createElement('canvas');private ctx:CanvasRenderingContext2D;private ratio:number;private paper:number[];
+ private surface=document.createElement('canvas');private ctx:CanvasRenderingContext2D;private ratio:number;private paper:number[];private focus:Vec3[]=[];
  private site=publicSiteAddress(location.href);
  private uniforms=new Map<string,WebGLUniformLocation|null>();
  private constructor(readonly canvas:HTMLCanvasElement,image:ImageBitmap,readonly poetry:ArtworkPoetry,readonly sound:BirdSound,paper:string,readonly credit:DanceCredit){
@@ -78,6 +83,8 @@ export class DanceRenderer{
   let image:ImageBitmap|undefined;
   try{image=await createImageBitmap(original,Math.floor(bounds.x*original.width),Math.floor(bounds.y*original.height),Math.max(1,Math.floor(bounds.width*original.width)),Math.max(1,Math.floor(bounds.height*original.height)));
    const scene=new DanceRenderer(canvas,image,poetry,sound,paper,credit);
+   ctx.clearRect(0,0,probe.width,probe.height);ctx.drawImage(image,0,0,probe.width,probe.height);
+   scene.focus=pigmentFocus(ctx.getImageData(0,0,probe.width,probe.height).data,probe.width,probe.height,rgb,image.width/image.height);
    return scene;
   }finally{image?.close();original.close();probe.width=probe.height=1;}
  }
@@ -86,7 +93,7 @@ export class DanceRenderer{
   const {canvas,gl,ctx}=this,w=canvas.width,h=canvas.height;
   if(gl.isContextLost())throw new Error('La surface 3D a été interrompue. Ferme puis rouvre la danse.');
   if(this.surface.width!==w||this.surface.height!==h){this.surface.width=w;this.surface.height=h;}
-  const t=visualTime(time),state=processState(t),matrix=flightMatrix(t,w/h,[],this.ratio),opacity=smooth(0,.65,t)*(1-smooth(29.3,30,t));
+  const t=visualTime(time),state=processState(t),matrix=flightMatrix(t,w/h,this.focus,this.ratio),opacity=smooth(0,.65,t)*(1-smooth(29.3,30,t));
   gl.viewport(0,0,w,h);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
   gl.useProgram(this.program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.uniform1i(this.uniform('uImage'),0);gl.uniform3fv(this.uniform('uPaper'),this.paper);gl.uniform1f(this.uniform('uRatio'),this.ratio);gl.uniform1f(this.uniform('uTime'),t);gl.uniform1f(this.uniform('uOpacity'),opacity);gl.uniformMatrix4fv(this.uniform('uViewProjection'),false,matrix);
   const sound=soundAt(this.sound.analysis,t);for(const [key,value]of Object.entries(sound))gl.uniform1f(this.uniform('u'+key[0].toUpperCase()+key.slice(1)),value);
