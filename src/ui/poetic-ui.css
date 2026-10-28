@@ -1,0 +1,13 @@
+/* Ivory, muted ink and paper shadows. Effects never enter the painting renderer. */
+.poetic-depth{width:48px;height:56px;transform-style:preserve-3d}
+.poetic-depth .feather-choice{transform:translateZ(7px)}
+.poetic-depth .feather-choice:focus-visible{box-shadow:0 5px 12px #54675414}
+.poetic-word{display:inline-block;font:inherit;font-style:inherit;font-weight:inherit;color:inherit;vertical-align:baseline}
+.poetic-dock-wake{pointer-events:auto;position:fixed;z-index:72;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 20px;border:1px solid #a8ae9866;border-radius:24px;background:#f7f4eceb;color:#61705c;box-shadow:0 5px 20px #50472c0c;font:12px Georgia,serif;cursor:pointer;transition:opacity .4s}
+.poetic-dock-wake.is-concealed{opacity:0;pointer-events:none}
+.poetic-dock-wake:focus-visible{outline:2px solid #688d93;outline-offset:3px}
+.poetic-dock .palette-toolbar>.water-pad:not(.undo-pad),.poetic-dock .bird-pad{transition:transform .35s ease,background-color .35s ease,box-shadow .35s ease;transform-origin:center bottom}
+@media(hover:hover) and (pointer:fine){.poetic-dock .palette-toolbar>.water-pad:not(.undo-pad):hover,.poetic-dock .bird-pad:hover{transform:translateY(-3px) scale(1.045);box-shadow:0 5px 12px #58674810}}
+@media(prefers-reduced-motion:reduce){.poetic-word{opacity:1!important;transform:none!important}.poetic-depth,.poetic-depth .feather-choice{transform:none!important}.poetic-dock,.poetic-dock-wake,.poetic-dock .palette-toolbar>.water-pad,.poetic-dock .bird-pad{transition:none!important}}
+
+@media(hover:none),(pointer:coarse){.poetic-depth,.poetic-depth .feather-choice{transform:none!important;transform-style:flat}}
