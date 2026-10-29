@@ -13,7 +13,7 @@ with sync_playwright() as pw:
   page.add_init_script('''for(const C of [WebGLRenderingContext,WebGL2RenderingContext]){const get=C.prototype.getParameter;C.prototype.getParameter=function(p){return p===this.MAX_TEXTURE_SIZE?Math.min(192,get.call(this,p)):get.call(this,p)}}''')
   print('opening',width,flush=True)
   page.goto(os.getenv('HAIKUARELLE_URL','http://127.0.0.1:5173/'),wait_until='domcontentloaded')
-  page.locator('.feather-choice').first.wait_for();assert page.locator('.feather-choice').count()==12;print('loaded',width,flush=True)
+  page.get_by_role('button',name='Entrer dans Haïkuarelle',exact=False).click();page.locator('.feather-choice').first.wait_for();assert page.locator('.feather-choice').count()==12;print('loaded',width,flush=True)
   # Limit the software display buffer as well as the field, so a short real
   # sample cannot finish while SwiftShader renders a full-window frame.
   page.evaluate('''async url=>{const {HaikuarelleEngine}=await import(url);const begin=HaikuarelleEngine.prototype.beginSignature;HaikuarelleEngine.prototype.beginSignature=function(...args){
@@ -80,7 +80,7 @@ with sync_playwright() as pw:
   assert not errors,errors
   print({'encounterComposeReveal':True,'touchWake':True,'poemUnchanged':True,'tablet':True,'errors':errors},flush=True);page.close()
  desktop=browser.new_page(viewport={'width':1200,'height':900},reduced_motion='no-preference')
- desktop.goto('http://localhost:5173');desktop.locator('.feather-choice').first.focus()
+ desktop.goto('http://localhost:5173');desktop.get_by_role('button',name='Entrer dans Haïkuarelle',exact=False).click();desktop.locator('.feather-choice').first.focus()
  desktop.locator('.feather-circle').scroll_into_view_if_needed()
  target=desktop.evaluate("""()=>{const cards=[...document.querySelectorAll('.poetic-depth')];for(let i=0;i<cards.length;i++){const r=cards[i].getBoundingClientRect(),x=r.x+r.width*.72,y=r.y+r.height*.35;if(cards[i].contains(document.elementFromPoint(x,y)))return {index:i,x,y};}throw Error('No exposed feather');}""")
  card=desktop.locator('.poetic-depth').nth(target['index']);desktop.mouse.move(target['x'],target['y']);desktop.wait_for_timeout(800)
