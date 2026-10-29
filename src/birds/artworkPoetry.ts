@@ -1,3 +1,4 @@
+import {composeNaturePoem} from './naturePoetry';
 import {createRng} from '../vendor/pigment-drift/engine/params';
 import {RESONANT_STANZAS,SENSORY_OPENINGS} from './resonantLexicon';
 import {composeBirdPoem} from './ornithopoetry';
@@ -112,7 +113,11 @@ export function makeResonantHaiku(marks:readonly BirdMark[],seed:number,reading:
  // and coherent couplet independently (shift/modulo picks correlated before).
  for(const c of bird)hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;
  for(const n of [reading.islands,Math.round((reading.centerX??.5)*1000),Math.round((reading.density??0)*1000),Number(!!reading.diffuse),Number(reading.vertical)])hash=Math.imul(hash^n,16777619)>>>0;
- const rng=createRng(hash),stanzas=RESONANT_STANZAS[family],openings=SENSORY_OPENINGS[bird];
+ for(const tone of reading.tones)for(const c of tone)hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;
+ const rng=createRng(hash);
+ const nature=composeNaturePoem(bird,reading,family,rng);
+ if(nature)return {title:`${nature.title} ${BIRD_TITLE_REFERENCE[bird]}`,verses:nature.verses,reading:{...reading,tones:[...reading.tones]}};
+ const stanzas=RESONANT_STANZAS[family],openings=SENSORY_OPENINGS[bird];
  const stanza=stanzas[Math.floor(rng()*stanzas.length)],opening=openings[Math.floor(rng()*openings.length)];
  return {title:`${stanza.title} ${BIRD_TITLE_REFERENCE[bird]}`,verses:[opening,stanza.image,stanza.echo],reading:{...reading,tones:[...reading.tones]}};
 }

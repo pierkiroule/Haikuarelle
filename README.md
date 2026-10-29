@@ -189,3 +189,7 @@ Les familles de couleurs ont des réponses de dépôt et de granulation distinct
 ### Interface poétique
 
 La palette s’efface pendant le geste, les plumes prennent une profondeur légère au survol et le poème se révèle mot par mot. Les préférences de mouvement réduit et le clavier sont pris en charge. Ces interactions sont des adaptations locales inspirées des composants Aceternity, avec Motion et le CSS existant ; [audit, provenance et limites](docs/ACETERNITY_UI.md).
+
+### Poétique des couleurs et des lieux
+
+Les haïkus résonants relient les couleurs dominantes et les formes mesurées de l'œuvre à 144 nouvelles scènes naturelles propres aux douze oiseaux. Le titre et le vers central partagent leur image ; refuges et gestes du vivant sont écrits ensemble. Les lieux-dits sont imaginaires. Voir [la grammaire naturelle](docs/NATURE_POETRY.md).
