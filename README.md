@@ -185,3 +185,7 @@ Le parcours ne contient aucune guidance vocale. Seuls les chants des oiseaux et 
 ### Matière et contours
 
 Les familles de couleurs ont des réponses de dépôt et de granulation distinctes. Les contours alternent netteté et diffusion ; le séchage révèle des détails localisés, tandis que les glacis gardent davantage de lumière et que les aplats restent plus calmes. Voir [le modèle pictural et ses limites](docs/WATERCOLOR_MATERIALS.md).
+
+### Interface poétique
+
+La palette s’efface pendant le geste, les plumes prennent une profondeur légère au survol et le poème se révèle mot par mot. Les préférences de mouvement réduit et le clavier sont pris en charge. Ces interactions sont des adaptations locales inspirées des composants Aceternity, avec Motion et le CSS existant ; [audit, provenance et limites](docs/ACETERNITY_UI.md).

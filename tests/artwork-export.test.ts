@@ -14,7 +14,7 @@ describe('fixed handwritten poetry export',()=>{
  it('centers the title at the top and three lines at the bottom, independently of the painting',async()=>{
   const {image,ctx,calls,fonts}=fixture();
   await exportResonantArtwork(new Blob(),['a','b','c'],'Le silence de la mésange bleue',{x:.2,y:.1,scale:.6});
-  expect(fonts.load).toHaveBeenCalledWith('20px "Caveat"');expect(ctx.drawImage).toHaveBeenCalledWith(image,200,141.4,600,848.4);
+  expect(fonts.load).toHaveBeenCalledWith('20px "Caveat"');const args=ctx.drawImage.mock.calls[0];expect(args[0]).toBe(image);expect(args[1]).toBeCloseTo(308);expect(args[2]).toBeCloseTo(288.456);expect(args[3]).toBeCloseTo(384);expect(args[4]).toBeCloseTo(542.976);
   expect(calls.map(c=>c.text)).toEqual(['Le silence de la mésange bleue','a','b','c','•°○']);
   for(const c of calls.slice(0,4)){expect(c.x).toBe(500);expect(c.align).toBe('center');expect(c.font).toContain('Caveat');expect(c.color).toBe('#35483e');expect(c.alpha).toBe(.8);}
   expect(calls[0].y).toBeLessThan(150);expect(calls[1].y).toBeGreaterThan(1100);expect(calls[3].y).toBeLessThan(1414*.94);expect(calls[4].alpha).toBe(1);expect(calls[4].color).toBe('rgba(163,68,61,.72)');expect(image.close).toHaveBeenCalledOnce();

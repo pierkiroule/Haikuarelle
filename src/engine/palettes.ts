@@ -8,7 +8,7 @@ export const PALETTES: Palette[] = [
   {id:'ambre',name:'Ambre',note:'Ocre jaune · terre brûlée',colors:['#b38332','#805039','#576262'],paper:'#f6f0e3'},
 ];
 /** Shared channels keep each bird's pigments stable when a different pad plays. */
-export const PLUMAGE_PALETTE:Palette={id:'plumages',name:'Plumages',note:'Carbone · orange de gorge · bleu de geai',colors:['#202627','#cf5930','#3d83b8'],paper:'#f7f4ec'};
+export const PLUMAGE_PALETTE:Palette={id:'plumages',name:'Plumages',note:'Carbone · orange de gorge · bleu de geai',colors:['#202627','#cf5930','#3d83b8'],paper:'#ffffff'};
 /** Stable indices shared by every bird. Choosing a brush never changes this table. */
 export const PLUMAGE_PIGMENTS=[
   '#202627', // 0 carbon

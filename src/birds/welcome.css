@@ -15,3 +15,36 @@
 .welcome-number{font:italic 28px Georgia,serif;color:#a18c72}.welcome-process h3{font:400 23px Georgia,serif;margin:14px 0}.welcome-process li p{font-size:14px;line-height:1.9;margin:0;max-width:290px}
 .welcome-meeting{max-width:700px;margin:68px auto 0;padding-top:36px;border-top:1px solid #9b9c7f40;text-align:center}.welcome-meeting p{font-size:15px;line-height:1.9}.welcome-meeting .welcome-closing{font:italic 21px/1.7 Georgia,serif;margin-top:32px;color:#7b705d;text-wrap:balance}
 @media(max-width:700px){.direct-studio .artistic-welcome{padding:0 12px;margin-top:28px}.welcome-opening{grid-template-columns:minmax(0,1fr);gap:36px}.welcome-intro{text-align:center}.welcome-question{margin-inline:auto}.welcome-subtitle{font-size:18px;margin-bottom:22px}.welcome-statement{margin:40px auto;font-size:15px}.welcome-process ol{grid-template-columns:minmax(0,1fr);gap:28px}.welcome-process li{position:relative;padding-left:52px}.welcome-number{position:absolute;left:0;top:0}.welcome-process h3{margin:0 0 10px}.welcome-process li p{max-width:none}.welcome-meeting{margin-top:44px}.welcome-feathers{justify-self:center;width:100%;max-width:340px}}
+
+/* A painted mark, breathing slowly above the wordmark. */
+.welcome-emblem{position:relative;width:128px;height:140px;margin:0 0 16px;isolation:isolate;pointer-events:none}
+.welcome-emblem .emblem-feather{position:absolute;inset:0;width:112px;height:140px;transform-origin:28% 83%;animation:emblem-float 10s ease-in-out infinite}
+.emblem-wash{position:absolute;border-radius:47% 53% 61% 39% / 42% 58% 46% 54%;opacity:.14;animation:emblem-wash 13s ease-in-out infinite}
+.wash-blue{width:82px;height:76px;left:24px;top:28px;background:radial-gradient(ellipse,#7eaba9,transparent 72%);transform:rotate(-24deg)}
+.wash-gold{width:75px;height:64px;left:43px;top:68px;background:radial-gradient(ellipse,#d5b16f,transparent 72%);animation-delay:-6s}
+.emblem-drop{position:absolute;border-radius:45% 55% 40% 60%;background:#749e9a;animation:emblem-drift 9s ease-in-out infinite;opacity:.4}
+.drop-one{width:4px;height:6px;left:102px;top:37px}.drop-two{width:3px;height:3px;left:13px;top:80px;background:#c99757;animation-delay:-3s}.drop-three{width:5px;height:4px;left:89px;top:110px;background:#b97e7b;animation-delay:-5s}
+.direct-studio .artistic-welcome h1{font-size:clamp(44px,5.8vw,76px);letter-spacing:-.055em;margin-bottom:16px}
+.welcome-kicker{letter-spacing:.24em;font-size:9px}.welcome-opening{gap:56px}
+@keyframes emblem-float{0%,100%{transform:translateY(0) rotate(-8deg)}45%{transform:translate(3px,-7px) rotate(2deg)}75%{transform:translate(-2px,-3px) rotate(-3deg)}}
+@keyframes emblem-wash{0%,100%{opacity:.12;transform:rotate(-16deg) scale(.94)}50%{opacity:.24;transform:rotate(8deg) scale(1.08)}}
+@keyframes emblem-drift{0%,100%{transform:translate(0,0);opacity:.22}50%{transform:translate(3px,-8px);opacity:.55}}
+@media(max-width:700px){.welcome-emblem{margin:0 auto 10px;width:105px;height:116px}.welcome-emblem .emblem-feather{width:94px;height:116px}.welcome-opening{gap:24px}.direct-studio .artistic-welcome h1{font-size:clamp(44px,12vw,62px)}}
+@media(prefers-reduced-motion:reduce){.welcome-emblem .emblem-feather,.welcome-emblem .emblem-wash,.welcome-emblem .emblem-drop{animation:none}}
+
+.welcome-links{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
+.intention-signature{margin:32px 0 0;padding-top:24px;border-top:1px solid #9b9c7f30;text-align:center;font:italic 14px/1.8 Georgia,serif;color:#7b705d}.intention-signature strong{font-weight:400;white-space:nowrap}.intention-signature span{margin-left:6px;color:#a46758}
+.bird-footer .artist-signature{font-family:Georgia,serif;font-style:italic;letter-spacing:.02em}
+
+/* Read at your own pace: native touch scrolling, no automatic slide changes. */
+.intention-carousel{margin:clamp(36px,7vw,72px) auto 0;max-width:900px;border-top:1px solid #bac5b44d;padding-top:24px}
+.intention-carousel-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.artistic-welcome .intention-carousel-heading h2{font:400 22px/1.4 Georgia,serif;margin:0}.intention-carousel-heading>span{font:10px sans-serif;letter-spacing:.15em;color:#71816e}
+.intention-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:thin;border-radius:18px;background:#fffdf74d}
+.intention-slide{flex:0 0 100%;min-width:0;box-sizing:border-box;scroll-snap-align:start;padding:clamp(20px,4vw,36px);align-self:stretch;overflow-wrap:anywhere}
+.intention-slide .welcome-statement{margin:0;max-width:none;font-size:15px;line-height:1.9}.intention-slide .welcome-kicker{margin-bottom:22px}
+.intention-slide .welcome-process,.intention-slide .welcome-meeting{margin:0;padding:0;border:0;max-width:none}.artistic-welcome .intention-slide h2{font-size:25px;margin-bottom:24px}.intention-slide .welcome-process ol{gap:24px}.intention-slide .welcome-process h3{font-size:21px}.intention-slide .welcome-meeting{text-align:left}.intention-slide .welcome-closing{font-size:20px;margin-bottom:0}
+.intention-slide .intention-signature{font-size:13px;margin-top:24px;padding-top:18px;text-align:left}
+.intention-navigation{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:12px}.intention-navigation>button{width:44px;height:44px;border:1px solid #c9d1c0;border-radius:50%;background:transparent;color:#4b6655;font:20px Georgia,serif;cursor:pointer}.intention-navigation>button:disabled{opacity:.3;cursor:default}
+.intention-dots{display:flex;gap:2px}.intention-dots button{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:transparent;cursor:pointer}.intention-dots span{width:6px;height:6px;border-radius:50%;background:#b5bfae}.intention-dots button[aria-current=true] span{width:18px;border-radius:6px;background:#5d7c67}
+.intention-track:focus-visible,.intention-navigation button:focus-visible{outline:2px solid #628b82;outline-offset:3px}
+@media(max-width:700px){.welcome-links{justify-content:center}.intention-slide{padding:20px}.intention-slide .welcome-process ol{gap:20px}.intention-carousel-heading{gap:8px}.artistic-welcome .intention-carousel-heading h2{font-size:20px}}

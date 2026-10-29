@@ -1,4 +1,5 @@
-export const APP_NAME="Plume d’Haïkuarelle";
+export const APP_NAME="Haïkuarelle";
+export const ARTIST_NAME="Pierre-Henri Garnier";
 /** Public atelier linked in the project README; never promote a localhost preview. */
 export const APP_URL='https://haikuarelle-atelier-v1.pluckyslug4.chatgpt.site';
 export function publicSiteAddress(href:string){

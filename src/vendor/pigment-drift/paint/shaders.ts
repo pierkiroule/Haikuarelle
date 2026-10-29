@@ -1197,10 +1197,10 @@ void main() {
   col += vec3(0.002, 0.005, 0.008) * damp * (0.5 + 0.5 * paperT.b) * (1.0 - pig);
   // Correlate mineral pigment density with the depressions in the paper.
   col *= 1.0 - mix(1.40, 1.8, uDetail) * uTexture * response.x * paperCapture * tooth * gran;
-  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(1.0,paperCapture,pig) * mix(0.06,0.65,pig) * light;
-  col *= 1.0 + 0.65 * uTexture * mix(1.0,paperCapture,pig) * grain;
+  col *= 1.0 + mix(0.35,0.035,uDetail) * uTexture * mix(1.0,paperCapture,pig) * (0.65 * pig) * light;
+  col *= 1.0 + 0.65 * uTexture * mix(1.0,paperCapture,pig) * pig * grain;
 
-  vec3 outc = toSrgb(col) + (hash12(frag) - 0.5) / 255.0;
+  vec3 outc = toSrgb(col) + (hash12(frag) - 0.5) * pig / 255.0;
   fragColor = vec4(outc, 1.0);
 }
 `;

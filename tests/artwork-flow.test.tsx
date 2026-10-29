@@ -78,9 +78,8 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     expect(host.querySelector('.feather-circle')).toBeNull();expect(h.starts).toBe(0);
     await water();expect(host.querySelectorAll('.bird-pad')).toHaveLength(1);
   });
-  it('can suspend the gusts before catching a feather with a single choice',async()=>{
-    const motion=host.querySelector<HTMLButtonElement>('.feather-motion')!;await click(motion);
-    expect(motion.getAttribute('aria-pressed')).toBe('true');expect(host.querySelector('.feather-circle.is-paused')).not.toBeNull();
+  it('catches a feather directly without a suspension control',async()=>{
+    expect(host.querySelector('.feather-motion')).toBeNull();
     await click(host.querySelector('.feather-choice[data-bird=pie]')!);expect(h.previews).toEqual(['pie']);
     expect(host.querySelector('.flow-paint')).not.toBeNull();expect(h.starts).toBe(0);
   });
@@ -169,7 +168,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     await click(button('Choisir l’eau résonante'));expect(host.querySelector('[aria-label="Quantité d’eau"]')).not.toBeNull();
   });
   it('keeps a feather tip at the keyboard drawing position and replaces all bird silhouettes',async()=>{
-    expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Plume d’Haïkuarelle");
+    expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Haïkuarelle");
     expect(host.querySelectorAll('.feather-choice .feather-glyph')).toHaveLength(12);
     expect(host.querySelector('.bird-glyph')).toBeNull();
     await paint();
