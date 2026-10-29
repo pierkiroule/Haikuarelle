@@ -50,11 +50,15 @@ s'anime uniquement par transformations et opacité, sans filtre SVG animé. Chaq
 plume partage les pigments de `BIRD_COLOURS`, avec des lavis superposés et une nervure
 fine. La pointe du curseur conserve ses coordonnées.
 
-L'intention artistique se lit dans un dialogue natif, depuis le bouton dédié.
-Le dialogue conserve le texte complet, les trois temps et la conclusion. Il gère
-le focus, Échap, la fermeture par bouton et le clic hors de la carte ; le fond est
-inactif pendant la lecture. Les animations du logo et du dialogue respectent
-`prefers-reduced-motion`. Vérification navigateur : `python scripts/check-welcome.py`.
+L'intention artistique se lit dans un carrousel en bas de l'accueil : résonance,
+trois temps pour créer, puis rencontre et signature. Le texte intégral est conservé.
+Le défilement tactile est natif, avec flèches, repères de page et navigation clavier
+(gauche/droite, début/fin). Il n'y a pas de défilement automatique. Les préférences de
+mouvement réduit désactivent le défilement animé et les animations du logo. Le bouton
+de suspension des plumes est retiré ; leur mouvement s'arrête toujours au focus
+clavier ou avec `prefers-reduced-motion`.
+
+Vérification navigateur : `python scripts/check-welcome.py`.
 
 ### Lecture agrandie de l'œuvre
 

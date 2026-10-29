@@ -80,7 +80,7 @@ with sync_playwright() as pw:
   assert not errors,errors
   print({'encounterComposeReveal':True,'touchWake':True,'poemUnchanged':True,'tablet':True,'errors':errors},flush=True);page.close()
  desktop=browser.new_page(viewport={'width':1200,'height':900},reduced_motion='no-preference')
- desktop.goto('http://localhost:5173');desktop.get_by_role('button',name='Suspendre les plumes',exact=True).click()
+ desktop.goto('http://localhost:5173');desktop.locator('.feather-choice').first.focus()
  desktop.locator('.feather-circle').scroll_into_view_if_needed()
  target=desktop.evaluate("""()=>{const cards=[...document.querySelectorAll('.poetic-depth')];for(let i=0;i<cards.length;i++){const r=cards[i].getBoundingClientRect(),x=r.x+r.width*.72,y=r.y+r.height*.35;if(cards[i].contains(document.elementFromPoint(x,y)))return {index:i,x,y};}throw Error('No exposed feather');}""")
  card=desktop.locator('.poetic-depth').nth(target['index']);desktop.mouse.move(target['x'],target['y']);desktop.wait_for_timeout(800)

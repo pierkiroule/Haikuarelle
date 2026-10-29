@@ -33,20 +33,18 @@
 @media(prefers-reduced-motion:reduce){.welcome-emblem .emblem-feather,.welcome-emblem .emblem-wash,.welcome-emblem .emblem-drop{animation:none}}
 
 .welcome-links{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
-.welcome-intention-link{display:inline-flex;align-items:center;gap:12px;min-height:44px;padding:0;border:0;background:none;color:#7a796a;font:12px Georgia,serif;cursor:pointer}
-.welcome-intention-link:hover{color:#405f56}.welcome-intention-link:focus-visible,.intention-close:focus-visible{outline:2px solid #628b82;outline-offset:4px}
-.intention-dialog{box-sizing:border-box;width:min(780px,calc(100vw - 28px));max-height:calc(100dvh - 40px);margin:auto;padding:clamp(24px,5vw,56px);border:1px solid #deded2;border-radius:20px;background:#fffef9;color:#53605d;box-shadow:0 24px 100px #293c352b;overscroll-behavior:contain;overflow-y:auto;text-align:left}
-.intention-dialog[open]{animation:intention-arrive .65s cubic-bezier(.2,.7,.3,1) both}
-.intention-dialog::backdrop{background:#263d3566;animation:intention-backdrop .5s ease both}
-.intention-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.intention-heading .welcome-kicker{margin:0}
-.intention-close{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid #d8ded5;border-radius:50%;background:transparent;color:#6d7a6e;font:26px Georgia,serif;cursor:pointer}
-.artistic-welcome .intention-dialog h2{font-size:clamp(26px,4vw,34px);line-height:1.35}
-.intention-dialog .welcome-statement{margin:28px 0 38px;font-size:15px;line-height:1.9}
-.intention-dialog .welcome-process ol{gap:24px}.intention-dialog .welcome-process h3{font-size:21px}.intention-dialog .welcome-meeting{margin:40px 0 0}.intention-dialog .welcome-closing{font-size:20px}
-@keyframes intention-arrive{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
-@keyframes intention-backdrop{from{opacity:0}to{opacity:1}}
-@media(max-width:700px){.welcome-links{justify-content:center;gap:8px 20px}.intention-dialog{max-height:calc(100dvh - 24px);padding:22px}.intention-dialog .welcome-process ol{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){.intention-dialog[open],.intention-dialog::backdrop{animation:none}}
-body:has(.intention-dialog[open]){overflow:hidden}
 .intention-signature{margin:32px 0 0;padding-top:24px;border-top:1px solid #9b9c7f30;text-align:center;font:italic 14px/1.8 Georgia,serif;color:#7b705d}.intention-signature strong{font-weight:400;white-space:nowrap}.intention-signature span{margin-left:6px;color:#a46758}
 .bird-footer .artist-signature{font-family:Georgia,serif;font-style:italic;letter-spacing:.02em}
+
+/* Read at your own pace: native touch scrolling, no automatic slide changes. */
+.intention-carousel{margin:clamp(36px,7vw,72px) auto 0;max-width:900px;border-top:1px solid #bac5b44d;padding-top:24px}
+.intention-carousel-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}.artistic-welcome .intention-carousel-heading h2{font:400 22px/1.4 Georgia,serif;margin:0}.intention-carousel-heading>span{font:10px sans-serif;letter-spacing:.15em;color:#71816e}
+.intention-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:thin;border-radius:18px;background:#fffdf74d}
+.intention-slide{flex:0 0 100%;min-width:0;box-sizing:border-box;scroll-snap-align:start;padding:clamp(20px,4vw,36px);align-self:stretch;overflow-wrap:anywhere}
+.intention-slide .welcome-statement{margin:0;max-width:none;font-size:15px;line-height:1.9}.intention-slide .welcome-kicker{margin-bottom:22px}
+.intention-slide .welcome-process,.intention-slide .welcome-meeting{margin:0;padding:0;border:0;max-width:none}.artistic-welcome .intention-slide h2{font-size:25px;margin-bottom:24px}.intention-slide .welcome-process ol{gap:24px}.intention-slide .welcome-process h3{font-size:21px}.intention-slide .welcome-meeting{text-align:left}.intention-slide .welcome-closing{font-size:20px;margin-bottom:0}
+.intention-slide .intention-signature{font-size:13px;margin-top:24px;padding-top:18px;text-align:left}
+.intention-navigation{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:12px}.intention-navigation>button{width:44px;height:44px;border:1px solid #c9d1c0;border-radius:50%;background:transparent;color:#4b6655;font:20px Georgia,serif;cursor:pointer}.intention-navigation>button:disabled{opacity:.3;cursor:default}
+.intention-dots{display:flex;gap:2px}.intention-dots button{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:transparent;cursor:pointer}.intention-dots span{width:6px;height:6px;border-radius:50%;background:#b5bfae}.intention-dots button[aria-current=true] span{width:18px;border-radius:6px;background:#5d7c67}
+.intention-track:focus-visible,.intention-navigation button:focus-visible{outline:2px solid #628b82;outline-offset:3px}
+@media(max-width:700px){.welcome-links{justify-content:center}.intention-slide{padding:20px}.intention-slide .welcome-process ol{gap:20px}.intention-carousel-heading{gap:8px}.artistic-welcome .intention-carousel-heading h2{font-size:20px}}
