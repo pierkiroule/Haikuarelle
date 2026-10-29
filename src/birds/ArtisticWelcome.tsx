@@ -2,6 +2,7 @@ import {useRef,useState,type ReactNode} from 'react';
 import './welcome.css';
 import {useMediaPreference} from '../ui/useMediaPreference';
 import {ARTIST_NAME} from '../brand';
+import {Presentation} from './Presentation';
 import {WatercolourLogo} from './WatercolourLogo';
 
 export function ArtisticWelcome({children}:{children:ReactNode}){
@@ -17,7 +18,7 @@ export function ArtisticWelcome({children}:{children:ReactNode}){
     <p className="welcome-subtitle">L’art de la résonance avec le vivant.</p>
     <p className="welcome-question">Et si l’on pouvait peindre avec le chant des oiseaux ?</p>
     <div className="welcome-links"><a className="welcome-link" href="#rencontrer-plume">Rencontrer une plume <span aria-hidden="true">↗</span></a>
-</div>
+<Presentation/></div>
    </div>
    <div id="rencontrer-plume" className="welcome-feathers" aria-label="Rencontrer une plume">{children}</div>
   </div>
