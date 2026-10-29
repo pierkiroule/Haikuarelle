@@ -1,6 +1,7 @@
 import {BIRD_BRUSHES} from '../src/birds/catalog';
 import {describe,it,expect} from 'vitest';
-import {readArtwork,makeResonantHaiku,morphicFamily,MORPHIC_LINES,BIRD_TITLE_REFERENCE,type ArtworkReading} from '../src/birds/artworkPoetry';
+import {readArtwork,makeResonantHaiku,morphicFamily,BIRD_TITLE_REFERENCE,type ArtworkReading} from '../src/birds/artworkPoetry';
+import {NATURE_HABITATS,NATURE_PIGMENTS,NATURE_SHAPES} from '../src/birds/naturePoetry';
 import {RESONANT_STANZAS,SENSORY_OPENINGS} from '../src/birds/resonantLexicon';
 const reading:ArtworkReading={tones:['blue'],coverage:.25,centerY:.5,islands:1,vertical:false,complexity:30,density:.4};
 const marks=[{bird:'mesange' as const,seed:7,point:{x:.5,y:.5}}];
@@ -8,8 +9,9 @@ describe('a response from actual morphology and bird ecology',()=>{
  it('changes the central image with morphology at the same seed and bird',()=>{
   const islands={...reading,islands:4},branches={...reading,complexity:110};
   const a=makeResonantHaiku(marks,7,islands,'mesange')!,b=makeResonantHaiku(marks,7,branches,'mesange')!;
-  expect(a.title).toContain('de la mésange bleue');expect(a.verses).toHaveLength(3);expect(a.verses[1]).not.toBe(b.verses[1]);expect(MORPHIC_LINES.islands).toContain(a.verses[1]);expect(MORPHIC_LINES.branching).toContain(b.verses[1]);
-  expect(SENSORY_OPENINGS.mesange).toContain(a.verses[0]);expect(RESONANT_STANZAS.islands.some(s=>s.image===a.verses[1]&&s.echo===a.verses[2]&&a.title.startsWith(s.title+' '))).toBe(true);expect(makeResonantHaiku(marks,7,islands,'mesange')).toEqual(a);
+  expect(a.title).toContain('de la mésange bleue');expect(a.verses).toHaveLength(3);expect(a.verses[1]).not.toBe(b.verses[1]);
+  expect(NATURE_SHAPES.islands.some(s=>a.verses[1].startsWith(s.title))).toBe(true);expect(NATURE_SHAPES.branching.some(s=>b.verses[1].startsWith(s.title))).toBe(true);
+  expect(NATURE_HABITATS.mesange!.some(h=>h.place===a.verses[0]&&h.echo===a.verses[2])).toBe(true);expect(makeResonantHaiku(marks,7,islands,'mesange')).toEqual(a);
  });
  it('distinguishes white space, vertical movement and diffuse films',()=>{
   expect(morphicFamily({...reading,coverage:.03})).toBe('silence');expect(morphicFamily({...reading,vertical:true})).toBe('rising');expect(morphicFamily({...reading,diffuse:true})).toBe('veil');
@@ -29,28 +31,40 @@ describe('a response from actual morphology and bird ecology',()=>{
    expect(poem.title.length).toBeGreaterThan(BIRD_TITLE_REFERENCE[bird].length);
   }
  });
- it('keeps every title attached to its complete sensory, rhyming couplet for every bird and morphology',()=>{
+ it('keeps a coherent refuge and bird gesture while grounding title and image in observed form and colour',()=>{
   const readings={islands:{...reading,islands:4},branching:{...reading,complexity:110},rising:{...reading,vertical:true},veil:{...reading,diffuse:true},shelter:{...reading,coverage:.6},silence:{...reading,coverage:.03},passage:reading};
-  for(const [family,r] of Object.entries(readings)){
-   const templates=RESONANT_STANZAS[family as keyof typeof RESONANT_STANZAS],seen=new Set<string>();
-   for(const bird of Object.keys(BIRD_TITLE_REFERENCE) as (keyof typeof BIRD_TITLE_REFERENCE)[])for(let seed=0;seed<64;seed++){
-    const poem=makeResonantHaiku(marks,seed,r,bird)!;
-    const stanza=templates.find(s=>poem.title===`${s.title} ${BIRD_TITLE_REFERENCE[bird]}`);expect(stanza).toBeDefined();
-    expect(poem.verses).toEqual([expect.any(String),stanza!.image,stanza!.echo]);expect(SENSORY_OPENINGS[bird]).toContain(poem.verses[0]);
-    expect(poem.verses.join(' ')).not.toMatch(/undefined|\{|\}/);expect(poem.verses.every(line=>line.length<=48)).toBe(true);seen.add(stanza!.title);
-   }
-   expect(seen.size).toBe(templates.length);
+  for(const [family,r] of Object.entries(readings))for(const bird of BIRD_BRUSHES)for(let seed=0;seed<32;seed++){
+   const poem=makeResonantHaiku(marks,seed,r,bird.id)!;
+   expect(NATURE_HABITATS[bird.id]!.some(h=>h.place===poem.verses[0]&&h.echo===poem.verses[2])).toBe(true);
+   expect(NATURE_SHAPES[family as keyof typeof NATURE_SHAPES].some(s=>poem.title.startsWith(s.title+' ')&&poem.verses[1].startsWith(s.title+' '))).toBe(true);
+   expect(NATURE_PIGMENTS.blue.some(p=>poem.title.includes(p)&&poem.verses[1].includes(p))).toBe(true);
+   expect(poem.verses.join(' ')).not.toMatch(/undefined|\{|\}/);expect(poem.verses.every(line=>line.length<=48)).toBe(true);
   }
  });
- it('offers a broad, reachable repertoire even for sparse paintings of the same bird',()=>{
+ it('offers varied reachable places and gestures for every active bird',()=>{
   for(const bird of BIRD_BRUSHES){
-   const poems=new Set<string>(),openings=new Set<string>(),titles=new Set<string>();
-   expect(SENSORY_OPENINGS[bird.id]).toHaveLength(12);
-   for(let seed=0;seed<256;seed++){
+   const poems=new Set<string>(),places=new Set<string>(),titles=new Set<string>();
+   expect(NATURE_HABITATS[bird.id]).toHaveLength(12);
+   for(let seed=0;seed<512;seed++){
     const poem=makeResonantHaiku(marks,seed,{...reading,coverage:.03},bird.id)!;
-    poems.add(poem.verses.join(' / '));openings.add(poem.verses[0]);titles.add(poem.title);
+    poems.add(poem.verses.join(' / '));places.add(poem.verses[0]);titles.add(poem.title);
    }
-   expect(poems.size).toBeGreaterThan(100);expect(openings.size).toBe(12);expect(titles.size).toBe(12);
+   expect(poems.size).toBeGreaterThan(100);expect(places.size).toBe(12);expect(titles.size).toBeGreaterThanOrEqual(8);
+  }
+ });
+ it('changes the visual image with dominant colour, not just the random seed',()=>{
+  for(const tone of Object.keys(NATURE_PIGMENTS) as (keyof typeof NATURE_PIGMENTS)[]){
+   const poem=makeResonantHaiku(marks,7,{...reading,tones:[tone]},'mesange')!;
+   expect(NATURE_PIGMENTS[tone].some(p=>poem.verses[1].includes(p)&&poem.title.includes(p))).toBe(true);
+  }
+  const poem=makeResonantHaiku(marks,7,{...reading,tones:['blue','ochre']},'mesange')!;
+  expect(NATURE_PIGMENTS.blue.some(p=>poem.verses[1].includes(p))).toBe(true);
+  expect(NATURE_PIGMENTS.ochre.some(p=>poem.verses[1].includes(p))).toBe(true);
+ });
+ it('keeps new rural scenes compact and unique, with places and echoes authored together',()=>{
+  for(const habitats of Object.values(NATURE_HABITATS)){
+   expect(new Set(habitats.map(h=>h.place)).size).toBe(habitats.length);
+   expect(habitats.every(h=>h.place.length<=48&&h.echo.length<=48&&h.affinities.length>0)).toBe(true);
   }
  });
  it('keeps authored variants unique, compact and substantial in all seven morphic families',()=>{
