@@ -15,3 +15,38 @@
 .welcome-number{font:italic 28px Georgia,serif;color:#a18c72}.welcome-process h3{font:400 23px Georgia,serif;margin:14px 0}.welcome-process li p{font-size:14px;line-height:1.9;margin:0;max-width:290px}
 .welcome-meeting{max-width:700px;margin:68px auto 0;padding-top:36px;border-top:1px solid #9b9c7f40;text-align:center}.welcome-meeting p{font-size:15px;line-height:1.9}.welcome-meeting .welcome-closing{font:italic 21px/1.7 Georgia,serif;margin-top:32px;color:#7b705d;text-wrap:balance}
 @media(max-width:700px){.direct-studio .artistic-welcome{padding:0 12px;margin-top:28px}.welcome-opening{grid-template-columns:minmax(0,1fr);gap:36px}.welcome-intro{text-align:center}.welcome-question{margin-inline:auto}.welcome-subtitle{font-size:18px;margin-bottom:22px}.welcome-statement{margin:40px auto;font-size:15px}.welcome-process ol{grid-template-columns:minmax(0,1fr);gap:28px}.welcome-process li{position:relative;padding-left:52px}.welcome-number{position:absolute;left:0;top:0}.welcome-process h3{margin:0 0 10px}.welcome-process li p{max-width:none}.welcome-meeting{margin-top:44px}.welcome-feathers{justify-self:center;width:100%;max-width:340px}}
+
+/* A painted mark, breathing slowly above the wordmark. */
+.welcome-emblem{position:relative;width:128px;height:140px;margin:0 0 16px;isolation:isolate;pointer-events:none}
+.welcome-emblem .emblem-feather{position:absolute;inset:0;width:112px;height:140px;transform-origin:28% 83%;animation:emblem-float 10s ease-in-out infinite}
+.emblem-wash{position:absolute;border-radius:47% 53% 61% 39% / 42% 58% 46% 54%;opacity:.14;animation:emblem-wash 13s ease-in-out infinite}
+.wash-blue{width:82px;height:76px;left:24px;top:28px;background:radial-gradient(ellipse,#7eaba9,transparent 72%);transform:rotate(-24deg)}
+.wash-gold{width:75px;height:64px;left:43px;top:68px;background:radial-gradient(ellipse,#d5b16f,transparent 72%);animation-delay:-6s}
+.emblem-drop{position:absolute;border-radius:45% 55% 40% 60%;background:#749e9a;animation:emblem-drift 9s ease-in-out infinite;opacity:.4}
+.drop-one{width:4px;height:6px;left:102px;top:37px}.drop-two{width:3px;height:3px;left:13px;top:80px;background:#c99757;animation-delay:-3s}.drop-three{width:5px;height:4px;left:89px;top:110px;background:#b97e7b;animation-delay:-5s}
+.direct-studio .artistic-welcome h1{font-size:clamp(44px,5.8vw,76px);letter-spacing:-.055em;margin-bottom:16px}
+.welcome-kicker{letter-spacing:.24em;font-size:9px}.welcome-opening{gap:56px}
+@keyframes emblem-float{0%,100%{transform:translateY(0) rotate(-8deg)}45%{transform:translate(3px,-7px) rotate(2deg)}75%{transform:translate(-2px,-3px) rotate(-3deg)}}
+@keyframes emblem-wash{0%,100%{opacity:.12;transform:rotate(-16deg) scale(.94)}50%{opacity:.24;transform:rotate(8deg) scale(1.08)}}
+@keyframes emblem-drift{0%,100%{transform:translate(0,0);opacity:.22}50%{transform:translate(3px,-8px);opacity:.55}}
+@media(max-width:700px){.welcome-emblem{margin:0 auto 10px;width:105px;height:116px}.welcome-emblem .emblem-feather{width:94px;height:116px}.welcome-opening{gap:24px}.direct-studio .artistic-welcome h1{font-size:clamp(44px,12vw,62px)}}
+@media(prefers-reduced-motion:reduce){.welcome-emblem .emblem-feather,.welcome-emblem .emblem-wash,.welcome-emblem .emblem-drop{animation:none}}
+
+.welcome-links{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
+.welcome-intention-link{display:inline-flex;align-items:center;gap:12px;min-height:44px;padding:0;border:0;background:none;color:#7a796a;font:12px Georgia,serif;cursor:pointer}
+.welcome-intention-link:hover{color:#405f56}.welcome-intention-link:focus-visible,.intention-close:focus-visible{outline:2px solid #628b82;outline-offset:4px}
+.intention-dialog{box-sizing:border-box;width:min(780px,calc(100vw - 28px));max-height:calc(100dvh - 40px);margin:auto;padding:clamp(24px,5vw,56px);border:1px solid #deded2;border-radius:20px;background:#fffef9;color:#53605d;box-shadow:0 24px 100px #293c352b;overscroll-behavior:contain;overflow-y:auto;text-align:left}
+.intention-dialog[open]{animation:intention-arrive .65s cubic-bezier(.2,.7,.3,1) both}
+.intention-dialog::backdrop{background:#263d3566;animation:intention-backdrop .5s ease both}
+.intention-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.intention-heading .welcome-kicker{margin:0}
+.intention-close{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid #d8ded5;border-radius:50%;background:transparent;color:#6d7a6e;font:26px Georgia,serif;cursor:pointer}
+.artistic-welcome .intention-dialog h2{font-size:clamp(26px,4vw,34px);line-height:1.35}
+.intention-dialog .welcome-statement{margin:28px 0 38px;font-size:15px;line-height:1.9}
+.intention-dialog .welcome-process ol{gap:24px}.intention-dialog .welcome-process h3{font-size:21px}.intention-dialog .welcome-meeting{margin:40px 0 0}.intention-dialog .welcome-closing{font-size:20px}
+@keyframes intention-arrive{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes intention-backdrop{from{opacity:0}to{opacity:1}}
+@media(max-width:700px){.welcome-links{justify-content:center;gap:8px 20px}.intention-dialog{max-height:calc(100dvh - 24px);padding:22px}.intention-dialog .welcome-process ol{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.intention-dialog[open],.intention-dialog::backdrop{animation:none}}
+body:has(.intention-dialog[open]){overflow:hidden}
+.intention-signature{margin:32px 0 0;padding-top:24px;border-top:1px solid #9b9c7f30;text-align:center;font:italic 14px/1.8 Georgia,serif;color:#7b705d}.intention-signature strong{font-weight:400;white-space:nowrap}.intention-signature span{margin-left:6px;color:#a46758}
+.bird-footer .artist-signature{font-family:Georgia,serif;font-style:italic;letter-spacing:.02em}

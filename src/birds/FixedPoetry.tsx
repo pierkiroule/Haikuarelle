@@ -7,8 +7,8 @@ export const POETRY_LINE_HEIGHT=1.5;
 /** The same width-fitting rule is used on paper and in the full-resolution PNG. */
 export function fixedPoetryLayout(measure:(text:string,size:number)=>number,title:string,verses:readonly string[],ratio=1400/1980){
  const fit=(lines:readonly string[],size:number)=>size*Math.min(1,.88/Math.max(.001,...lines.map(line=>measure(line,size))));
- const titleSize=fit([title],.048),verseSize=fit(verses,.041);
- return {titleSize,verseSize,titleY:.045,verseY:.92-verses.length*verseSize*POETRY_LINE_HEIGHT*ratio};
+ const titleSize=Math.min(fit([title],.048),.065/(POETRY_LINE_HEIGHT*ratio)),verseSize=Math.min(fit(verses,.041),.13/(Math.max(1,verses.length)*POETRY_LINE_HEIGHT*ratio));
+ return {titleSize,verseSize,titleY:.045,verseY:.81+Math.max(0,(.13-verses.length*verseSize*POETRY_LINE_HEIGHT*ratio)/2)};
 }
 export async function loadPoetryFont(){await document.fonts?.load(`20px ${POETRY_FONT}`);await document.fonts?.ready;}
 export function FixedPoetry({title,verses,ratio=1400/1980}:{title:string;verses:readonly string[];ratio?:number}){

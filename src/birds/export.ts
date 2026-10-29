@@ -1,3 +1,4 @@
+import {ARTWORK_WHITE,paintingOnSheet} from './artworkLayout';
 import {fitPainting,ORIGINAL_PAINTING,type PaintingPlacement} from './PaintingPlacement';
 import {fixedPoetryLayout,POETRY_FONT,loadPoetryFont,POETRY_COLOR,POETRY_OPACITY,POETRY_LINE_HEIGHT} from './FixedPoetry';
 /** Fixed handwritten title and verses; only the original painting is transformed. */
@@ -6,7 +7,7 @@ export async function exportResonantArtwork(painting:Blob,verses:readonly string
  const image=await createImageBitmap(painting),output=document.createElement('canvas');output.width=image.width;output.height=image.height;
  const ctx=output.getContext('2d');if(!ctx){image.close();throw new Error('Export indisponible.');}
  try{
-  const p=fitPainting(paintingPlacement);ctx.fillStyle='#f7f5ed';ctx.fillRect(0,0,output.width,output.height);
+  const p=paintingOnSheet(fitPainting(paintingPlacement));ctx.fillStyle=ARTWORK_WHITE;ctx.fillRect(0,0,output.width,output.height);
   ctx.drawImage(image,p.x*output.width,p.y*output.height,p.scale*output.width,p.scale*output.height);
   drawArtworkWords(ctx,output.width,output.height,title,verses);
   return await new Promise<Blob>((resolve,reject)=>output.toBlob(v=>v?resolve(v):reject(new Error('Export impossible.')),'image/png'));

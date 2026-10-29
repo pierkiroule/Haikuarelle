@@ -169,7 +169,7 @@ describe('one bird, an opening haiku, a shared palette and a final title',()=>{
     await click(button('Choisir l’eau résonante'));expect(host.querySelector('[aria-label="Quantité d’eau"]')).not.toBeNull();
   });
   it('keeps a feather tip at the keyboard drawing position and replaces all bird silhouettes',async()=>{
-    expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Plume d’Haïkuarelle");
+    expect(host.querySelector('.bird-wordmark')!.getAttribute('aria-label')).toBe("Haïkuarelle");
     expect(host.querySelectorAll('.feather-choice .feather-glyph')).toHaveLength(12);
     expect(host.querySelector('.bird-glyph')).toBeNull();
     await paint();

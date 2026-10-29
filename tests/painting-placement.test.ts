@@ -1,3 +1,4 @@
+import {paintingOnSheet,PAINTING_ZONE} from '../src/birds/artworkLayout';
 import {describe,it,expect} from 'vitest';
 import {fitPainting} from '../src/birds/PaintingPlacement';
 describe('finished painting composition',()=>{
@@ -9,4 +10,14 @@ describe('finished painting composition',()=>{
   expect(fitPainting({x:NaN,y:Infinity,scale:NaN})).toEqual({x:0,y:0,scale:1});
   expect(fitPainting({x:.3,y:.4,scale:0})).toEqual({x:.3,y:.4,scale:.25});
  });
+});
+
+it('reserves text bands even at maximum size and extreme placements',()=>{
+ for(const scale of [.25,.6,1])for(const x of [-10,0,.5,10])for(const y of [-10,0,.5,10]){
+  const p=paintingOnSheet(fitPainting({scale,x,y}));
+  expect(p.y).toBeGreaterThanOrEqual(PAINTING_ZONE.y);
+  expect(p.y+p.scale).toBeLessThanOrEqual(PAINTING_ZONE.y+PAINTING_ZONE.height+1e-12);
+  expect(p.x).toBeGreaterThanOrEqual(PAINTING_ZONE.x);
+  expect(p.x+p.scale).toBeLessThanOrEqual(1-PAINTING_ZONE.x);
+ }
 });

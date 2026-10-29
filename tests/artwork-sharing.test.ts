@@ -14,7 +14,7 @@ describe('sharing the finished haikuarelle',()=>{
   it('shares the actual PNG and title through the native sheet',async()=>{
     expect(await deliver()).toBe('shared');expect(click).not.toHaveBeenCalled();
     const data=share.mock.calls[0][0] as ShareData;
-    expect(data.title).toBe('Les ailes du matin');expect(data.text).toBe('Plume d’Haïkuarelle');
+    expect(data.title).toBe('Les ailes du matin');expect(data.text).toBe('Haïkuarelle');
     expect(data.files![0]).toMatchObject({name:'haikuarelle.png',type:'image/png',size:3});
   });
   it('does not download when the person cancels sharing',async()=>{

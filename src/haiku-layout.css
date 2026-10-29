@@ -10,7 +10,7 @@
 @media(max-width:760px){.bird-studio.direct-studio.flow-finished{padding-bottom:0}.bird-studio.direct-studio.flow-finished .bird-workbench{padding:12px 0}.bird-studio.direct-studio.flow-finished .bird-instrument{position:static;display:block;padding:14px 0;border:0;background:transparent;box-shadow:none}.resonant-actions{width:100%;max-width:none}.bird-studio.direct-studio.flow-finished .bird-pad-board{position:static}.resonant-actions .finalize-art{max-width:none!important;width:100%}}
 
 /* Composition changes only presentation: original pigment simulation stays intact. */
-.bird-studio.direct-studio.flow-finished .bird-paper{background:#f7f5ed;overflow:hidden}
+.bird-studio.direct-studio.flow-finished .bird-paper{background:#fff;overflow:hidden}
 .painting-handle{position:absolute;z-index:2;box-sizing:border-box;outline:1px dashed #607e6b66;outline-offset:-2px;touch-action:none;cursor:grab}
 .painting-handle:active{cursor:grabbing}.painting-handle:focus-visible{outline:2px solid #607e6b;outline-offset:-3px}
 /* A compact inspector for the painting alone. */
@@ -20,3 +20,6 @@
 .bird-studio .fixed-poetry{left:5%;width:90%;max-width:none;font-family:'Caveat',cursive;font-style:normal;font-weight:400;text-align:center;line-height:1.5;white-space:pre;pointer-events:none;user-select:text;outline:none}
 .bird-studio .fixed-poetry>span{display:block}
 .painting-handle.is-selected{outline:1px dashed #607e6b99;outline-offset:-2px}
+
+/* Keep the presentation sheet and its reserved text margins uniformly white. */
+.bird-studio.direct-studio .artwork-paper,.bird-studio.direct-studio .bird-paper.stable-sheet{background:#fff;--paper:#fff}

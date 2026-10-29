@@ -25,3 +25,33 @@ Motion est la seule dépendance directe ajoutée, sans Tailwind, bibliothèque d
 ## Vérification
 
 Les tests couvrent le réveil tactile/clavier, la conservation du focus, le texte inchangé et les préférences de mouvement. `scripts/check-poetic-ui.py` parcourt Rencontrer → Composer → Révéler dans Chromium logiciel, puis vérifie le mode tablette et l’inclinaison sur ordinateur. Les essais sur téléphones et tablettes physiques restent à faire.
+
+### Composition du papier
+
+La mise en page partagée (`src/birds/artworkLayout.ts`) réserve le haut au titre,
+le bas aux trois vers et la zone verticale 14–78 % à la peinture. La transformation
+choisie dans l'éditeur est relative à cette zone : 100 % conserve toute l'image et
+ses proportions dans l'espace disponible. Les déplacements restent bornés à cet
+espace. Le calcul des polices tient compte de la largeur et de la hauteur réservées,
+y compris en paysage. L'écran, le PNG et chaque étape du film utilisent ce même
+placement. Le film termine toujours sur le PNG composé.
+
+Le papier des plumages, les marges et le fond du film utilisent le blanc pur. Le grain
+reste porté par les pigments, sans teinter la feuille vide ; l'eau reste visible
+pendant le travail et invisible dans l'enregistrement comme auparavant.
+
+Vérification : `python scripts/check-artwork-zones.py` (Vite sur le port 5173) contrôle
+les trois formats, les marges blanches et le confinement des pigments exportés.
+
+### Accueil Haïkuarelle
+
+Le titre, le bandeau et les métadonnées emploient « Haïkuarelle ». Le logo SVG
+s'anime uniquement par transformations et opacité, sans filtre SVG animé. Chaque
+plume partage les pigments de `BIRD_COLOURS`, avec des lavis superposés et une nervure
+fine. La pointe du curseur conserve ses coordonnées.
+
+L'intention artistique se lit dans un dialogue natif, depuis le bouton dédié.
+Le dialogue conserve le texte complet, les trois temps et la conclusion. Il gère
+le focus, Échap, la fermeture par bouton et le clic hors de la carte ; le fond est
+inactif pendant la lecture. Les animations du logo et du dialogue respectent
+`prefers-reduced-motion`. Vérification navigateur : `python scripts/check-welcome.py`.
