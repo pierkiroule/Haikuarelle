@@ -17,6 +17,7 @@ import type {BirdMark} from './birds/haiku';
 import {makeResonantHaiku,readArtwork,type ArtworkPoetry} from './birds/artworkPoetry';
 import {PaintingHandle,fitPainting,ORIGINAL_PAINTING,type PaintingPlacement} from './birds/PaintingPlacement';
 import {paintingOnSheet} from './birds/artworkLayout';
+import {ArtworkViewer} from './birds/ArtworkViewer';
 import {FixedPoetry} from './birds/FixedPoetry';
 import './haiku-layout.css';
 import {deliverArtwork} from './birds/share';
@@ -39,6 +40,7 @@ import {ArtisticWelcome} from './birds/ArtisticWelcome';
 import {FeatherEncounter} from './birds/FeatherEncounter';
 import {FeatherGlyph} from './birds/FeatherGlyph';
 import './immersive.css';
+import './birds/watercolourTable.css';
 const DanceStudio=lazy(()=>import('./dance/DanceStudio'));
 const Validation=lazy(()=>import('./Validation'));
 const Legacy=lazy(()=>import('./LegacyStudio'));
@@ -61,6 +63,8 @@ export function BirdStudio(){
   const [inkSize,setInkSize]=useState(.5),[inkOpacity,setInkOpacity]=useState(.9);
   const [tool,setTool]=useState<'water'|'plume'|'breath'|'ink'>('water');
   const [dance,setDance]=useState<{painting:Blob;sound:import('./birds/BirdAudioBank').BirdSound;credit:import('./dance/renderer').DanceCredit;audio:DanceAudio;frames:ProcessFrame[];placement:PaintingPlacement}|null>(null);
+  const [readingImage,setReadingImage]=useState<Blob|null>(null);
+  const [openingReader,setOpeningReader]=useState(false);
   const [poemPlaced,setPoemPlaced]=useState(false);
   const [paintingPlacement,setPaintingPlacement]=useState<PaintingPlacement>(ORIGINAL_PAINTING);
   const [selected,setSelected]=useState<BirdId>('rougegorge');
@@ -272,6 +276,13 @@ export function BirdStudio(){
   };
   const dryingEnd=(engine.current?.composition.duration??1)*30;
   const dryingProgress=Math.min(1,Math.max(0,(status.ticks-dryingStart)/Math.max(1,dryingEnd-dryingStart)));
+  const openReader=async()=>{
+    if(!engine.current||!poetry||openingReader)return;
+    setOpeningReader(true);
+    try{setReadingImage(await exportResonantArtwork(await engine.current.exportPNG(),poetry.verses,poetry.title,paintingPlacement));}
+    catch{setNotice('La vue agrandie n’a pas pu s’ouvrir. Réessaie.');}
+    finally{setOpeningReader(false);}
+  };
   const liveText=tool==='ink'&&canCreate?'Un tap libère Inkbird. Glisse pour attirer son vol ; un geste vif lui donne un élan.':canBlow?'Glisse pour déplacer l’eau et ses pigments vers l’extérieur.':canWet?(playing?'Le chant plonge dans l’eau…':loading?'L’eau accueille le chant…':waterPlaced?(marks.length?'L’eau réveille les pigments. Le chant peut revenir.':'L’eau accueille le chant. Tu peux encore l’étendre.'):'Glisse sur le papier pour déposer l’eau claire.') :stage==='drying'?'L’eau se retire. Les contours se précisent…':stage==='finished'?'Ton œuvre a trouvé ses mots.':loading?'La plume prépare son chant…':playing?`${BIRDS.find(b=>b.id===playing)?.name} · le chant anime la matière`:status.paused&&status.hasPigment&&status.phase!=='complete'?'La diffusion est suspendue.':status.phase==='complete'&&marks.length?'L’eau reste disponible pour les prochains chants.':marks.length?'Les pigments se diffusent doucement. L’eau reste présente.':'Dépose un chant sur le papier sec ou dans l’eau.';
   const secondaryActions=stage!=='choose'?<details className="atelier-more" onClick={event=>{if(event.target instanceof Element&&event.target.closest('button'))event.currentTarget.open=false;}}><summary aria-label="Autres actions">⋯</summary><div className="bird-actions"><button onClick={screen.toggle} aria-label="Grand écran HD"><Glyph name="screen"/>Grand écran</button>{busy&&<button onClick={stop}><Glyph name="stop"/>Interrompre le chant</button>}<button onClick={fresh} disabled={exporting||busy}><Glyph name="refresh"/>Nouvelle œuvre</button>{stage==='paint'&&!marks.length&&!busy&&<button onClick={()=>{stop();setStage('choose');}}>Retrouver les plumes</button>}<button onClick={erase} disabled={exporting||busy}><Glyph name="erase"/>Effacer tout</button><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Licence du moteur ↗</a></div></details>:null;
   return <div ref={studio} className={`bird-studio water-studio direct-studio flow-${stage} ${immersiveActive?'is-immersive':''} ${canvasOnly?'canvas-only':''} ${contact?'is-painting':''} ${screen.viewing?'bird-viewing':''} ${screen.hud?'show-hud':''}`} onPointerMove={screen.viewing?screen.reveal:undefined} onPointerDown={screen.viewing?screen.reveal:undefined} style={{'--paper':palette.paper,'--art-ratio':sheet.width/sheet.height,'--sample-color':paintingBird.color} as React.CSSProperties}>
@@ -303,6 +314,7 @@ export function BirdStudio(){
           {error&&<div className="bird-gpu-error" role="alert"><span>•°</span><p>Le papier attend votre GPU.</p><small>{error.includes('WebGL')?'Activez l’accélération graphique dans un navigateur compatible WebGL2.':error}</small><button onClick={event=>{event.stopPropagation();stop();setWaterPlaced(false);setMarks([]);setPaintingPlacement(ORIGINAL_PAINTING);setPoetry(null);setStage(padIds.length===1?'paint':'choose');setTool('water');setPoint(null);setColour(null);setStatus(idle);setError('');setRetry(r=>r+1);}}>Réessayer</button></div>}
         </div>
         </div>
+        {stage==='finished'&&poetry&&<button className="artwork-zoom-open" disabled={openingReader||exporting} onClick={()=>void openReader()}>{openingReader?'Préparation…':'Agrandir l’œuvre'} <span aria-hidden="true">＋</span></button>}
         <div className="bird-art-caption"><span>{stage==='finished'?'Une plume. Votre empreinte.':stage==='drying'?'Les contours se déposent. Le papier garde le poème.':marks.length?'Levez la plume. Laissez l’eau poursuivre son chemin.':'Un geste, un chant. Le papier et l’eau composent la matière.'}</span><span className="signature-id">N° {seed.toString(16).toUpperCase().padStart(8,'0')}</span></div>
       </section>
       <aside className="bird-instrument">
@@ -333,6 +345,7 @@ export function BirdStudio(){
     {screen.viewing&&!immersiveActive&&<button className="bird-exit" aria-label="Quitter le plein écran" onClick={screen.exit} onFocus={screen.reveal} onPointerMove={screen.reveal}><Glyph name="close"/>Quitter</button>}
     {screen.viewing&&playing&&<button className="bird-finish-screen" onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/>Interrompre le chant</button>}
     {screen.viewing&&!immersiveActive&&canCreate&&!busy&&marks.length>0&&<button className="bird-finalize-screen" onClick={finalize}>Laisser sécher ☼</button>}
+    {readingImage&&<ArtworkViewer image={readingImage} onClose={()=>setReadingImage(null)}/>}
     {dance&&poetry&&<Suspense fallback={<div className="toast" role="status">Préparation du film…</div>}><DanceStudio frames={dance.frames} placement={dance.placement} painting={dance.painting} sound={dance.sound} audio={dance.audio} credit={dance.credit} poetry={poetry} paper={palette.paper} seed={seed} onClose={()=>setDance(null)}/></Suspense>}
     {notice&&<div className="toast" role="status">{notice}</div>}
   </div>;

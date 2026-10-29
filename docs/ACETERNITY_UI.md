@@ -55,3 +55,33 @@ Le dialogue conserve le texte complet, les trois temps et la conclusion. Il gèr
 le focus, Échap, la fermeture par bouton et le clic hors de la carte ; le fond est
 inactif pendant la lecture. Les animations du logo et du dialogue respectent
 `prefers-reduced-motion`. Vérification navigateur : `python scripts/check-welcome.py`.
+
+### Lecture agrandie de l'œuvre
+
+Après révélation, « Agrandir l’œuvre » ouvre le PNG composé en haute définition dans
+une vue dédiée. Pincement (100–500 %), déplacement borné, double toucher (100/300 %),
+boutons +/− et retour à la vue entière partagent le même état de lecture. Échap ferme
+la vue et rend le focus à son bouton d'ouverture. Le changement d'orientation remet
+l'image à l'échelle de la vue. La composition, les pigments et les fichiers exportés
+ne sont pas modifiés. Les URL temporaires sont libérées à la fermeture.
+
+`python scripts/check-artwork-reader.py` vérifie les gestes tactiles Chromium, les
+boutons, le double toucher et le retour du focus. `scripts/check-poetic-ui.py` vérifie
+l'ouverture depuis le parcours complet sans changer le placement de la peinture.
+
+### Table d'aquarelle
+
+La palette regroupe quatre outils explicitement nommés, les actions Annuler/Sécher
+et un volet de réglages repliable. Les godets utilisent les couleurs du plumage,
+avec un godet multicolore pour la brosse complète ; la bordure et le point de
+sélection ne reposent pas uniquement sur la perception des couleurs. Les outils,
+godets et boutons ont des cibles d'au moins 44 px. Les godets défilent horizontalement
+sur petit écran. Le nuancier conserve ses noms accessibles et ses callbacks.
+
+Les commandes deviennent transparentes pendant le geste ; la zone invisible ne
+capture plus les touchers. Le focus clavier garde les commandes disponibles, alors
+que la sélection tactile ne force pas leur maintien à l'écran. La poignée Outils
+permet de les rappeler. Aucun changement du moteur pictural ou du traitement audio.
+
+`python scripts/check-watercolour-table.py` contrôle les dimensions tactiles, les
+quatre largeurs 320/390/768/1280 px et les callbacks de sélection, annulation et séchage.

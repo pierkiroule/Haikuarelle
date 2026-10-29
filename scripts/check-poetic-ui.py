@@ -66,7 +66,12 @@ with sync_playwright() as pw:
   assert tb['y']<paper_box['y']+paper_box['height']*.1 and pb['y']>paper_box['y']+paper_box['height']*.7
   assert pb['y']+pb['height']<paper_box['y']+paper_box['height']*.94
   assert title.evaluate('e=>getComputedStyle(e).pointerEvents')=='none' and poem.evaluate('e=>getComputedStyle(e).pointerEvents')=='none'
-  assert 'scale(0.6)' in page.locator('canvas').get_attribute('style')
+  assert 'scale(0.384)' in page.locator('canvas').get_attribute('style')
+  original_style=page.locator('canvas').get_attribute('style')
+  page.get_by_role('button',name='Agrandir l’œuvre',exact=False).click();page.locator('.artwork-viewer img').wait_for()
+  page.get_by_label('Agrandir le zoom',exact=True).click();assert page.get_by_label('Niveau de zoom').inner_text()=='150 %'
+  page.keyboard.press('Escape');assert page.locator('.artwork-viewer').count()==0
+  assert page.locator('canvas').get_attribute('style')==original_style
   page.screenshot(path=f'/tmp/new-feather-{bird}.png',full_page=True)
   page.get_by_role('button',name='Valider la composition').click();assert not page.get_by_role('button',name='Partager l’œuvre',exact=False).is_disabled()
   assert page.locator('.resonant-haiku.is-editable').count()==0

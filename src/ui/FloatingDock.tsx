@@ -12,9 +12,9 @@ export function FloatingDock({children,className,drawing=false,keepOpen=false}:{
  const visible=reduced||keyboard||!drawing&&(awake||engaged||keepOpen);
  return <PoeticMotion>
   <button type="button" className={`poetic-dock-wake${visible||drawing?' is-concealed':''}`} onClick={()=>{wake();root.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();}} aria-hidden={visible||drawing} aria-label="Afficher les outils de peinture" tabIndex={visible||drawing?-1:0}>Outils <span aria-hidden="true">•°</span></button>
-  <MotionDiv ref={root} className={`${className} poetic-dock`} data-dock-visible={visible} initial={false} animate={{opacity:visible?1:0}} transition={{duration:reduced?0:.65,ease:'easeInOut'}} style={{pointerEvents:drawing&&!keyboard?'none':undefined}}
+  <MotionDiv ref={root} className={`${className} poetic-dock`} data-dock-visible={visible} initial={false} animate={{opacity:visible?1:0}} transition={{duration:reduced?0:.65,ease:'easeInOut'}} style={{pointerEvents:!visible||drawing&&!keyboard?'none':undefined}}
    onPointerEnter={e=>{if(e.pointerType==='mouse'){setEngaged(true);wake();}}} onPointerLeave={()=>{setEngaged(false);wake();}} onPointerDownCapture={wake}
-   onFocusCapture={()=>{setKeyboard(true);wake();}} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null)){setKeyboard(false);wake();}}}
+   onFocusCapture={e=>{setKeyboard(e.target.matches(':focus-visible'));wake();}} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null)){setKeyboard(false);wake();}}}
    role="group" aria-label="Palette : eau, plume, souffle du vivant et Inkbird">{children}</MotionDiv>
  </PoeticMotion>;
 }
