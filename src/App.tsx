@@ -29,7 +29,7 @@ import './atelier.css';
 import './plumes.css';
 import {RITUAL,RitualProgress,WaterDrop,type RitualStage} from './birds/Ritual';
 import './ritual.css';
-import {APP_NAME,ARTIST_NAME} from './brand';
+import {APP_NAME,ARTIST_NAME,PROJECT_CREDIT} from './brand';
 import {FeatherDrift} from './birds/FeatherDrift';
 import {DryingProgress} from './birds/DryingProgress';
 import './birds/drying.css';
@@ -340,7 +340,7 @@ export function BirdStudio(){
       </aside>
 
     </main>
-    <footer className="bird-footer"><span className="artist-signature">Une création de {ARTIST_NAME} · •°</span><span>Un oiseau. De l’eau, un chant, du silence. Une haïkuarelle.</span><a href="/?guide=1#guide-therapeute" target="_blank" rel="noreferrer">Guide d’accompagnement ↗</a><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Pigment Drift · MIT</a></footer>
+    <footer className="bird-footer"><span className="artist-signature">Une création de {ARTIST_NAME} · {PROJECT_CREDIT} · •°</span><span>Un oiseau. De l’eau, un chant, du silence. Une haïkuarelle.</span><a href="/?guide=1#guide-therapeute" target="_blank" rel="noreferrer">Guide d’accompagnement ↗</a><a href="/birds/credits.html" target="_blank" rel="noreferrer">Chants & crédits ↗</a><a href="/PIGMENT-DRIFT-LICENSE.txt" target="_blank" rel="noreferrer">Pigment Drift · MIT</a></footer>
     {canvasOnly&&<button className="canvas-restore" onClick={()=>setCanvasOnly(false)}>Afficher les commandes <span aria-hidden="true">↗</span></button>}
     {screen.viewing&&!immersiveActive&&<button className="bird-exit" aria-label="Quitter le plein écran" onClick={screen.exit} onFocus={screen.reveal} onPointerMove={screen.reveal}><Glyph name="close"/>Quitter</button>}
     {screen.viewing&&playing&&<button className="bird-finish-screen" onClick={stop} aria-label="Interrompre le chant"><Glyph name="stop"/>Interrompre le chant</button>}
