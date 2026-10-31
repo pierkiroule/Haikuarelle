@@ -1,7 +1,8 @@
 import {useRef,useState,type ReactNode} from 'react';
 import './welcome.css';
 import {useMediaPreference} from '../ui/useMediaPreference';
-import {ARTIST_NAME} from '../brand';
+import {ARTIST_NAME,PROJECT_CREDIT} from '../brand';
+import {TherapistGuide} from './TherapistGuide';
 import {Presentation} from './Presentation';
 import {WatercolourLogo} from './WatercolourLogo';
 
@@ -22,6 +23,7 @@ export function ArtisticWelcome({children}:{children:ReactNode}){
    </div>
    <div id="rencontrer-plume" className="welcome-feathers" aria-label="Rencontrer une plume">{children}</div>
   </div>
+  <TherapistGuide/>
   <section className="intention-carousel" aria-labelledby="intention-title" aria-roledescription="carrousel">
    <header className="intention-carousel-heading"><h2 id="intention-title">L’intention artistique</h2><span aria-hidden="true">{String(page+1).padStart(2,'0')} / 03</span></header>
    <div ref={track} className="intention-track" tabIndex={0} aria-label="L’intention en trois pages. Utilisez les flèches gauche et droite." onScroll={e=>{const el=e.currentTarget;setPage(Math.max(0,Math.min(2,Math.round(el.scrollLeft/Math.max(1,el.clientWidth)))));}} onKeyDown={e=>{if(e.target!==e.currentTarget)return;if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();go(Math.max(0,Math.min(2,page+(e.key==='ArrowRight'?1:-1))));}else if(e.key==='Home'||e.key==='End'){e.preventDefault();go(e.key==='Home'?0:2);}}}>
@@ -49,7 +51,7 @@ export function ArtisticWelcome({children}:{children:ReactNode}){
    <p>Ici, l’art ne consiste pas à tout maîtriser, mais à faire place à ce qui résonne.</p>
    <p className="welcome-closing">Une personne, un oiseau, un peu d’eau et le temps d’un chant.</p>
   </section>
-   <p className="intention-signature">Une création de <strong>{ARTIST_NAME}</strong> <span aria-hidden="true">•°</span></p>
+   <p className="intention-signature">Une création de <strong>{ARTIST_NAME}</strong> · {PROJECT_CREDIT} <span aria-hidden="true">•°</span></p>
    </article>
    </div>
    <nav className="intention-navigation" aria-label="Pages de l’intention artistique"><button aria-label="Page précédente" disabled={page===0} onClick={()=>go(page-1)}>←</button><div className="intention-dots">{['La résonance','Trois temps pour créer','L’art comme rencontre'].map((label,index)=><button key={label} aria-label={`Lire : ${label}`} aria-current={page===index?'true':undefined} onClick={()=>go(index)}><span/></button>)}</div><button aria-label="Page suivante" disabled={page===2} onClick={()=>go(page+1)}>→</button></nav>
