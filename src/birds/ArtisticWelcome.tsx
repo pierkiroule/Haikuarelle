@@ -2,6 +2,7 @@ import {useRef,useState,type ReactNode} from 'react';
 import './welcome.css';
 import {useMediaPreference} from '../ui/useMediaPreference';
 import {ARTIST_NAME} from '../brand';
+import {TherapistGuide} from './TherapistGuide';
 import {Presentation} from './Presentation';
 import {WatercolourLogo} from './WatercolourLogo';
 
@@ -22,6 +23,7 @@ export function ArtisticWelcome({children}:{children:ReactNode}){
    </div>
    <div id="rencontrer-plume" className="welcome-feathers" aria-label="Rencontrer une plume">{children}</div>
   </div>
+  <TherapistGuide/>
   <section className="intention-carousel" aria-labelledby="intention-title" aria-roledescription="carrousel">
    <header className="intention-carousel-heading"><h2 id="intention-title">L’intention artistique</h2><span aria-hidden="true">{String(page+1).padStart(2,'0')} / 03</span></header>
    <div ref={track} className="intention-track" tabIndex={0} aria-label="L’intention en trois pages. Utilisez les flèches gauche et droite." onScroll={e=>{const el=e.currentTarget;setPage(Math.max(0,Math.min(2,Math.round(el.scrollLeft/Math.max(1,el.clientWidth)))));}} onKeyDown={e=>{if(e.target!==e.currentTarget)return;if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();go(Math.max(0,Math.min(2,page+(e.key==='ArrowRight'?1:-1))));}else if(e.key==='Home'||e.key==='End'){e.preventDefault();go(e.key==='Home'?0:2);}}}>

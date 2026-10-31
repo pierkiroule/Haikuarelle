@@ -193,3 +193,18 @@ La palette s’efface pendant le geste, les plumes prennent une profondeur lég�
 ### Poétique des couleurs et des lieux
 
 Les haïkus résonants relient les couleurs dominantes et les formes mesurées de l'œuvre à 144 nouvelles scènes naturelles propres aux douze oiseaux. Le titre et le vers central partagent leur image ; refuges et gestes du vivant sont écrits ensemble. Les lieux-dits sont imaginaires. Voir [la grammaire naturelle](docs/NATURE_POETRY.md).
+
+### Guide d’accompagnement
+
+L’accueil propose un guide du thérapeute dépliable, avant le carrousel d’intention.
+Son texte fourni par l’auteur est conservé dans `docs/guide-therapeute.md`. Le bouton
+« Télécharger le guide illustré » distribue `public/guide-therapeute.pdf` : cinq pages
+A4, icônes vectorielles, tableaux de relances, précautions et signature.
+Le pied de page ouvre le guide dans un autre onglet pour préserver une œuvre en cours.
+
+Régénération du PDF : `python scripts/build-therapist-pdf.py` (Python Playwright et
+Chromium requis). Le script produit aussi un HTML autonome et vérifie que le contenu
+n’empiète pas sur les pieds de page. Contrôle navigateur avec Vite sur 5173 :
+`python scripts/check-therapist-guide.py` (contenu intégral, mobile, lien direct et
+téléchargement réel du PDF). Le PDF contient du texte sélectionnable et des balises
+sémantiques ; il ne s’agit pas d’une certification PDF/UA.
