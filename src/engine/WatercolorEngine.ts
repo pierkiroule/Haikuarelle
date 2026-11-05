@@ -1,3 +1,4 @@
+import {LiveBudget} from './LiveBudget';
 import {SignatureInk} from '../birds/SignatureInk';
 import {LivingBreath} from '../birds/LivingBreath';
 import type {WaterCurrent} from '../birds/ResonantWater';
@@ -67,6 +68,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private last=0;
   private notifyAt=-1;
   private frameMs=33;
+  private liveBudget=new LiveBudget();
   private observer:ResizeObserver;
   private onChange?:(s:EngineStatus)=>void;
   private onError?:(message:string)=>void;
@@ -301,7 +303,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
   }
   private resize():void {
     const rect=this.paint.canvas.getBoundingClientRect();
-    const size=displaySize(rect.width,rect.height,devicePixelRatio||1,matchMedia('(pointer:coarse)').matches,this.quality.displayPixels);
+    const size=displaySize(rect.width,rect.height,devicePixelRatio||1,matchMedia('(pointer:coarse)').matches,Math.min(this.quality.displayPixels,this.paint.softwareRenderer?.35e6:Infinity)*this.liveBudget.scale);
     const {width:w,height:h}=size,sheet=sheetFor(this.settings.format);
     if(this.lastDisplay[0]===w&&this.lastDisplay[1]===h&&this.paint.ready){
       this.paint.setView(sheet.width,sheet.height,w,h);return;
@@ -314,6 +316,8 @@ export class HaikuarelleEngine implements WatercolorEngine {
   private frame=(now:number)=>{
     this.raf=0;
     if(this.destroyed||!this.active||this.paused||document.hidden)return;
+    const initialFrame=!this.last,beforeTick=this.tick;
+    if(this.last&&this.liveBudget.observe(now-this.last))this.resize();
     if(this.last){const delta=Math.min((now-this.last)/1000,.15);this.accumulator+=delta;this.frameMs=.92*this.frameMs+.08*(now-this.last);}
     this.last=now;
     // Never discard a physical tick. Slow devices take longer, but paint the same image.
@@ -321,7 +325,7 @@ export class HaikuarelleEngine implements WatercolorEngine {
     while(this.accumulator>=1/TICK_RATE&&budget-->0&&this.tick<this.composition.duration*TICK_RATE){
       this.stepOnce();this.accumulator-=1/TICK_RATE;
     }
-    this.paint.render(0);
+    if(initialFrame||this.tick!==beforeTick)this.paint.render(0);
     if(this.tick%6===0)this.emit();
     if(this.tick<this.composition.duration*TICK_RATE)this.request();else{this.accumulator=0;this.emit();}
   };
@@ -495,7 +499,11 @@ export class HaikuarelleEngine implements WatercolorEngine {
     this.paint.render(0);this.notifyAt=-1;this.emit();
   }
   /** A bounded readback for the creation film, independent of display resolution. */
-  captureProcessFrame():{width:number;height:number;pixels:Uint8Array} {const mobile=typeof matchMedia!=='undefined'&&matchMedia('(pointer:coarse)').matches;return this.paint.capture((mobile?1600:1920)/Math.max(this.paint.viewW,this.paint.viewH),0,false);}
+  captureProcessFrame():{width:number;height:number;pixels:Uint8Array} {
+    const edge=this.paint.softwareRenderer?640:this.quality.tier==='light'?768:this.quality.tier==='balanced'?1080:this.quality.tier==='fine'?1440:1600;
+    const responsiveEdge=Math.max(640,Math.round(edge*Math.sqrt(this.liveBudget.scale)));
+    return this.paint.capture(responsiveEdge/Math.max(this.paint.viewW,this.paint.viewH),0,false,true);
+  }
   capturePreview():{width:number;height:number;pixels:Uint8Array} {return this.paint.capture(1,0);}
   destroy():void {
     this.clearGestureHistory();this.destroyed=true;cancelAnimationFrame(this.raf);this.observer.disconnect();

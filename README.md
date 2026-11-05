@@ -42,7 +42,7 @@ Documentation et planche des quatre nouveautés : [Sept plumages](docs/SEPT-PLUM
 Correctif V11.1 : la toile garde le même gabarit entre peinture, séchage et révélation des mots. Son bitmap GPU est isolé dans une couche positionnée pour éviter que sa définition interne pilote la hauteur du cadre. Portrait 9:16 et paysage 16:9 sont conservés. Le titre et le haïku occupent des bandes protégées du papier, hors du champ de peinture. Les contrôles de géométrie sont documentés dans [Proportions de la feuille](docs/PROPORTIONS-DE-LA-FEUILLE.md).
 
 
-Portrait 9:16 ou paysage 16:9, grand écran et commandes tactiles. Champ adaptatif de 864 × 1 536 à 1 800 × 3 200, avec un profil QHD 1 440 × 2 560 par défaut lorsque les indications de ressources sont indisponibles, toujours limité par le GPU ; export de peinture 2 304 × 4 096 en portrait, puis marge du haïku (2 304 × 5 110 au total, titre et haïku inclus). L’eau claire est plus contrastée et s’efface en séchant. Le papier est fin, sans quadrillage. Les lavis utilisent une concentration continue pour éviter les bandes artificielles. Les échanges entre cellules voisines et diagonales évitent les sous-grilles laissées par les anciens pas de diffusion. Au grossissement et à l’export, une reconstruction cubique positive adoucit les cellules sans accentuer leurs carrés.
+Portrait 9:16 ou paysage 16:9, grand écran et commandes tactiles. Champ stable de 540 × 960 à 1 080 × 1 920 en portrait, avec un profil équilibré de 756 × 1 344 lorsque les indications de ressources sont indisponibles, toujours limité par le GPU ; export de peinture avec un grand côté de 4 096 pixels, puis composition du titre et du haïku sur la même feuille. L’eau claire est plus contrastée et s’efface en séchant. Le papier est fin, sans quadrillage. Les lavis utilisent une concentration continue pour éviter les bandes artificielles. Les échanges entre cellules voisines et diagonales évitent les sous-grilles laissées par les anciens pas de diffusion. Au grossissement et à l’export, une reconstruction cubique positive adoucit les cellules sans accentuer leurs carrés.
 
 `1` : choisir la plume sonore. Sur la feuille, maintenir espace/Entrée et utiliser les flèches pour peindre au clavier. Relâcher la touche lève le pinceau. `F` : grand écran. `Échap` : lever le pinceau et sortir du grand écran.
 
@@ -141,12 +141,12 @@ Le moteur choisit un profil au démarrage à partir du type de pointeur et des i
 
 | Profil | Champ portrait | Sélection |
 | --- | --- | --- |
-| Léger | 864 × 1 536 | Mémoire annoncée ≤ 2 Go |
-| Équilibré | 1 080 × 1 920 | Tactile, mémoire ≤ 4 Go ou ≤ 4 processeurs |
-| Fin | 1 440 × 2 560 | Profil par défaut, notamment si les indications manquent |
-| Atelier | 1 800 × 3 200 | Pointeur fin, mémoire ≥ 8 Go et ≥ 12 processeurs logiques |
+| Léger | 540 × 960 | Mémoire annoncée ≤ 2 Go |
+| Équilibré | 756 × 1 344 | Indications absentes, ≤ 4 processeurs, ou tactile avec mémoire ≤ 4 Go |
+| Fin | 972 × 1 728 | Mémoire ≥ 8 Go et ≥ 8 processeurs, hors profil Atelier |
+| Atelier | 1 080 × 1 920 | Pointeur fin, mémoire ≥ 8 Go et ≥ 12 processeurs logiques |
 
-Le profil Atelier calcule 56 % de cellules de pigment en plus que l’ancien QHD fixe. Son atlas procédural de séchage peut atteindre la définition complète de l’export 4K ; il ne reconstruit pas une simulation 4K ni des gestes perdus. L’affichage respecte la densité de l’écran sous un plafond de mémoire ; le profil léger plafonne aussi ses tampons d’affichage et son atlas.
+Les profils limitent le nombre de cellules à simuler plutôt que de supposer que beaucoup de processeurs garantissent un GPU puissant. Son atlas procédural de séchage peut atteindre la définition complète de l’export 4K ; il ne reconstruit pas une simulation 4K ni des gestes perdus. L’affichage peut réduire son budget après une lenteur persistante, sans rééchantillonner le champ humide ni changer le PNG ; le profil léger plafonne aussi ses tampons d’affichage et son atlas.
 
 Pendant les 12 secondes de séchage, l’advection et les échanges capillaires ralentissent davantage avec la baisse de l’humidité. Les dépôts fins se fixent progressivement ; aucune accentuation globale ou nouvelle trame n’est ajoutée. Les échanges restent symétriques entre cellules et la réhumidification permet à la matière de bouger à nouveau.
 
@@ -208,3 +208,11 @@ n’empiète pas sur les pieds de page. Contrôle navigateur avec Vite sur 5173 
 `python scripts/check-therapist-guide.py` (contenu intégral, mobile, lien direct et
 téléchargement réel du PDF). Le PDF contient du texte sélectionnable et des balises
 sémantiques ; il ne s’agit pas d’une certification PDF/UA.
+
+### Fluidité sur PC et mobile
+
+Les captures du film réutilisent leurs textures procédurales et s'espacent si la
+lecture GPU coûte trop cher. Le rendu évite les frames sans nouveau pas physique.
+Les profils de départ et l'affichage sont plafonnés ; l'affichage peut s'alléger
+sans modifier le champ humide. Le PNG final garde son grand côté de 4 096 pixels.
+Voir [les mesures et les compromis de performance](docs/LIVE_PERFORMANCE.md).

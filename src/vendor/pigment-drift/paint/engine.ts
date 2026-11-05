@@ -162,6 +162,9 @@ export class PaintEngine {
   private tweenMs = 0;
   private segBuf = new Float32Array(MAX_SEGS * 4);
   private segPBuf = new Float32Array(MAX_SEGS * 4);
+  // One reusable movie target; exports remain isolated, one-shot HD renders.
+  readonly softwareRenderer:boolean;
+  private processCapture: {target:Target;aux:Aux}|null=null;
   private forceBuf = new Float32Array(MAX_SEGS * 4);
   private dropBuf = new Float32Array(MAX_DROPS * 4);
   private dropInkBuf = new Float32Array(MAX_DROPS * 4);
@@ -174,6 +177,9 @@ export class PaintEngine {
     }) as WebGL2RenderingContext | null;
     if (!gl) throw new PaintUnavailableError('WebGL2 is not available.');
     this.gl = gl;
+    const debug=gl.getExtension('WEBGL_debug_renderer_info');
+    const renderer=debug?String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)):'';
+    this.softwareRenderer=/swiftshader|llvmpipe|softpipe|software rasterizer|basic render/i.test(renderer);
     gl.getExtension('EXT_color_buffer_float');
     gl.getExtension('EXT_color_buffer_half_float');
     const rg = this.pickFormat([[gl.RG16F, gl.RG], [gl.RGBA16F, gl.RGBA]]);
@@ -183,8 +189,8 @@ export class PaintEngine {
     this.rg = rg;
     this.r = r;
     this.rgba = rgba;
-    this.maxTexels = opts.fieldBudget ?? (opts.coarse ? 0.55e6 : 2.1e6);
-    this.maxScale = opts.fieldScale ?? 1;
+    this.maxTexels = Math.min(opts.fieldBudget ?? (opts.coarse ? 0.55e6 : 2.1e6),this.softwareRenderer?.3e6:Infinity);
+    this.maxScale = Math.min(opts.fieldScale ?? 1,this.softwareRenderer?.4:Infinity);
     this.maxDimension = opts.maxDimension ?? 2048;
     this.detailBudget=opts.detailBudget??1440*2560;
     this.historyBytes = opts.coarse ? 28e6 : 100e6;
@@ -639,19 +645,22 @@ export class PaintEngine {
   }
 
   /** Renders what the viewport shows at `scale` × CSS size; rows top-down, RGBA. */
-  capture(scale: number, timeS: number, showClearWater = true): { width: number; height: number; pixels: Uint8Array } {
+  capture(scale: number, timeS: number, showClearWater = true, reuse = false): { width: number; height: number; pixels: Uint8Array } {
     const gl = this.gl;
     const maxDim = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number);
     const s = Math.min(scale, maxDim / this.viewW, maxDim / this.viewH);
     const width = Math.round(this.viewW * s);
     const height = Math.round(this.viewH * s);
-    const t = this.makeTarget(width, height, { internal: gl.RGBA8, format: gl.RGBA }, false, gl.UNSIGNED_BYTE);
-    this.render(timeS, t, showClearWater);
+    if(reuse&&this.processCapture&&(this.processCapture.target.w!==width||this.processCapture.target.h!==height))this.releaseProcessCapture();
+    if(reuse&&!this.processCapture)this.processCapture={target:this.makeTarget(width,height,{internal:gl.RGBA8,format:gl.RGBA},false,gl.UNSIGNED_BYTE),aux:this.makeAux(width,height)};
+    const t=reuse?this.processCapture!.target:this.makeTarget(width,height,{internal:gl.RGBA8,format:gl.RGBA},false,gl.UNSIGNED_BYTE);
+    if(reuse){this.drawLook(timeS,t,this.processCapture!.aux,showClearWater);this.afterRender?.(width,height);}
+    else this.render(timeS,t,showClearWater);
     const raw = new Uint8Array(width * height * 4);
     gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, raw);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    this.deleteTarget(t);
+    if(!reuse)this.deleteTarget(t);
     const pixels = new Uint8Array(raw.length);
     const row = width * 4;
     for (let y = 0; y < height; y++) pixels.set(raw.subarray((height - 1 - y) * row, (height - y) * row), y * row);
@@ -707,7 +716,11 @@ export class PaintEngine {
     return true;
   }
 
+  private releaseProcessCapture():void{
+    if(!this.processCapture)return;this.deleteTarget(this.processCapture.target);this.deleteAux(this.processCapture.aux);this.processCapture=null;
+  }
   dispose(): void {
+    this.releaseProcessCapture();
     const gl = this.gl;
     this.release();
     if (this.aux) this.deleteAux(this.aux);
@@ -741,6 +754,7 @@ export class PaintEngine {
 
   /** Frees every GPU target, except `keep` (used to carry the old sheet over when growing). */
   private release(keep?: Target): void {
+    this.releaseProcessCapture();
     this.clearHistory();
     if(this.moistureTarget){this.deleteTarget(this.moistureTarget);this.moistureTarget=null;}
     for (const t of this.pool.splice(0)) this.deleteTarget(t);
