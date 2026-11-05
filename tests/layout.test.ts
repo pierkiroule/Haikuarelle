@@ -46,23 +46,23 @@ describe('portrait and HD presentation',()=>{
   });
 });
 
- describe('automatic painting quality',()=>{
-  it('gives well-equipped desktops a finer stable field and a full 4K detail atlas',()=>{
-   const q=paintingQuality({coarse:false,memory:8,cores:12});
-   expect(q.tier).toBe('studio');expect(q.scale*1080).toBe(1800);expect(q.scale*1920).toBe(3200);
-   expect(paintingQuality({memory:8,cores:8}).tier).toBe('fine');
-   expect(q.pixels).toBe(1800*3200);expect(q.detailPixels).toBe(2304*4096);
-  });
-  it('bounds mobile memory without assuming all phones are equally powerful',()=>{
-   expect(paintingQuality({coarse:true,memory:2,cores:8}).tier).toBe('light');
-   expect(paintingQuality({coarse:true,memory:4,cores:8}).pixels).toBe(1080*1920);
-   expect(paintingQuality({coarse:true,memory:8,cores:8}).pixels).toBe(1440*2560);
-   const q=paintingQuality({coarse:true,memory:2});const display=displaySize(1440,2560,3,true,q.displayPixels);
-   expect(display.width*display.height).toBeLessThan(2.11e6);
-  });
-  it('keeps the previous QHD default when optional browser hints are unavailable or invalid',()=>{
-   for(const hints of [{},{memory:NaN,cores:Infinity},{memory:-1,cores:0},{coarse:true}]){
-    expect(paintingQuality(hints).tier).toBe('fine');expect(paintingQuality(hints).pixels).toBe(1440*2560);
-   }
-  });
+describe('automatic painting quality',()=>{
+ it('bounds integrated-GPU work even when a desktop has many CPU cores',()=>{
+  const q=paintingQuality({memory:8,cores:12});
+  expect(q.tier).toBe('studio');expect(q.pixels).toBeLessThanOrEqual(2.1e6);
+  expect(q.displayPixels).toBeLessThanOrEqual(2.1e6);expect(q.detailPixels).toBe(2304*4096);
+  expect(exportSize('a4').height).toBe(4096);
  });
+ it('uses smaller stable fields on constrained phones while keeping independent detail sampling',()=>{
+  const small=paintingQuality({coarse:true,memory:2,cores:8}),phone=paintingQuality({coarse:true,memory:4,cores:8}),strong=paintingQuality({coarse:true,memory:8,cores:8});
+  expect(small.tier).toBe('light');expect(small.pixels).toBeLessThan(.6e6);
+  expect(phone.pixels).toBeLessThan(1.1e6);expect(strong.pixels).toBeGreaterThan(phone.pixels);
+  expect(strong.detailPixels).toBe(1440*2560);
+  const display=displaySize(1440,2560,3,true,small.displayPixels);expect(display.width*display.height).toBeLessThan(.71e6);
+ });
+ it('starts conservatively when browser hardware hints are unavailable or invalid',()=>{
+  for(const hints of [{},{memory:NaN,cores:Infinity},{memory:-1,cores:0},{coarse:true}]){
+   const q=paintingQuality(hints);expect(q.tier).toBe('balanced');expect(q.pixels).toBeLessThan(1.1e6);
+  }
+ });
+});

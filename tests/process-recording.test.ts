@@ -52,3 +52,12 @@ it('removes cancelled gestures from the recorded film and captures the restored 
  await recorder.capture(read,0,true);await recorder.capture(read,1000,true);await recorder.capture(read,2000,true);
  recorder.rewind(1000);await recorder.capture(read,1000,true);expect((await recorder.snapshot()).map(f=>f.time)).toEqual([0,1000]);
 });
+it('spaces expensive GPU readbacks while keeping forced milestone captures',async()=>{
+ fakeCanvas();let clock=0;vi.stubGlobal('performance',{now:()=>clock});
+ const read=vi.fn(()=>{clock+=40;return {width:1,height:1,pixels:new Uint8Array(4)};});const recorder=new ProcessRecording();
+ await recorder.capture(read,0);await recorder.capture(read,100);expect(read).toHaveBeenCalledTimes(1);
+ await recorder.capture(read,400);expect(read).toHaveBeenCalledTimes(2);
+ await recorder.capture(read,450,true);expect(read).toHaveBeenCalledTimes(3);
+ expect((await recorder.snapshot()).map(f=>f.time)).toEqual([0,400,450]);
+ recorder.reset();await recorder.capture(read,0);expect(read).toHaveBeenCalledTimes(4);
+});

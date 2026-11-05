@@ -13,19 +13,20 @@ export function replaySample(frames:readonly ProcessFrame[],time:number):ReplayS
  return {from,to,mix:span>0?Math.max(0,Math.min(1,(target-frames[from].time)/span)):0};
 }
 export class ProcessRecording {
- private frames:ProcessFrame[]=[];private interval=80;private last=-Infinity;private generation=0;private pending:Promise<void>|null=null;private failed=false;
+ private frames:ProcessFrame[]=[];private interval=80;private last=-Infinity;private generation=0;private pending:Promise<void>|null=null;private failed=false;private readCost=0;
  private canvas:HTMLCanvasElement|null=null;
  constructor(private unavailable:()=>void=()=>{}){}
- reset(){this.generation++;this.frames=[];this.interval=80;this.last=-Infinity;this.failed=false;}
- rewind(time:number){this.generation++;this.frames=this.frames.filter(f=>f.time<time);this.last=this.frames.at(-1)?.time??-Infinity;this.failed=false;}
+ reset(){this.generation++;this.frames=[];this.interval=80;this.last=-Infinity;this.failed=false;this.readCost=0;}
+ rewind(time:number){this.generation++;this.frames=this.frames.filter(f=>f.time<time);this.last=this.frames.at(-1)?.time??-Infinity;this.failed=false;this.readCost=0;}
  get available(){return this.frames.length>1;}
  async capture(read:()=>{width:number;height:number;pixels:Uint8Array},time:number,force=false){
   if(this.failed)return;
   if(this.pending){if(!force)return;await this.pending;}
-  if(!force&&time-this.last<this.interval)return;
+  if(!force&&time-this.last<Math.max(this.interval,Math.min(2000,this.readCost*8)))return;
   const generation=this.generation;
   const task=(async()=>{try{
-   const {width,height,pixels}=read();const canvas=this.canvas??=document.createElement('canvas');canvas.width=width;canvas.height=height;
+   const began=performance.now();
+   const {width,height,pixels}=read();this.readCost=performance.now()-began;const canvas=this.canvas??=document.createElement('canvas');if(canvas.width!==width)canvas.width=width;if(canvas.height!==height)canvas.height=height;
    const ctx=canvas.getContext('2d');if(!ctx)throw Error('Capture indisponible');
    ctx.putImageData(new ImageData(new Uint8ClampedArray(pixels),width,height),0,0);
    const image=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Capture indisponible')),'image/jpeg',.96));

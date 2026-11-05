@@ -17,7 +17,7 @@ with sync_playwright() as p:
  engine.undoGesture();if(checksum()!==blank||engine.waterAt({x:.5,y:.5})!==0||engine.undoDepth!==0)throw Error('Blank state not restored');
  for(let i=0;i<10;i++)engine.checkpointGesture();if(engine.undoDepth>6)throw Error('Unbounded gesture history');engine.clear();if(engine.undoDepth!==0)throw Error('History survived clear');
  bank.destroy();engine.destroy();return {waterPreserved:true,inkRemoved:inkCount,blankRestored:true,historyBounded:true};}'''),flush=True)
- page.goto('http://localhost:5173');page.locator('.feather-choice').first.click();undo=page.get_by_role('button',name='Annuler le dernier geste',exact=True);undo.wait_for();assert undo.is_disabled()
+ page.goto('http://localhost:5173');page.get_by_role('button',name='Entrer dans Haïkuarelle',exact=False).click();page.locator('.feather-choice').first.click();undo=page.get_by_role('button',name='Annuler le dernier geste',exact=True);undo.wait_for();assert undo.is_disabled()
  assert page.get_by_role('button',name='Voix',exact=False).count()==0
  paper=page.locator('.bird-paper');paper.focus();page.keyboard.press('Space');page.wait_for_timeout(350);assert undo.is_enabled();undo.click();assert undo.is_disabled()
  box=undo.bounding_box();assert box['x']>=0 and box['x']+box['width']<=320
